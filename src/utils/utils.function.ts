@@ -6,16 +6,14 @@ import * as fs from 'fs';
 import { S3Client } from '@aws-sdk/client-s3';
 import { Upload } from '@aws-sdk/lib-storage';
 import { Readable } from 'stream';
+import { AES, enc } from 'crypto-js';
+import { v4 as uuidv4 } from 'uuid';
+import { FindManyOptions, Repository } from 'typeorm';
 import {
   BaseResponseTypeDTO,
   PaginationRequestType,
   PaginationResponseType,
 } from '@utils/index';
-import { AES, enc } from 'crypto-js';
-import { v4 as uuidv4 } from 'uuid';
-import { FindManyOptions, Repository } from 'typeorm';
-// eslint-disable-next-line @typescript-eslint/no-var-requires
-const cryppto = require('crypto');
 
 dotenv.config();
 
@@ -33,6 +31,9 @@ export const decryptData = (
   encryptedData: string,
   encryptionKey: string,
 ): string => AES.decrypt(encryptedData, encryptionKey).toString(enc.Utf8);
+
+export const generateUniqueKey = (length = 5) =>
+  (uuidv4() as string).slice(0, length);
 
 export const arrayIncludesAny = <T>(arr: T[], values: T[]) =>
   values.some((v) => arr.includes(v));
@@ -290,7 +291,7 @@ export const sendEmail = async (
     },
   });
   const mailOptions = {
-    from: `"Unizonn App" <${process.env.EMAIL_ADMIN}>`,
+    from: `"Spraay App" <${process.env.EMAIL_ADMIN}>`,
     to: recipientEmails.join(','),
     subject,
     html,
@@ -447,3 +448,6 @@ export const httpDelete = async <U>(url: string, headers = {}): Promise<U> => {
   const response: AxiosResponse = await axios.delete(url, { headers });
   return response.data as U;
 };
+
+export const appendPrefixToString = (prefix: string, word: string): string =>
+  word.startsWith(prefix) ? word : `${prefix}${word}`;

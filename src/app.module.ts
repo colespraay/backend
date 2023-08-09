@@ -2,9 +2,9 @@ import { Module } from '@nestjs/common';
 import { AppController } from './app.controller';
 import { MulterModule } from '@nestjs/platform-express';
 import { TypeOrmModule } from '@nestjs/typeorm';
+import { APP_FILTER, APP_GUARD, APP_INTERCEPTOR } from '@nestjs/core';
 import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
 import { PrometheusModule } from '@willsoto/nestjs-prometheus';
-import { APP_FILTER, APP_GUARD, APP_INTERCEPTOR } from '@nestjs/core';
 import {
   JsonMaskInterceptor,
   HideObjectPropertyInterceptor,
@@ -18,12 +18,12 @@ import ormConfig from './orm.config';
 
 @Module({
   imports: [
-    MulterModule.register({ dest: './uploads' }),
-    ThrottlerModule.forRoot({ ttl: 60, limit: 40 }),
     TypeOrmModule.forRoot(ormConfig),
     PrometheusModule.register(),
-    UserModule,
+    MulterModule.register({ dest: './uploads' }),
+    ThrottlerModule.forRoot({ ttl: 60, limit: 40 }),
     AuthModule,
+    UserModule,
   ],
   controllers: [AppController],
   providers: [

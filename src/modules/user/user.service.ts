@@ -1,73 +1,99 @@
-import { User } from '@entities/user.entity';
 import {
   BadRequestException,
   ConflictException,
   ForbiddenException,
   HttpStatus,
+  Inject,
   Injectable,
+  forwardRef,
   InternalServerErrorException,
   NotFoundException,
 } from '@nestjs/common';
+import { User } from '@entities/index';
 import { GenericService } from '@schematics/index';
 import {
-  AppRole,
+  appendPrefixToString,
   calculatePaginationControls,
   checkForRequiredFields,
-  compareEnumValueFields,
   generateUniqueCode,
+  generateUniqueKey,
   hashPassword,
   sendEmail,
+  Gender,
+  compareEnumValueFields,
   validateEmailField,
   verifyPasswordHash,
-} from '@utils/index';
-import {
   BaseResponseTypeDTO,
   PaginationRequestType,
-} from '@utils/types/utils.types';
-import { FindManyOptions } from 'typeorm';
+  validateURLField,
+} from '@utils/index';
+import { FindManyOptions, Not } from 'typeorm';
 import {
   ChangePasswordDTO,
   CreateUserDTO,
   UpdatePasswordDTO,
+  UpdateUserDTO,
   UserResponseDTO,
   UsersResponseDTO,
 } from './dto/user.dto';
+import { AuthResponseDTO } from '@modules/auth/dto/auth.dto';
+import { AuthService } from '../index';
 
 @Injectable()
 export class UserService extends GenericService(User) {
-  async createUser(payload: CreateUserDTO): Promise<UserResponseDTO> {
+  constructor(
+    @Inject(forwardRef(() => AuthService))
+    private readonly authSrv: AuthService,
+  ) {
+    super();
+  }
+
+  async createUser(
+    payload: CreateUserDTO,
+    type: 'email' | 'phoneNumber' = 'email',
+  ): Promise<AuthResponseDTO> {
     try {
-      checkForRequiredFields(['email', 'password', 'phoneNumber'], payload);
-      if (payload.role) {
-        compareEnumValueFields(payload.role, Object.values(AppRole), 'role');
+      if (type === 'email') {
+        checkForRequiredFields(['email', 'password'], payload);
+        validateEmailField(payload.email);
+        payload.email = payload.email.toUpperCase();
       }
-      const emailToUppercase = payload.email.toUpperCase();
-      const record = await this.getRepo().findOne({
-        where: [
-          { phoneNumber: payload.phoneNumber },
-          { email: emailToUppercase },
-        ],
-        select: ['id', 'email', 'phoneNumber'],
+      if (type === 'phoneNumber') {
+        checkForRequiredFields(['phoneNumber', 'password'], payload);
+      }
+      const recordExists = await this.getRepo().findOne({
+        where: [{ phoneNumber: payload.phoneNumber }, { email: payload.email }],
+        select: ['id'],
       });
-      if (record?.id) {
-        let message = 'User with similar details exist';
-        if (record.phoneNumber === payload.phoneNumber) {
-          message = 'User with similar phoneNumber exists';
+      if (recordExists?.id) {
+        let message = 'User with similar details already exists';
+        if (recordExists.email === payload.email) {
+          message = 'User with similar email already exists';
         }
-        if (record.email === emailToUppercase) {
-          message = 'User with similar email exists';
+        if (recordExists.phoneNumber === payload.phoneNumber) {
+          message = 'User with similar phone-number already exists';
         }
         throw new ConflictException(message);
       }
-      const newUser = await this.create<Partial<User>>({
+      const verificationCode = generateUniqueKey(4);
+      await this.create<Partial<User>>({
         ...payload,
-        role: AppRole.ADMIN,
+        uniqueVerificationCode: verificationCode,
       });
+      const response =
+        type === 'email'
+          ? await this.authSrv.login({
+              email: payload.email,
+              password: payload.password,
+            })
+          : await this.authSrv.loginWithPhone({
+              phoneNumber: payload.phoneNumber,
+              password: payload.password,
+            });
       return {
-        success: true,
-        data: newUser,
-        message: 'Account created',
+        ...response,
         code: HttpStatus.CREATED,
+        message: 'Account Created',
       };
     } catch (ex) {
       this.logger.error(ex);
@@ -232,7 +258,30 @@ export class UserService extends GenericService(User) {
   ): Promise<UserResponseDTO> {
     try {
       const user = await this.getRepo().findOne({
-        where: { email },
+        where: { email: email.toUpperCase() },
+      });
+      if (user?.id && (await verifyPasswordHash(password, user.password))) {
+        return {
+          success: true,
+          code: HttpStatus.OK,
+          data: user,
+          message: 'User found',
+        };
+      }
+      throw new NotFoundException('Invalid credentials');
+    } catch (ex) {
+      this.logger.error(ex);
+      throw ex;
+    }
+  }
+
+  async findUserByPhoneNumberAndPassword(
+    phoneNumber: string,
+    password: string,
+  ): Promise<UserResponseDTO> {
+    try {
+      const user = await this.getRepo().findOne({
+        where: { phoneNumber },
       });
       if (user?.id && (await verifyPasswordHash(password, user.password))) {
         return {
@@ -371,5 +420,83 @@ export class UserService extends GenericService(User) {
     }
   }
 
-  // TODO: Write code for updating user details including saving bvn
+  async updateUser(payload: UpdateUserDTO): Promise<BaseResponseTypeDTO> {
+    try {
+      checkForRequiredFields(['userId'], payload);
+      const record = await this.findOne({ id: payload.userId });
+      if (!record?.id) {
+        throw new NotFoundException();
+      }
+      if ('status' in payload) {
+        record.status = payload.status;
+      }
+      if (payload.email && payload.email !== record.email) {
+        validateEmailField(payload.email);
+        record.email = payload.email.toUpperCase();
+      }
+      if (payload.phoneNumber && payload.phoneNumber !== record.phoneNumber) {
+        record.phoneNumber = payload.phoneNumber;
+      }
+      if (payload.firstName && payload.firstName !== record.firstName) {
+        record.firstName = payload.firstName.toUpperCase();
+      }
+      if (payload.lastName && payload.lastName !== record.lastName) {
+        record.lastName = payload.lastName.toUpperCase();
+      }
+      if (payload.gender && payload.gender !== record.gender) {
+        compareEnumValueFields(payload.gender, Object.values(Gender), 'type');
+        record.gender = payload.gender;
+      }
+      if (payload.transactionPin) {
+        record.transactionPin = await hashPassword(payload.transactionPin);
+      }
+      if (payload.password) {
+        record.password = await hashPassword(payload.password);
+      }
+      if (
+        payload.profileImageUrl &&
+        payload.profileImageUrl !== record.profileImageUrl
+      ) {
+        validateURLField(payload.profileImageUrl, 'profileImageUrl');
+        record.profileImageUrl = payload.profileImageUrl;
+      }
+      if (
+        payload.userTag &&
+        appendPrefixToString('@', payload.userTag) !== record.userTag
+      ) {
+        const tag = appendPrefixToString('@', payload.userTag);
+        const tagRecord = await this.getRepo().findOne({
+          where: { userTag: tag, id: Not(payload.userId) },
+          select: ['id'],
+        });
+        if (tagRecord?.id) {
+          throw new ConflictException(
+            `Another user currently owns tag: '${tag}'`,
+          );
+        }
+        record.userTag = tag;
+      }
+      const updatedRecord: Partial<User> = {
+        userTag: record.userTag,
+        transactionPin: record.transactionPin,
+        profileImageUrl: record.profileImageUrl,
+        gender: record.gender,
+        email: record.email,
+        firstName: record.firstName,
+        lastName: record.lastName,
+        password: record.password,
+        phoneNumber: record.phoneNumber,
+        status: record.status,
+      };
+      await this.getRepo().update({ id: record.id }, updatedRecord);
+      return {
+        success: true,
+        code: HttpStatus.OK,
+        message: 'Updated',
+      };
+    } catch (ex) {
+      this.logger.error(ex);
+      throw ex;
+    }
+  }
 }

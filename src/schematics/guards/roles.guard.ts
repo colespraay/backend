@@ -6,7 +6,7 @@ import {
   UnauthorizedException,
 } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
-import { AppRole } from '@utils/types/utils.constant';
+import { AppRole, decryptData } from '@utils/index';
 import { decode } from 'jsonwebtoken';
 import { Observable } from 'rxjs';
 
@@ -36,14 +36,18 @@ export class RolesGuard implements CanActivate {
       const rawToken: string = (extractedHeaders.authorization as string)
         .split(' ')
         .pop();
-      const decodedToken: any = decode(rawToken);
-
+      let decodedToken: any = decode(rawToken);
+      decodedToken = {
+        iat: decodedToken.iat,
+        exp: decodedToken.exp,
+        ...JSON.parse(
+          decryptData(decodedToken.data, process.env.ENCRYPTION_KEY),
+        ),
+      };
       if (decodedToken) {
         const { exp, role } = decodedToken;
-
         if (Date.now() <= exp * 1000) {
           request.userData = { ...decodedToken };
-
           if (requiredRoles) {
             returnValue = this.matchRoles(role, requiredRoles);
 

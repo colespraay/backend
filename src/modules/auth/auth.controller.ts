@@ -10,20 +10,35 @@ import {
 import { DecodeTokenGuard, CurrentUser } from '@schematics/index';
 import { DecodedTokenKey } from '@utils/index';
 import { AuthService } from './auth.service';
-import { AuthResponseDTO, LoginUserDTO } from './dto/auth.dto';
+import {
+  AuthResponseDTO,
+  LoginPhoneUserDTO,
+  LoginUserDTO,
+} from './dto/auth.dto';
 
 @ApiTags('auth')
 @Controller('auth')
 export class AuthController {
   constructor(private readonly authSrv: AuthService) {}
 
-  @ApiOperation({ description: 'Login' })
+  @ApiOperation({ description: 'Login with email and password' })
   @ApiProduces('json')
   @ApiConsumes('application/json')
   @ApiResponse({ type: AuthResponseDTO })
   @Post('/login')
   async login(@Body() payload: LoginUserDTO): Promise<AuthResponseDTO> {
     return await this.authSrv.login(payload);
+  }
+
+  @ApiOperation({ description: 'Login with phone number and password' })
+  @ApiProduces('json')
+  @ApiConsumes('application/json')
+  @ApiResponse({ type: AuthResponseDTO })
+  @Post('/login/phone-number')
+  async loginWithPhone(
+    @Body() payload: LoginPhoneUserDTO,
+  ): Promise<AuthResponseDTO> {
+    return await this.authSrv.loginWithPhone(payload);
   }
 
   @ApiBearerAuth('JWT')

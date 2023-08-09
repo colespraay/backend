@@ -1,10 +1,10 @@
-import { ApiProperty, PartialType } from '@nestjs/swagger';
-import { User } from '@entities/user.entity';
-import { AppRole } from '@utils/types/utils.constant';
+import { ApiProperty, OmitType, PartialType } from '@nestjs/swagger';
+import { User } from '@entities/index';
 import {
   BaseResponseTypeDTO,
+  Gender,
   PaginationResponseType,
-} from '@utils/types/utils.types';
+} from '@utils/index';
 
 export class UserResponseDTO extends BaseResponseTypeDTO {
   @ApiProperty({ type: () => User })
@@ -31,15 +31,20 @@ export class CreateUserDTO {
   @ApiProperty()
   password: string;
 
-  @ApiProperty({ enum: AppRole })
-  role: AppRole;
+  @ApiProperty({ nullable: true })
+  email?: string;
 
-  @ApiProperty()
-  email: string;
-
-  @ApiProperty()
-  phoneNumber: string;
+  @ApiProperty({ nullable: true })
+  phoneNumber?: string;
 }
+
+export class CreateUserEmailDTO extends OmitType(CreateUserDTO, [
+  'phoneNumber',
+] as const) {}
+
+export class CreateUserPhoneNumberDTO extends OmitType(CreateUserDTO, [
+  'email',
+] as const) {}
 
 export class CreateCustomerDTO {
   @ApiProperty({ description: 'nullable' })
@@ -66,7 +71,25 @@ export class UpdateUserDTO extends PartialType(CreateUserDTO) {
   userId: string;
 
   @ApiProperty({ nullable: true })
-  profileImage?: string;
+  firstName?: string;
+
+  @ApiProperty({ nullable: true })
+  lastName?: string;
+
+  @ApiProperty({ nullable: true })
+  password?: string;
+
+  @ApiProperty({ enum: Gender, nullable: true })
+  gender?: Gender;
+
+  @ApiProperty({ nullable: true })
+  userTag?: string;
+
+  @ApiProperty({ nullable: true })
+  transactionPin?: string;
+
+  @ApiProperty({ nullable: true })
+  profileImageUrl?: string;
 
   @ApiProperty({ nullable: true })
   status?: boolean;

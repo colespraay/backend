@@ -22,5 +22,5 @@ export abstract class Base extends BaseEntity {
 
   @ApiProperty()
   @UpdateDateColumn()
-  dateUpdate: Date;
+  dateUpdated: Date;
 }

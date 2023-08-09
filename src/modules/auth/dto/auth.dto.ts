@@ -1,14 +1,11 @@
-import { User } from '@entities/user.entity';
 import { ApiProperty } from '@nestjs/swagger';
-import { AppRole, AuthProvider } from '@utils/types/utils.constant';
-import { BaseResponseTypeDTO } from '@utils/types/utils.types';
+import { User } from '@entities/index';
+import { AppRole, AuthProvider } from '@utils/index';
+import { BaseResponseTypeDTO } from '@utils/index';
 
 export class AuthResponse {
   @ApiProperty()
   userId: string;
-
-  @ApiProperty()
-  email: string;
 
   @ApiProperty({
     enum: AppRole,
@@ -16,16 +13,7 @@ export class AuthResponse {
   role: AppRole;
 
   @ApiProperty()
-  dateCreated: Date;
-
-  @ApiProperty()
   token: string;
-
-  @ApiProperty()
-  tokenInitializationDate: number;
-
-  @ApiProperty()
-  tokenExpiryDate: number;
 
   @ApiProperty({ type: User })
   user: User;
@@ -34,6 +22,14 @@ export class AuthResponse {
 export class LoginUserDTO {
   @ApiProperty()
   email: string;
+
+  @ApiProperty()
+  password: string;
+}
+
+export class LoginPhoneUserDTO {
+  @ApiProperty()
+  phoneNumber: string;
 
   @ApiProperty()
   password: string;

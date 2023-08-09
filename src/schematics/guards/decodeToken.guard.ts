@@ -4,7 +4,7 @@ import {
   ExecutionContext,
   ForbiddenException,
 } from '@nestjs/common';
-import { AppRole } from '@utils/types/utils.constant';
+import { decryptData } from '@utils/index';
 import { decode } from 'jsonwebtoken';
 import { Observable } from 'rxjs';
 
@@ -27,7 +27,16 @@ export class DecodeTokenGuard implements CanActivate {
       const rawToken: string = (extractedHeaders.authorization as string)
         .split(' ')
         .pop();
-      const decodedToken: any = decode(rawToken);
+      let decodedToken: any = decode(rawToken);
+      console.log({ decodedToken });
+      decodedToken = {
+        iat: decodedToken.iat,
+        exp: decodedToken.exp,
+        ...JSON.parse(
+          decryptData(decodedToken.data, process.env.ENCRYPTION_KEY),
+        ),
+      };
+      console.log({ decodedToken });
       request.userData = { ...decodedToken };
       returnValue = true;
     } else {
@@ -36,9 +45,5 @@ export class DecodeTokenGuard implements CanActivate {
       );
     }
     return returnValue;
-  }
-
-  private matchRoles(role: AppRole, permittedRoles: AppRole): boolean {
-    return permittedRoles.includes(role);
   }
 }
