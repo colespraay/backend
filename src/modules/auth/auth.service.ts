@@ -7,11 +7,11 @@ import {
 } from '@nestjs/common';
 import {
   AuthProvider,
-  checkForRequiredFields,
-  compareEnumValueFields,
   encryptData,
   validateEmailField,
   validateURLField,
+  checkForRequiredFields,
+  compareEnumValueFields,
 } from '@utils/index';
 import { User } from '@entities/index';
 import { sign } from 'jsonwebtoken';
