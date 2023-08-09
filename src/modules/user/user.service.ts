@@ -12,6 +12,12 @@ import {
 import { User } from '@entities/index';
 import { GenericService } from '@schematics/index';
 import {
+  compareEnumValueFields,
+  validateEmailField,
+  verifyPasswordHash,
+  BaseResponseTypeDTO,
+  PaginationRequestType,
+  validateURLField,
   appendPrefixToString,
   calculatePaginationControls,
   checkForRequiredFields,
@@ -20,12 +26,6 @@ import {
   hashPassword,
   sendEmail,
   Gender,
-  compareEnumValueFields,
-  validateEmailField,
-  verifyPasswordHash,
-  BaseResponseTypeDTO,
-  PaginationRequestType,
-  validateURLField,
 } from '@utils/index';
 import { FindManyOptions, Not } from 'typeorm';
 import {
@@ -425,17 +425,32 @@ export class UserService extends GenericService(User) {
       checkForRequiredFields(['userId'], payload);
       const record = await this.findOne({ id: payload.userId });
       if (!record?.id) {
-        throw new NotFoundException();
+        throw new NotFoundException('User with id not found');
       }
       if ('status' in payload) {
         record.status = payload.status;
       }
-      if (payload.email && payload.email !== record.email) {
-        validateEmailField(payload.email);
-        record.email = payload.email.toUpperCase();
+      if ('displayWalletBalance' in payload) {
+        record.displayWalletBalance = payload.displayWalletBalance;
+      }
+      if ('enableFaceId' in payload) {
+        record.enableFaceId = payload.enableFaceId;
+      }
+      if ('allowEmailNotifications' in payload) {
+        record.allowEmailNotifications = payload.allowEmailNotifications;
+      }
+      if ('allowSmsNotifications' in payload) {
+        record.allowSmsNotifications = payload.allowSmsNotifications;
+      }
+      if ('allowPushNotifications' in payload) {
+        record.allowPushNotifications = payload.allowPushNotifications;
       }
       if (payload.phoneNumber && payload.phoneNumber !== record.phoneNumber) {
         record.phoneNumber = payload.phoneNumber;
+      }
+      if (payload.email && payload.email !== record.email) {
+        validateEmailField(payload.email);
+        record.email = payload.email.toUpperCase();
       }
       if (payload.firstName && payload.firstName !== record.firstName) {
         record.firstName = payload.firstName.toUpperCase();
@@ -444,7 +459,7 @@ export class UserService extends GenericService(User) {
         record.lastName = payload.lastName.toUpperCase();
       }
       if (payload.gender && payload.gender !== record.gender) {
-        compareEnumValueFields(payload.gender, Object.values(Gender), 'type');
+        compareEnumValueFields(payload.gender, Object.values(Gender), 'gender');
         record.gender = payload.gender;
       }
       if (payload.transactionPin) {
@@ -466,7 +481,7 @@ export class UserService extends GenericService(User) {
       ) {
         const tag = appendPrefixToString('@', payload.userTag);
         const tagRecord = await this.getRepo().findOne({
-          where: { userTag: tag, id: Not(payload.userId) },
+          where: { id: Not(payload.userId), userTag: tag },
           select: ['id'],
         });
         if (tagRecord?.id) {
@@ -477,16 +492,21 @@ export class UserService extends GenericService(User) {
         record.userTag = tag;
       }
       const updatedRecord: Partial<User> = {
-        userTag: record.userTag,
-        transactionPin: record.transactionPin,
-        profileImageUrl: record.profileImageUrl,
         gender: record.gender,
         email: record.email,
-        firstName: record.firstName,
+        status: record.status,
+        userTag: record.userTag,
         lastName: record.lastName,
         password: record.password,
+        firstName: record.firstName,
         phoneNumber: record.phoneNumber,
-        status: record.status,
+        enableFaceId: record.enableFaceId,
+        transactionPin: record.transactionPin,
+        profileImageUrl: record.profileImageUrl,
+        allowEmailNotifications: record.allowEmailNotifications,
+        allowPushNotifications: record.allowPushNotifications,
+        allowSmsNotifications: record.allowSmsNotifications,
+        displayWalletBalance: record.displayWalletBalance,
       };
       await this.getRepo().update({ id: record.id }, updatedRecord);
       return {

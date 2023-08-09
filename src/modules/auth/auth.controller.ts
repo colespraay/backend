@@ -14,6 +14,7 @@ import {
   AuthResponseDTO,
   LoginPhoneUserDTO,
   LoginUserDTO,
+  ThirdPartyLoginDTO,
 } from './dto/auth.dto';
 
 @ApiTags('auth')
@@ -39,6 +40,21 @@ export class AuthController {
     @Body() payload: LoginPhoneUserDTO,
   ): Promise<AuthResponseDTO> {
     return await this.authSrv.loginWithPhone(payload);
+  }
+
+  @ApiOperation({
+    description: `Login with Third-party, I.E Google/Facebook. 
+      Pick json data returned to frontend client from either google and facebook, 
+      and send to this endpoint for new jwt token to be generated`,
+  })
+  @ApiProduces('json')
+  @ApiConsumes('application/json')
+  @ApiResponse({ type: AuthResponseDTO })
+  @Post('/login/third-party')
+  async signUpOrLogin(
+    @Body() payload: ThirdPartyLoginDTO,
+  ): Promise<AuthResponseDTO> {
+    return await this.authSrv.signUpOrLogin(payload);
   }
 
   @ApiBearerAuth('JWT')

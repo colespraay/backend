@@ -192,7 +192,7 @@ export class UserController {
   @ApiResponse({ type: BaseResponseTypeDTO })
   @Delete('/:userId')
   async deleteUser(
-    @Param('userId') userId: string,
+    @Param('userId', ParseUUIDPipe) userId: string,
   ): Promise<BaseResponseTypeDTO> {
     return await this.userSrv.deleteUser(userId);
   }

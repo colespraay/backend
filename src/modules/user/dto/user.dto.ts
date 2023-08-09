@@ -92,6 +92,21 @@ export class UpdateUserDTO extends PartialType(CreateUserDTO) {
   profileImageUrl?: string;
 
   @ApiProperty({ nullable: true })
+  allowPushNotifications?: boolean;
+
+  @ApiProperty({ nullable: true })
+  allowSmsNotifications?: boolean;
+
+  @ApiProperty({ nullable: true })
+  allowEmailNotifications: boolean;
+
+  @ApiProperty({ nullable: true })
+  displayWalletBalance?: boolean;
+
+  @ApiProperty({ nullable: true })
+  enableFaceId?: boolean;
+
+  @ApiProperty({ nullable: true })
   status?: boolean;
 }
 

@@ -1,20 +1,26 @@
-import { UserService } from '@modules/user/user.service';
 import {
   Injectable,
-  BadRequestException,
   HttpStatus,
   Logger,
+  NotFoundException,
+  BadRequestException,
 } from '@nestjs/common';
 import {
+  AuthProvider,
   checkForRequiredFields,
+  compareEnumValueFields,
   encryptData,
   validateEmailField,
+  validateURLField,
 } from '@utils/index';
+import { User } from '@entities/index';
 import { sign } from 'jsonwebtoken';
+import { UserService } from '@modules/user/user.service';
 import {
   LoginUserDTO,
   AuthResponseDTO,
   LoginPhoneUserDTO,
+  ThirdPartyLoginDTO,
 } from './dto/auth.dto';
 
 @Injectable()
@@ -59,7 +65,7 @@ export class AuthService {
           },
         };
       }
-      throw new BadRequestException('Invalid credentials');
+      throw new NotFoundException('Invalid credentials');
     } catch (ex) {
       this.logger.log(ex);
       throw ex;
@@ -101,7 +107,7 @@ export class AuthService {
           },
         };
       }
-      throw new BadRequestException('Invalid credentials');
+      throw new NotFoundException('Invalid credentials');
     } catch (ex) {
       this.logger.log(ex);
       throw ex;
@@ -136,6 +142,66 @@ export class AuthService {
           role,
           token,
           user: payload,
+        },
+      };
+    } catch (ex) {
+      this.logger.error(ex);
+      throw ex;
+    }
+  }
+
+  async signUpOrLogin(payload: ThirdPartyLoginDTO): Promise<AuthResponseDTO> {
+    try {
+      checkForRequiredFields(['provider', 'thirdPartyUserId'], payload);
+      compareEnumValueFields(
+        payload.provider,
+        Object.values(AuthProvider),
+        'provider',
+      );
+      if (payload.provider === AuthProvider.LOCAL) {
+        const message = `Cannot use local auth on this endpoint. Consider using '/auth/login' or '/auth/login/phone-number'`;
+        throw new BadRequestException(message);
+      }
+      if (payload.email) {
+        validateEmailField(payload.email);
+      }
+      if (payload.profileImageUrl) {
+        validateURLField(payload.profileImageUrl, 'profileImageUrl');
+      }
+      let record = await this.userSrv.getRepo().findOne({
+        where: { externalUserId: payload.thirdPartyUserId },
+      });
+      if (!record?.id) {
+        record = await this.userSrv.create<Partial<User>>({
+          email: payload.email,
+          authProvider: payload.provider,
+          phoneNumber: payload.phoneNumber,
+          externalUserId: payload.thirdPartyUserId,
+          profileImageUrl: payload.profileImageUrl,
+        });
+      }
+      const { dateCreated, email, phoneNumber, role, id } = record;
+      const payloadToSign = encryptData(
+        JSON.stringify({
+          user: record,
+          dateCreated,
+          phoneNumber,
+          email,
+          role,
+          id,
+        }),
+        process.env.ENCRYPTION_KEY,
+      );
+      const token = this.signPayload({ data: payloadToSign });
+      return {
+        success: true,
+        code: HttpStatus.OK,
+        message: 'Logged in',
+        data: {
+          userId: id,
+          user: record,
+          role,
+          token,
         },
       };
     } catch (ex) {

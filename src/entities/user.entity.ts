@@ -68,6 +68,30 @@ export class User extends Base {
   @Column({ type: 'varchar', length: 255, nullable: true })
   transactionPin: string;
 
+  @ApiProperty({ nullable: true })
+  @Column({ type: 'varchar', length: 255, nullable: true })
+  externalUserId: string;
+
+  @ApiProperty()
+  @Column({ type: 'boolean', default: false })
+  allowPushNotifications: boolean;
+
+  @ApiProperty()
+  @Column({ type: 'boolean', default: false })
+  allowSmsNotifications: boolean;
+
+  @ApiProperty()
+  @Column({ type: 'boolean', default: false })
+  allowEmailNotifications: boolean;
+
+  @ApiProperty()
+  @Column({ type: 'boolean', default: true })
+  displayWalletBalance: boolean;
+
+  @ApiProperty()
+  @Column({ type: 'boolean', default: false })
+  enableFaceId: boolean;
+
   @BeforeInsert()
   async beforeInsertHandler(): Promise<void> {
     this.id = uuidV4();

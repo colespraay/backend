@@ -47,6 +47,12 @@ export class ThirdPartyLoginDTO {
 
   @ApiProperty({ nullable: true, description: 'Nullable' })
   profileImageUrl: string;
+
+  @ApiProperty({ nullable: true, description: 'Nullable' })
+  email: string;
+
+  @ApiProperty({ nullable: true, description: 'Nullable' })
+  phoneNumber: string;
 }
 
 export class AuthResponseDTO extends BaseResponseTypeDTO {
