@@ -1,0 +1,33 @@
+{
+  "compilerOptions": {
+    "module": "commonjs",
+    "declaration": true,
+    "removeComments": true,
+    "emitDecoratorMetadata": true,
+    "experimentalDecorators": true,
+    "allowSyntheticDefaultImports": true,
+    "target": "es2017",
+    "sourceMap": true,
+    "outDir": "./dist",
+    "baseUrl": "./",
+    "incremental": true,
+    "skipLibCheck": true,
+    "strictNullChecks": false,
+    "noImplicitAny": false,
+    "strictBindCallApply": false,
+    "forceConsistentCasingInFileNames": false,
+    "noFallthroughCasesInSwitch": false,
+    "paths": {
+      "@entities/*": ["./src/entities/*", "./src/entities/"],
+      "@utils/*": ["./src/utils/*", "./src/utils"],
+      "@types/*": ["./src/utils/types/*"],
+      "@functions/*": ["./src/utils/functions/*"],
+      "@validators/*": ["./src/utils/validators/*"],
+      "@decorators/*": ["./src/utils/decorators/*"],
+      "@guards/*": ["./src/auth/guards/*", "./src/auth/guards/"],
+      "@modules/*": ["./src/modules/*", "./src/modules"],
+      "@schematics/*": ["./src/schematics/*", "./src/schematics"],
+      "@services/*": ["./src/schematics/services/*", "./src/schematics"],
+    }
+  }
+}

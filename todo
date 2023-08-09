@@ -1,0 +1,45 @@
+# Breakdown of tasks for Spraay app (Backend)
+
+1. Auth/Sign up
+
+- Sign up
+- Third-party sign up
+- Login
+- Forgot Password
+- Change password
+
+2. BVN verification
+
+- Call fincra API validate BVN
+- Call Wema bank to create a bank account for the new user
+
+3. Event
+
+- Create event
+- Share event invite
+- View events
+
+4. Bills
+
+- Pay Electricity bill
+- Pay Tv bill
+- Buy Data
+- Buy airtime
+
+5. Onboarding/Profile management
+
+- Update users bio data (PIN, DOB, Name, profile-handle)
+- Change password
+- Change pin
+- Create/update user settings (I.E send push-notifications, send emails, send sms)
+
+6. Wallet management
+
+- Top-up/fund wallet
+- Transfer another users wallet (Spraay transfer)
+- View wallet/transaction history
+- Withdraw from wallet into main account
+
+Application for Frontend Engineer Role (Subject)
+
+
