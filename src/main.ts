@@ -20,7 +20,7 @@ async function bootstrap() {
 
   const config = new DocumentBuilder()
     .setTitle('SPRAAY API')
-    .setDescription('The API for UBA CAV Platform')
+    .setDescription('The API for Spraay App')
     .setVersion('1.0')
     .addBearerAuth(
       {

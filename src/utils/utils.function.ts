@@ -451,3 +451,90 @@ export const httpDelete = async <U>(url: string, headers = {}): Promise<U> => {
 
 export const appendPrefixToString = (prefix: string, word: string): string =>
   word.startsWith(prefix) ? word : `${prefix}${word}`;
+
+export const generateRandomNumber = (prefix = '7'): string => {
+  // Generate a random number between 100000000 and 999999999 (inclusive) 9 digits
+  const randomNumber = Math.floor(Math.random() * 900000000) + 100000000;
+  return `${prefix}${randomNumber.toString()}`;
+};
+
+export const generateRandomName = (): string => {
+  const firstNames = [
+    'Alice',
+    'Bob',
+    'Charlie',
+    'Diana',
+    'Eva',
+    'Frank',
+    'Grace',
+    'Henry',
+    'Isabella',
+    'Jack',
+    'Katherine',
+    'Liam',
+    'Mia',
+    'Noah',
+    'Olivia',
+    'Peter',
+    'Quinn',
+    'Ryan',
+    'Sophia',
+    'Thomas',
+    'Ursula',
+    'Victoria',
+    'William',
+    'Xavier',
+    'Yara',
+    'Igwe',
+    'Okafor',
+    'Adelabi',
+    'Oladurun',
+    'Ola',
+    'Bisi',
+    'Taiwo',
+    'Kehinde',
+    'Zoe',
+    'Ola',
+    'Obefemi',
+    'Odeh',
+    'Mark',
+  ];
+  const lastNames = [
+    'Smith',
+    'David',
+    'Johnson',
+    'Onome',
+    'Buhari',
+    'Udeh',
+    'Peter',
+    'John',
+    'Williams',
+    'Jones',
+    'Brown',
+    'Davis',
+    'Miller',
+    'Wilson',
+    'Moore',
+    'Taylor',
+    'Anderson',
+    'Thomas',
+    'Jackson',
+    'White',
+    'Harris',
+    'Martin',
+    'Thompson',
+    'Garcia',
+    'Martinez',
+    'Robinson',
+    'Clark',
+    'Rodriguez',
+    'Lewis',
+    'Lee',
+    'Walker',
+  ];
+  const randomFirstName =
+    firstNames[Math.floor(Math.random() * firstNames.length)];
+  const randomLastName =
+    lastNames[Math.floor(Math.random() * lastNames.length)];
+  return `${randomFirstName} ${randomLastName}`;
+};
