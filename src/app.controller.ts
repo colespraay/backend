@@ -19,7 +19,7 @@ export class AppController {
 
   @Get()
   getHello(): { message: string } {
-    return { message: 'Welcome to Customer Address Verification App' };
+    return { message: 'Welcome to the Spraay App Api' };
   }
 
   @Get('/health-check')
