@@ -52,6 +52,18 @@ export class User extends Base {
   @Column({ type: 'text', default: DefaultPassportLink.male })
   profileImageUrl: string;
 
+  @ApiProperty({ nullable: true })
+  @Column({ type: 'varchar', length: 12, nullable: true })
+  bvn: string;
+
+  @ApiProperty({ nullable: true })
+  @Column({ type: 'varchar', length: 20, nullable: true })
+  virtualAccountName: string;
+
+  @ApiProperty({ nullable: true })
+  @Column({ type: 'varchar', length: 20, nullable: true })
+  virtualAccountNumber: string;
+
   @ApiProperty({ enum: Gender, nullable: true })
   @Column({ enum: Gender, nullable: true })
   gender: Gender;

@@ -15,6 +15,7 @@ import {
   ApiConsumes,
   ApiOperation,
   ApiProduces,
+  ApiQuery,
   ApiResponse,
   ApiTags,
 } from '@nestjs/swagger';
@@ -101,6 +102,8 @@ export class UserController {
     return await this.userSrv.findUserById(userId);
   }
 
+  @ApiQuery({ name: 'pageSize', required: false })
+  @ApiQuery({ name: 'pageNumber', required: false })
   @ApiOperation({ description: 'Find all users' })
   @ApiProduces('json')
   @ApiConsumes('application/json')

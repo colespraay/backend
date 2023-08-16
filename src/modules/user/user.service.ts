@@ -26,11 +26,16 @@ import {
   hashPassword,
   sendEmail,
   Gender,
+  httpPost,
+  validateBvn,
+  DefaultPassportLink,
+  generateRandomNumber,
 } from '@utils/index';
 import { FindManyOptions, Not } from 'typeorm';
 import {
   ChangePasswordDTO,
   CreateUserDTO,
+  FincraBVNValidationResponseDTO,
   UpdatePasswordDTO,
   UpdateUserDTO,
   UserResponseDTO,
@@ -491,7 +496,37 @@ export class UserService extends GenericService(User) {
         }
         record.userTag = tag;
       }
+      if (payload.bvn && record.bvn !== payload.bvn) {
+        validateBvn(payload.bvn, 'bvn');
+        const bvnValidationResponse = await this.resolveUserBvn(payload.bvn);
+        if (bvnValidationResponse?.success && bvnValidationResponse.data) {
+          if (record.profileImageUrl === DefaultPassportLink.male) {
+            record.profileImageUrl = bvnValidationResponse.data.pixBase64;
+          }
+          if (!record.phoneNumber) {
+            record.phoneNumber = bvnValidationResponse.data.phoneNo;
+          }
+          if (!record.firstName) {
+            record.firstName = bvnValidationResponse.data.firstName;
+          }
+          if (!record.lastName) {
+            record.lastName = bvnValidationResponse.data.lastName;
+          }
+          if (!record.virtualAccountNumber) {
+            // Generate a WEMA bank account for the user
+            const { accountName, accountNumber } = await this.createBankAccount(
+              record,
+            );
+            if (accountName && accountNumber) {
+              record.virtualAccountName = accountName;
+              record.virtualAccountNumber = accountNumber;
+            }
+          }
+        }
+        record.bvn = payload.bvn;
+      }
       const updatedRecord: Partial<User> = {
+        bvn: record.bvn,
         gender: record.gender,
         email: record.email,
         status: record.status,
@@ -503,6 +538,8 @@ export class UserService extends GenericService(User) {
         enableFaceId: record.enableFaceId,
         transactionPin: record.transactionPin,
         profileImageUrl: record.profileImageUrl,
+        virtualAccountName: record.virtualAccountName,
+        virtualAccountNumber: record.virtualAccountNumber,
         allowEmailNotifications: record.allowEmailNotifications,
         allowPushNotifications: record.allowPushNotifications,
         allowSmsNotifications: record.allowSmsNotifications,
@@ -514,6 +551,44 @@ export class UserService extends GenericService(User) {
         code: HttpStatus.OK,
         message: 'Updated',
       };
+    } catch (ex) {
+      this.logger.error(ex);
+      throw ex;
+    }
+  }
+
+  private async createBankAccount(
+    { firstName, lastName }: User,
+    env = 'TEST',
+  ): Promise<{ accountName: string; accountNumber: string }> {
+    if (!firstName || !lastName) {
+      throw new BadRequestException(
+        'User cannot have a virtual account without first/last names',
+      );
+    }
+    if (env === 'TEST') {
+      const accountNumber = generateRandomNumber();
+      const accountName = `${firstName} ${lastName}`;
+      return { accountName, accountNumber };
+    }
+  }
+
+  private async resolveUserBvn(
+    bvn: string,
+  ): Promise<FincraBVNValidationResponseDTO> {
+    try {
+      const businessId = String(process.env.FINCRA_BUSINESS_ID);
+      const url = 'https://api.fincra.com/core/bvn-verification';
+      return await httpPost<FincraBVNValidationResponseDTO, any>(
+        url,
+        {
+          business: businessId,
+          bvn,
+        },
+        {
+          'api-key': String(process.env.FINCRA_SECRET_KEY),
+        },
+      );
     } catch (ex) {
       this.logger.error(ex);
       throw ex;

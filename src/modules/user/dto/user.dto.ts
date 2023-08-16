@@ -86,6 +86,9 @@ export class UpdateUserDTO extends PartialType(CreateUserDTO) {
   userTag?: string;
 
   @ApiProperty({ nullable: true })
+  bvn?: string;
+
+  @ApiProperty({ nullable: true })
   transactionPin?: string;
 
   @ApiProperty({ nullable: true })
@@ -116,4 +119,38 @@ export class UpdatePasswordDTO {
 
   @ApiProperty()
   newPassword: string;
+}
+
+export class Data {
+  @ApiProperty()
+  firstName: string;
+
+  @ApiProperty()
+  middleName: string;
+
+  @ApiProperty()
+  lastName: string;
+
+  @ApiProperty()
+  gender: string;
+
+  @ApiProperty()
+  dateOfBirth: string;
+
+  @ApiProperty()
+  phoneNo: string;
+
+  @ApiProperty()
+  pixBase64: string;
+}
+
+export class FincraBVNValidationResponseDTO {
+  @ApiProperty()
+  success: boolean;
+
+  @ApiProperty()
+  message: string;
+
+  @ApiProperty({ type: () => Data })
+  data: Data;
 }

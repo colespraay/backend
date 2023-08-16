@@ -538,3 +538,10 @@ export const generateRandomName = (): string => {
     lastNames[Math.floor(Math.random() * lastNames.length)];
   return `${randomFirstName} ${randomLastName}`;
 };
+
+export const validateBvn = (bvn: string, field = 'bvn'): void => {
+  const regExp = /\d{11}/;
+  if (!regExp.test(bvn)) {
+    throw new BadRequestException(`Field ${field} has invalid bvn format`);
+  }
+};
