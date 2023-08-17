@@ -34,6 +34,7 @@ import {
   UserResponseDTO,
   UsersResponseDTO,
   UpdateUserDTO,
+  FilterUserDTO,
 } from './dto/user.dto';
 import { UserService } from './user.service';
 
@@ -102,17 +103,22 @@ export class UserController {
     return await this.userSrv.findUserById(userId);
   }
 
+  @ApiQuery({ name: 'gender', required: false })
+  @ApiQuery({ name: 'isNewUser', required: false })
+  @ApiQuery({ name: 'role', required: false })
+  @ApiQuery({ name: 'status', required: false })
+  @ApiQuery({ name: 'authProvider', required: false })
   @ApiQuery({ name: 'pageSize', required: false })
   @ApiQuery({ name: 'pageNumber', required: false })
+  @ApiQuery({ name: 'searchTerm', required: false })
   @ApiOperation({ description: 'Find all users' })
-  @ApiProduces('json')
-  @ApiConsumes('application/json')
   @ApiResponse({ type: UsersResponseDTO })
   @Get()
-  async findAllUsers(
-    @Query() payload?: PaginationRequestType,
+  async findUsers(
+    @Query() payload: FilterUserDTO,
+    @Query() pagination?: PaginationRequestType,
   ): Promise<UsersResponseDTO> {
-    return await this.userSrv.findAllUsers(payload);
+    return await this.userSrv.findUsers(payload, pagination);
   }
 
   @ApiOperation({ description: 'Resend OTP after login' })

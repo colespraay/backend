@@ -46,3 +46,8 @@ export enum Gender {
   MALE = 'MALE',
   FEMALE = 'FEMALE',
 }
+
+export enum EventCategory {
+  WEDDING = 'WEDDING',
+  CHILD_DEDICATION = 'CHILD_DEDICATION',
+}

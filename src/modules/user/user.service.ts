@@ -31,10 +31,11 @@ import {
   DefaultPassportLink,
   generateRandomNumber,
 } from '@utils/index';
-import { FindManyOptions, Not } from 'typeorm';
+import { FindManyOptions, ILike, Not } from 'typeorm';
 import {
   ChangePasswordDTO,
   CreateUserDTO,
+  FilterUserDTO,
   FincraBVNValidationResponseDTO,
   UpdatePasswordDTO,
   UpdateUserDTO,
@@ -322,42 +323,86 @@ export class UserService extends GenericService(User) {
     }
   }
 
-  async findAllUsers(
-    payload?: PaginationRequestType,
+  async findUsers(
+    filterOptions: FilterUserDTO,
+    pagination?: PaginationRequestType,
   ): Promise<UsersResponseDTO> {
     try {
-      if (payload?.pageNumber) {
-        payload = {
-          pageSize: parseInt(`${payload.pageSize}`),
-          pageNumber: parseInt(`${payload.pageNumber}`),
+      const filter: FindManyOptions<User> = {};
+      if (
+        typeof filterOptions.status !== 'undefined' &&
+        filterOptions.status !== null
+      ) {
+        filter.where = { ...filter.where, status: filterOptions.status };
+      }
+      if (
+        typeof filterOptions.isNewUser !== 'undefined' &&
+        filterOptions.isNewUser !== null
+      ) {
+        filter.where = { ...filter.where, status: filterOptions.isNewUser };
+      }
+      if (filterOptions?.gender) {
+        filter.where = { ...filter.where, gender: filterOptions.gender };
+      }
+      if (filterOptions?.authProvider) {
+        filter.where = {
+          ...filter.where,
+          authProvider: filterOptions.authProvider,
         };
-
-        const options: FindManyOptions<User> = {
-          take: payload.pageSize,
-          skip: (payload.pageNumber - 1) * payload.pageSize,
-        };
+      }
+      if (filterOptions?.role) {
+        filter.where = { ...filter.where, role: filterOptions.role };
+      }
+      if (filterOptions?.searchTerm) {
+        filter.where = [
+          {
+            ...filter.where,
+            firstName: ILike(`%${filterOptions.searchTerm}%`),
+          },
+          {
+            ...filter.where,
+            lastName: ILike(`%${filterOptions.searchTerm}%`),
+          },
+          {
+            ...filter.where,
+            bvn: ILike(`%${filterOptions.searchTerm}%`),
+          },
+          {
+            ...filter.where,
+            email: ILike(`%${filterOptions.searchTerm}%`),
+          },
+          {
+            ...filter.where,
+            phoneNumber: ILike(`%${filterOptions.searchTerm}%`),
+          },
+        ];
+      }
+      if (pagination?.pageNumber && pagination?.pageSize) {
+        filter.skip = (pagination.pageNumber - 1) * pagination.pageSize;
+        filter.take = pagination.pageSize;
         const { response, paginationControl } =
           await calculatePaginationControls<User>(
             this.getRepo(),
-            options,
-            payload,
+            filter,
+            pagination,
           );
         return {
           success: true,
-          message: 'Users found',
+          message: 'Records found',
           code: HttpStatus.OK,
           data: response,
-          paginationControl: paginationControl,
+          paginationControl,
         };
       }
-      const data = await this.findAll();
+      const users = await this.getRepo().find(filter);
       return {
-        code: HttpStatus.FOUND,
-        data,
-        message: 'Users found',
         success: true,
+        message: 'Records found',
+        code: HttpStatus.OK,
+        data: users,
       };
     } catch (ex) {
+      this.logger.error(ex);
       throw ex;
     }
   }
@@ -520,6 +565,7 @@ export class UserService extends GenericService(User) {
             if (accountName && accountNumber) {
               record.virtualAccountName = accountName;
               record.virtualAccountNumber = accountNumber;
+              record.bankName = 'WEMA BANK';
             }
           }
         }

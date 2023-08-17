@@ -1,6 +1,8 @@
 import { ApiProperty, OmitType, PartialType } from '@nestjs/swagger';
 import { User } from '@entities/index';
 import {
+  AppRole,
+  AuthProvider,
   BaseResponseTypeDTO,
   Gender,
   PaginationResponseType,
@@ -111,6 +113,26 @@ export class UpdateUserDTO extends PartialType(CreateUserDTO) {
 
   @ApiProperty({ nullable: true })
   status?: boolean;
+}
+
+export class FilterUserDTO {
+  @ApiProperty({ nullable: true })
+  searchTerm: string;
+
+  @ApiProperty({ enum: Gender, nullable: true })
+  gender: Gender;
+
+  @ApiProperty({ enum: AuthProvider, nullable: true })
+  authProvider: AuthProvider;
+
+  @ApiProperty({ enum: AppRole, nullable: true })
+  role: AppRole;
+
+  @ApiProperty({ nullable: true })
+  isNewUser: boolean;
+
+  @ApiProperty({ nullable: true })
+  status: boolean;
 }
 
 export class UpdatePasswordDTO {

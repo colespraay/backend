@@ -12,7 +12,13 @@ import {
   TimeoutInterceptor,
   HttpExceptionFilter,
 } from '@schematics/index';
-import { UserModule, AuthModule } from '@modules/index';
+import {
+  UserModule,
+  AuthModule,
+  EventModule,
+  EventInviteModule,
+  EventSpraayModule,
+} from '@modules/index';
 import { AppService } from './app.service';
 import ormConfig from './orm.config';
 
@@ -24,6 +30,9 @@ import ormConfig from './orm.config';
     ThrottlerModule.forRoot({ ttl: 60, limit: 40 }),
     AuthModule,
     UserModule,
+    EventModule,
+    EventInviteModule,
+    EventSpraayModule,
   ],
   controllers: [AppController],
   providers: [

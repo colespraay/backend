@@ -8,7 +8,7 @@ import {
   sendEmail,
   Gender,
 } from '@utils/index';
-import { Base, uuidV4 } from './index';
+import { Base, EventRecord, EventInvite, EventSpraay, uuidV4 } from './index';
 
 @Entity({ name: 'USER' })
 export class User extends Base {
@@ -64,6 +64,10 @@ export class User extends Base {
   @Column({ type: 'varchar', length: 20, nullable: true })
   virtualAccountNumber: string;
 
+  @ApiProperty({ nullable: true })
+  @Column({ type: 'varchar', length: 255, nullable: true })
+  bankName: string;
+
   @ApiProperty({ enum: Gender, nullable: true })
   @Column({ enum: Gender, nullable: true })
   gender: Gender;
@@ -103,6 +107,18 @@ export class User extends Base {
   @ApiProperty()
   @Column({ type: 'boolean', default: false })
   enableFaceId: boolean;
+
+  @ApiProperty({ type: () => [EventRecord] })
+  @OneToMany(() => EventRecord, ({ user }) => user, { cascade: true })
+  events: Event[];
+
+  @ApiProperty({ type: () => [EventSpraay] })
+  @OneToMany(() => EventSpraay, ({ user }) => user, { cascade: true })
+  eventSpraays: EventSpraay[];
+
+  @ApiProperty({ type: () => [EventInvite] })
+  @OneToMany(() => EventInvite, ({ user }) => user, { cascade: true })
+  eventInvites: EventInvite[];
 
   @BeforeInsert()
   async beforeInsertHandler(): Promise<void> {

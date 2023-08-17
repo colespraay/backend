@@ -545,3 +545,19 @@ export const validateBvn = (bvn: string, field = 'bvn'): void => {
     throw new BadRequestException(`Field ${field} has invalid bvn format`);
   }
 };
+
+export const generateQRCode = async (content: string): Promise<string> => {
+  try {
+    // eslint-disable-next-line @typescript-eslint/no-var-requires
+    const QRCode = require('qrcode');
+    return await QRCode.toDataURL(content);
+  } catch (ex) {
+    throw ex;
+  }
+};
+
+export const validateFutureDate = (date: Date, field = 'date') => {
+  if (new Date().getTime() >= new Date(date).getTime()) {
+    throw new BadRequestException(`Field ${field} must be in the future`);
+  }
+};

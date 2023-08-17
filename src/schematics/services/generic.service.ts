@@ -1,4 +1,4 @@
-import { Logger, Type } from '@nestjs/common';
+import { BadRequestException, Logger, Type } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, FindOptionsWhere } from 'typeorm';
 import { ApiMessageList } from '@utils/types/utils.types';
@@ -37,6 +37,11 @@ export interface IDataService<T> {
   softDelete(ids: string[]): Promise<void>;
 
   getRepo(): Repository<T>;
+
+  validateDataToDelete(
+    predicate: FindOptionsWhere<T>,
+    idsToValidate: string[],
+  ): Promise<void>;
 }
 
 export function GenericService<T>(
@@ -208,6 +213,18 @@ export function GenericService<T>(
       } catch (ex) {
         this.logger.error(`${ApiMessageList.GENERIC_ERROR_MESSAGE} ${ex}`);
         throw ex;
+      }
+    }
+
+    async validateDataToDelete(
+      predicate: FindOptionsWhere<T>,
+      idsToValidate: string[],
+    ): Promise<void> {
+      const records = await this.repo.find({ where: predicate });
+      if (records.length !== idsToValidate.length) {
+        throw new BadRequestException(
+          'Data does not exists or has been deleted earlier',
+        );
       }
     }
 
