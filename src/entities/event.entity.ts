@@ -7,7 +7,7 @@ import {
   JoinColumn,
   ManyToOne,
 } from 'typeorm';
-import { generateUniqueKey, EventCategory, generateQRCode } from '@utils/index';
+import { generateUniqueKey, generateQRCode, EventCategory } from '@utils/index';
 import { Base, EventSpraay, EventInvite, User, uuidV4 } from './index';
 
 @Entity({ name: 'EVENT' })
