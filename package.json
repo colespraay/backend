@@ -5,10 +5,6 @@
   "author": "Abel Ani",
   "private": true,
   "license": "MIT",
-  "engines": {
-    "node": "16.20.0",
-    "npm": "8.19.4"
-  },
   "scripts": {
     "prebuild": "rimraf dist",
     "build": "nest build",
