@@ -8,7 +8,14 @@ import {
   sendEmail,
   Gender,
 } from '@utils/index';
-import { Base, EventRecord, EventInvite, EventSpraay, uuidV4 } from './index';
+import {
+  Base,
+  EventRecord,
+  EventInvite,
+  EventSpraay,
+  uuidV4,
+  NotificationMessage,
+} from './index';
 
 @Entity({ name: 'USER' })
 export class User extends Base {
@@ -119,6 +126,10 @@ export class User extends Base {
   @ApiProperty({ type: () => [EventInvite] })
   @OneToMany(() => EventInvite, ({ user }) => user, { cascade: true })
   eventInvites: EventInvite[];
+
+  @ApiProperty({ type: () => [NotificationMessage] })
+  @OneToMany(() => NotificationMessage, ({ user }) => user, { cascade: true })
+  notifications: NotificationMessage[];
 
   @BeforeInsert()
   async beforeInsertHandler(): Promise<void> {

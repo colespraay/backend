@@ -75,6 +75,5 @@ export class EventRecord extends Base {
     const eventCode = generateUniqueKey(7);
     this.eventCode = eventCode;
     this.qrCodeForEvent = await generateQRCode(eventCode);
-    console.log({ eventCode, qrCode: this.qrCodeForEvent });
   }
 }

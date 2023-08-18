@@ -1,6 +1,7 @@
 import { Module } from '@nestjs/common';
 import { AppController } from './app.controller';
 import { MulterModule } from '@nestjs/platform-express';
+import { EventEmitterModule } from '@nestjs/event-emitter';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { APP_FILTER, APP_GUARD, APP_INTERCEPTOR } from '@nestjs/core';
 import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
@@ -18,6 +19,7 @@ import {
   EventModule,
   EventInviteModule,
   EventSpraayModule,
+  NotificationMessageModule,
 } from '@modules/index';
 import { AppService } from './app.service';
 import ormConfig from './orm.config';
@@ -26,6 +28,7 @@ import ormConfig from './orm.config';
   imports: [
     TypeOrmModule.forRoot(ormConfig),
     PrometheusModule.register(),
+    EventEmitterModule.forRoot(),
     MulterModule.register({ dest: './uploads' }),
     ThrottlerModule.forRoot({ ttl: 60, limit: 40 }),
     AuthModule,
@@ -33,6 +36,7 @@ import ormConfig from './orm.config';
     EventModule,
     EventInviteModule,
     EventSpraayModule,
+    NotificationMessageModule,
   ],
   controllers: [AppController],
   providers: [

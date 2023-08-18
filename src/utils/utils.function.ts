@@ -561,3 +561,31 @@ export const validateFutureDate = (date: Date, field = 'date') => {
     throw new BadRequestException(`Field ${field} must be in the future`);
   }
 };
+
+export const validateArrayUUIDField = (arrayField: string[], field: string) => {
+  if (arrayField?.length > 0) {
+    for (let i = 0; i < arrayField.length; i++) {
+      const item = arrayField[i];
+      validateUUIDField(item, `${field}[${i}]`);
+    }
+  }
+};
+
+export const validateArrayField = (
+  arrayField: any,
+  field = 'array',
+  checkLength = false,
+): void => {
+  if (!Array.isArray(arrayField)) {
+    throw new BadRequestException(
+      `Field ${field} has invalid format. Should be an array`,
+    );
+  }
+  if (checkLength) {
+    if (arrayField?.length <= 0) {
+      throw new BadRequestException(
+        `Field ${field} must have at-least 1 element in the array`,
+      );
+    }
+  }
+};

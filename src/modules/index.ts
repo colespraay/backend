@@ -18,3 +18,7 @@ export * from './event-invite/event-invite.service';
 export * from './event-spraay/event-spraay.controller';
 export * from './event-spraay/event-spraay.module';
 export * from './event-spraay/event-spraay.service';
+// [Notification]
+export * from './notification-message/notification-message.controller';
+export * from './notification-message/notification-message.module';
+export * from './notification-message/notification-message.service';

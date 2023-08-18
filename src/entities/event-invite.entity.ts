@@ -27,7 +27,7 @@ export class EventInvite extends Base {
   event: Event;
 
   @ApiProperty()
-  @Column({ type: 'boolean', default: false })
+  @Column({ type: 'boolean', default: true })
   isInviteSent: boolean;
 
   @BeforeInsert()

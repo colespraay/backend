@@ -3,4 +3,5 @@ export * from './event.entity';
 export * from './user.entity';
 export * from './event-invite.entity';
 export * from './event-spray.entity';
+export * from './notification-message.entity';
 export { v4 as uuidV4 } from 'uuid';

@@ -51,3 +51,13 @@ export enum EventCategory {
   WEDDING = 'WEDDING',
   CHILD_DEDICATION = 'CHILD_DEDICATION',
 }
+
+export enum NotificationType {
+  PUSH_NOTIFICATION = 'PUSH_NOTIFICATION',
+  EMAIL = 'EMAIL',
+  SMS = 'SMS',
+}
+
+export enum NotificationPurpose {
+  EVENT_INVITE = 'EVENT_INVITE',
+}

@@ -35,12 +35,12 @@ export class EventService extends GenericService(EventRecord) {
     try {
       checkForRequiredFields(
         [
+          'time',
           'venue',
+          'category',
           'eventName',
           'eventDescription',
           'eventDate',
-          'time',
-          'category',
           'eventCoverImage',
         ],
         payload,
