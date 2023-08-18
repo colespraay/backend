@@ -5,8 +5,8 @@ import {
   Injectable,
 } from '@nestjs/common';
 import { FindManyOptions, In, ILike } from 'typeorm';
-import { EventRecord } from '@entities/index';
 import { GenericService } from '@schematics/index';
+import { EventRecord } from '@entities/index';
 import {
   BaseResponseTypeDTO,
   EventCategory,
