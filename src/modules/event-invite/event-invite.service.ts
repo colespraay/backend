@@ -59,11 +59,11 @@ export class EventInviteService extends GenericService(EventInvite) {
         const duplicateIds = userIdsWithoutDuplicates.filter((id) =>
           recordUserIds.includes(id),
         );
-        // if (duplicateIds?.length > 0) {
-        //   throw new BadRequestException(
-        //     `${duplicateIds.length} users have already been invited for event`,
-        //   );
-        // }
+        if (duplicateIds?.length > 0) {
+          throw new BadRequestException(
+            `${duplicateIds.length} users have already been invited for event`,
+          );
+        }
       }
       const createdInvites = await this.createMany<Partial<EventInvite>>(
         payload.userIds.map((userId) => ({ userId, eventId: payload.eventId })),
