@@ -274,9 +274,20 @@ export const saveLogToFile = (error: any) => {
   }
 };
 
+export const formatPhoneNumberWithPrefix = (
+  phoneNumber: string,
+  prefix = '234',
+): string => {
+  let formattedPhoneNumber = phoneNumber;
+  if (!phoneNumber.startsWith(prefix)) {
+    formattedPhoneNumber = `${prefix}${phoneNumber.slice(1)}`;
+  }
+  return formattedPhoneNumber;
+};
+
 export const sendSMS = async (
   message: string,
-  phoneNumber: string,
+  phoneNumbers: string[],
   subject?: string,
 ) => {
   try {
@@ -291,31 +302,22 @@ export const sendSMS = async (
   }
 };
 
-export const formatPhoneNumberWithPrefix = (
-  phoneNumber: string,
-  prefix = '234',
-): string => {
-  let formattedPhoneNumber = phoneNumber;
-  if (!phoneNumber.startsWith(prefix)) {
-    formattedPhoneNumber = `${prefix}${phoneNumber.slice(1)}`;
-  }
-  return formattedPhoneNumber;
-};
-
 export const sendSMS2 = async (
   message: string,
-  phoneNumber: string,
+  phoneNumbers: string[],
   subject: string,
   channel: 'dnd' | 'generic' | 'whatsapp' = 'dnd',
 ) => {
   try {
+    const url = 'https://api.ng.termii.com/api/sms/send';
     const senderId = String(process.env.TERMII_SENDER_ID);
     const apiKey = String(process.env.TERMII_API_KEY);
-    const url = 'https://api.ng.termii.com/api/sms/send';
     const smsApiResponse = await httpPost<any, any>(
       url,
       {
-        to: [formatPhoneNumberWithPrefix(phoneNumber)],
+        to: phoneNumbers.map((phoneNumber) =>
+          formatPhoneNumberWithPrefix(phoneNumber),
+        ),
         from: senderId,
         sms: message,
         type: 'plain',

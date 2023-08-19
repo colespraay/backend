@@ -109,7 +109,7 @@ export class NotificationMessageService extends GenericService(
               if (item.user.phoneNumber) {
                 await sendSMS(
                   item.message,
-                  item.user.phoneNumber,
+                  [item.user.phoneNumber],
                   item.subject,
                 );
               }
