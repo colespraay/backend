@@ -51,6 +51,10 @@ export class User extends Base {
   @Column({ enum: AppRole, default: AppRole.CUSTOMER })
   role: AppRole;
 
+  @ApiProperty({ nullable: true })
+  @Column({ type: 'text', nullable: true })
+  deviceId: string;
+
   @ApiProperty({ enum: AuthProvider })
   @Column({ enum: AuthProvider, default: AuthProvider.LOCAL })
   authProvider: AuthProvider;
@@ -96,7 +100,7 @@ export class User extends Base {
   externalUserId: string;
 
   @ApiProperty()
-  @Column({ type: 'boolean', default: false })
+  @Column({ type: 'boolean', default: true })
   allowPushNotifications: boolean;
 
   @ApiProperty()
@@ -104,7 +108,7 @@ export class User extends Base {
   allowSmsNotifications: boolean;
 
   @ApiProperty()
-  @Column({ type: 'boolean', default: false })
+  @Column({ type: 'boolean', default: true })
   allowEmailNotifications: boolean;
 
   @ApiProperty()

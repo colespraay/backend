@@ -38,6 +38,12 @@ export class CreateUserDTO {
 
   @ApiProperty({ nullable: true })
   phoneNumber?: string;
+
+  @ApiProperty({
+    nullable: true,
+    description: 'Device Id of mobile devices used to send push notifications',
+  })
+  deviceId?: string;
 }
 
 export class CreateUserEmailDTO extends OmitType(CreateUserDTO, [

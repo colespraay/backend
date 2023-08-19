@@ -498,6 +498,9 @@ export class UserService extends GenericService(User) {
       if (payload.phoneNumber && payload.phoneNumber !== record.phoneNumber) {
         record.phoneNumber = payload.phoneNumber;
       }
+      if (payload.deviceId && record.deviceId !== payload.deviceId) {
+        record.deviceId = payload.deviceId;
+      }
       if (payload.email && payload.email !== record.email) {
         validateEmailField(payload.email);
         record.email = payload.email.toUpperCase();
@@ -581,6 +584,7 @@ export class UserService extends GenericService(User) {
         password: record.password,
         firstName: record.firstName,
         phoneNumber: record.phoneNumber,
+        deviceId: record.deviceId,
         enableFaceId: record.enableFaceId,
         transactionPin: record.transactionPin,
         profileImageUrl: record.profileImageUrl,

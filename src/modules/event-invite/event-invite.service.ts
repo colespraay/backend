@@ -4,24 +4,34 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
+import { EventEmitter2 } from '@nestjs/event-emitter';
 import { EventInvite } from '@entities/index';
 import { GenericService } from '@schematics/index';
 import {
-  CreateEventInvitesDTO,
-  EventInviteResponseDTO,
-  CreatedEventInvitesResponseDTO,
-} from './dto/event-invite.dto';
-import {
   BaseResponseTypeDTO,
+  NotificationPurpose,
   checkForRequiredFields,
   validateArrayField,
   validateArrayUUIDField,
   validateUUIDField,
 } from '@utils/index';
 import { In } from 'typeorm';
+import {
+  CreateEventInvitesDTO,
+  EventInviteResponseDTO,
+  CreatedEventInvitesResponseDTO,
+} from './dto/event-invite.dto';
+import { EventService } from '../index';
 
 @Injectable()
 export class EventInviteService extends GenericService(EventInvite) {
+  constructor(
+    private readonly eventEmitter: EventEmitter2,
+    private readonly eventSrv: EventService,
+  ) {
+    super();
+  }
+
   async createEventInvites(
     payload: CreateEventInvitesDTO,
   ): Promise<CreatedEventInvitesResponseDTO> {
@@ -30,6 +40,13 @@ export class EventInviteService extends GenericService(EventInvite) {
       validateArrayField(payload.userIds, 'userIds', true);
       validateArrayUUIDField(payload.userIds, 'userIds');
       const userIdsWithoutDuplicates = [...new Set(payload.userIds)];
+      const event = await this.eventSrv.getRepo().findOne({
+        where: { id: payload.eventId },
+        relations: ['user'],
+      });
+      if (!event?.id) {
+        throw new NotFoundException('Event not found');
+      }
       const record = await this.getRepo().find({
         where: {
           eventId: payload.eventId,
@@ -42,16 +59,25 @@ export class EventInviteService extends GenericService(EventInvite) {
         const duplicateIds = userIdsWithoutDuplicates.filter((id) =>
           recordUserIds.includes(id),
         );
-        if (duplicateIds?.length > 0) {
-          throw new BadRequestException(
-            `${duplicateIds.length} users have already been invited for event`,
-          );
-        }
+        // if (duplicateIds?.length > 0) {
+        //   throw new BadRequestException(
+        //     `${duplicateIds.length} users have already been invited for event`,
+        //   );
+        // }
       }
       const createdInvites = await this.createMany<Partial<EventInvite>>(
         payload.userIds.map((userId) => ({ userId, eventId: payload.eventId })),
       );
-      // TODO: Send out invites here [User async events here]
+      this.eventEmitter.emit(
+        'notification.created',
+        createdInvites.map((invite) => ({
+          subject: `INVITATION TO EVENT ${event.eventName}`,
+          message: `You are invited to ${event.eventName}`,
+          html: `<h1>You are invited to ${event.eventName}</h1>`,
+          purpose: NotificationPurpose.EVENT_INVITE,
+          userId: invite.userId,
+        })),
+      );
       return {
         success: true,
         code: HttpStatus.CREATED,

@@ -13,6 +13,10 @@ export class NotificationMessage extends Base {
   @Column({ type: 'text' })
   message: string;
 
+  @ApiProperty()
+  @Column({ type: 'text' })
+  html: string;
+
   @ApiProperty({ enum: NotificationType })
   @Column({ enum: NotificationType, default: NotificationType.EMAIL })
   type: NotificationType;

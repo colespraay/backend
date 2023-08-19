@@ -274,6 +274,64 @@ export const saveLogToFile = (error: any) => {
   }
 };
 
+// TODO: Implement
+export const sendSMS = async (
+  message: string,
+  phoneNumber: string,
+  subject?: string,
+) => {
+  try {
+    return { success: true, message: 'SMS sent', code: HttpStatus.OK };
+  } catch (ex) {
+    logger.error(ex);
+    return {
+      success: true,
+      message: `SMS not sent: ${ex}`,
+      code: HttpStatus.BAD_GATEWAY,
+    };
+  }
+};
+
+// Video-guide: https://www.youtube.com/watch?v=rQzexLu0eLU
+export const sendPushNotification = async (
+  message: string,
+  deviceId: string,
+  subject?: string,
+): Promise<BaseResponseTypeDTO> => {
+  try {
+    const response = await httpPost<any, any>(
+      'https://fcm.googleapis.com/fcm/send',
+      {
+        // registration_ids: [...notification.to],
+        to: deviceId,
+        notification: {
+          body: message,
+          title: subject,
+          subtitle: subject,
+        },
+      },
+      {
+        Authorization: `key=${String(process.env.FIREBASE_SERVER_KEY)}`,
+        'Content-Type': 'application/json',
+      },
+    );
+    if (response.success === 1 && response.failure === 0) {
+      return {
+        success: true,
+        message: 'Push notification was sent',
+        code: HttpStatus.BAD_GATEWAY,
+      };
+    }
+  } catch (ex) {
+    logger.error(ex);
+    return {
+      success: false,
+      code: HttpStatus.BAD_GATEWAY,
+      message: `Not sent: ${ex}`,
+    };
+  }
+};
+
 export const sendEmail = async (
   html: string,
   subject: string,
