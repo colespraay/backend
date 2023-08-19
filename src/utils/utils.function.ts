@@ -274,7 +274,6 @@ export const saveLogToFile = (error: any) => {
   }
 };
 
-// TODO: Implement
 export const sendSMS = async (
   message: string,
   phoneNumber: string,
@@ -282,6 +281,56 @@ export const sendSMS = async (
 ) => {
   try {
     return { success: true, message: 'SMS sent', code: HttpStatus.OK };
+  } catch (ex) {
+    logger.error(ex);
+    return {
+      success: true,
+      message: `SMS not sent: ${ex}`,
+      code: HttpStatus.BAD_GATEWAY,
+    };
+  }
+};
+
+export const formatPhoneNumberWithPrefix = (
+  phoneNumber: string,
+  prefix = '234',
+): string => {
+  let formattedPhoneNumber = phoneNumber;
+  if (!phoneNumber.startsWith(prefix)) {
+    formattedPhoneNumber = `${prefix}${phoneNumber.slice(1)}`;
+  }
+  return formattedPhoneNumber;
+};
+
+export const sendSMS2 = async (
+  message: string,
+  phoneNumber: string,
+  subject: string,
+  channel: 'dnd' | 'generic' | 'whatsapp' = 'dnd',
+) => {
+  try {
+    const senderId = String(process.env.TERMII_SENDER_ID);
+    const apiKey = String(process.env.TERMII_API_KEY);
+    const url = 'https://api.ng.termii.com/api/sms/send';
+    const smsApiResponse = await httpPost<any, any>(
+      url,
+      {
+        to: [formatPhoneNumberWithPrefix(phoneNumber)],
+        from: senderId,
+        sms: message,
+        type: 'plain',
+        channel,
+        api_key: apiKey,
+      },
+      {},
+    );
+    if (smsApiResponse?.code === 'ok') {
+      return {
+        success: true,
+        message: 'SMS sent',
+        code: HttpStatus.OK,
+      };
+    }
   } catch (ex) {
     logger.error(ex);
     return {
