@@ -91,6 +91,9 @@ export class UpdateUserDTO extends PartialType(CreateUserDTO) {
   gender?: Gender;
 
   @ApiProperty({ nullable: true })
+  dob: Date;
+
+  @ApiProperty({ nullable: true })
   userTag?: string;
 
   @ApiProperty({ nullable: true })
@@ -101,6 +104,9 @@ export class UpdateUserDTO extends PartialType(CreateUserDTO) {
 
   @ApiProperty({ nullable: true })
   profileImageUrl?: string;
+
+  @ApiProperty({ nullable: true })
+  uniqueVerificationCode?: string;
 
   @ApiProperty({ nullable: true })
   allowPushNotifications?: boolean;

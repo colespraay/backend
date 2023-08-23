@@ -30,6 +30,7 @@ import {
   validateBvn,
   DefaultPassportLink,
   generateRandomNumber,
+  validateFutureDate,
 } from '@utils/index';
 import { FindManyOptions, ILike, Not } from 'typeorm';
 import {
@@ -495,6 +496,10 @@ export class UserService extends GenericService(User) {
       if ('allowPushNotifications' in payload) {
         record.allowPushNotifications = payload.allowPushNotifications;
       }
+      if (payload.dob && record.dob !== payload.dob) {
+        validateFutureDate(payload.dob, 'dob');
+        record.dob = payload.dob;
+      }
       if (payload.phoneNumber && payload.phoneNumber !== record.phoneNumber) {
         record.phoneNumber = payload.phoneNumber;
       }
@@ -544,6 +549,12 @@ export class UserService extends GenericService(User) {
         }
         record.userTag = tag;
       }
+      if (
+        payload.uniqueVerificationCode &&
+        record.uniqueVerificationCode !== payload.uniqueVerificationCode
+      ) {
+        record.uniqueVerificationCode = payload.uniqueVerificationCode;
+      }
       if (payload.bvn && record.bvn !== payload.bvn) {
         validateBvn(payload.bvn, 'bvn');
         const bvnValidationResponse = await this.resolveUserBvn(payload.bvn);
@@ -576,6 +587,7 @@ export class UserService extends GenericService(User) {
       }
       const updatedRecord: Partial<User> = {
         bvn: record.bvn,
+        dob: record.dob,
         gender: record.gender,
         email: record.email,
         status: record.status,
@@ -588,6 +600,7 @@ export class UserService extends GenericService(User) {
         enableFaceId: record.enableFaceId,
         transactionPin: record.transactionPin,
         profileImageUrl: record.profileImageUrl,
+        uniqueVerificationCode: record.uniqueVerificationCode,
         virtualAccountName: record.virtualAccountName,
         virtualAccountNumber: record.virtualAccountNumber,
         allowEmailNotifications: record.allowEmailNotifications,

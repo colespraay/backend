@@ -14,6 +14,7 @@ import {
   calculatePaginationControls,
   checkForRequiredFields,
   compareEnumValueFields,
+  sendSMS2,
   validateFutureDate,
   validateURLField,
   validateUUIDField,
@@ -28,6 +29,18 @@ import {
 
 @Injectable()
 export class EventService extends GenericService(EventRecord) {
+  // constructor() {
+  //   super();
+  //   setTimeout(async () => {
+  //     const tick = await sendSMS2(
+  //       'Hello hello',
+  //       ['2348173749456'],
+  //       'I Do Not Care',
+  //     );
+  //     console.log({ tick });
+  //   }, 5000);
+  // }
+
   async createEvent(
     payload: CreateEventDTO,
     userId: string,

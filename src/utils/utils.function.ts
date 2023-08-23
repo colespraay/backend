@@ -1,14 +1,14 @@
 import { BadRequestException, HttpStatus, Logger } from '@nestjs/common';
-import axios, { type AxiosResponse } from 'axios';
+import { S3Client } from '@aws-sdk/client-s3';
+import { Upload } from '@aws-sdk/lib-storage';
+import { FindManyOptions, Repository } from 'typeorm';
+import axios, { AxiosError, type AxiosResponse } from 'axios';
+import { AES, enc } from 'crypto-js';
+import { v4 as uuidv4 } from 'uuid';
+import { Readable } from 'stream';
 import * as dotenv from 'dotenv';
 import * as bcrypt from 'bcrypt';
 import * as fs from 'fs';
-import { S3Client } from '@aws-sdk/client-s3';
-import { Upload } from '@aws-sdk/lib-storage';
-import { Readable } from 'stream';
-import { AES, enc } from 'crypto-js';
-import { v4 as uuidv4 } from 'uuid';
-import { FindManyOptions, Repository } from 'typeorm';
 import {
   BaseResponseTypeDTO,
   PaginationRequestType,
@@ -310,21 +310,38 @@ export const sendSMS2 = async (
 ) => {
   try {
     const url = 'https://api.ng.termii.com/api/sms/send';
+    const headers = { 'Content-Type': 'application/json' };
     const senderId = String(process.env.TERMII_SENDER_ID);
     const apiKey = String(process.env.TERMII_API_KEY);
+    // const res = await axios.post(
+    //   url,
+    //   {
+    //     to: [...phoneNumbers.map((phoneNumber) =>
+    //       formatPhoneNumberWithPrefix(phoneNumber),
+    //     )],
+    //     from: senderId,
+    //     api_key: apiKey,
+    //     type: 'plain',
+    //     sms: message,
+    //     channel,
+    //   },
+    //   {},
+    // );
     const smsApiResponse = await httpPost<any, any>(
       url,
       {
-        to: phoneNumbers.map((phoneNumber) =>
-          formatPhoneNumberWithPrefix(phoneNumber),
-        ),
+        to: [
+          ...phoneNumbers.map((phoneNumber) =>
+            formatPhoneNumberWithPrefix(phoneNumber),
+          ),
+        ],
         from: senderId,
-        sms: message,
-        type: 'plain',
-        channel,
         api_key: apiKey,
+        type: 'plain',
+        sms: message,
+        channel,
       },
-      {},
+      headers,
     );
     if (smsApiResponse?.code === 'ok') {
       return {
@@ -334,6 +351,9 @@ export const sendSMS2 = async (
       };
     }
   } catch (ex) {
+    if (ex instanceof AxiosError) {
+      logger.error(ex.response.data);
+    }
     logger.error(ex);
     return {
       success: true,

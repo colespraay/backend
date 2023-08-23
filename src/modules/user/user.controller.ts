@@ -160,11 +160,11 @@ export class UserController {
     return await this.userSrv.initiateForgotPasswordFlow(email);
   }
 
-  @ApiOperation({ description: 'Finalize forgot-password flow' })
+  @ApiOperation({ description: 'Used to verify OTP as valid' })
   @ApiProduces('json')
   @ApiConsumes('application/json')
   @ApiResponse({ type: BaseResponseTypeDTO })
-  @Get('/verification/finalize-forgot-password-flow/:uniqueVerificationCode')
+  @Get('/verification/verify-otp/:uniqueVerificationCode')
   async finalizeForgotPasswordFlow(
     @Param('uniqueVerificationCode') uniqueVerificationCode: string,
   ): Promise<BaseResponseTypeDTO> {
