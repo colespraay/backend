@@ -129,7 +129,7 @@ export class UserController {
   async resendOTPAfterLogin(
     @Param('userId', ParseUUIDPipe) userId: string,
   ): Promise<BaseResponseTypeDTO> {
-    return await this.userSrv.resendOTPAfterLogin(userId);
+    return await this.userSrv.resendOTPAfterLogin({ userId });
   }
 
   @ApiBearerAuth('JWT')
@@ -158,6 +158,19 @@ export class UserController {
     @Param('email') email: string,
   ): Promise<BaseResponseTypeDTO> {
     return await this.userSrv.initiateForgotPasswordFlow(email);
+  }
+
+  @ApiOperation({
+    description: 'Resend OTP after forgot password flow is initiated',
+  })
+  @ApiProduces('json')
+  @ApiConsumes('application/json')
+  @ApiResponse({ type: BaseResponseTypeDTO })
+  @Get('verification/resend-otp-code/:email')
+  async resendOTPOnForgotPassword(
+    @Param('email') email: string,
+  ): Promise<BaseResponseTypeDTO> {
+    return await this.userSrv.resendOTPAfterLogin({ email });
   }
 
   @ApiOperation({ description: 'Used to verify OTP as valid' })

@@ -31,11 +31,13 @@ import {
   DefaultPassportLink,
   generateRandomNumber,
   validateFutureDate,
+  validateUUIDField,
 } from '@utils/index';
 import { FindManyOptions, ILike, Not } from 'typeorm';
 import {
   ChangePasswordDTO,
   CreateUserDTO,
+  ResendOTPPayloadDTO,
   FilterUserDTO,
   FincraBVNValidationResponseDTO,
   UpdatePasswordDTO,
@@ -135,14 +137,21 @@ export class UserService extends GenericService(User) {
     }
   }
 
-  async resendOTPAfterLogin(userId: string): Promise<BaseResponseTypeDTO> {
+  async resendOTPAfterLogin(
+    payload: Partial<ResendOTPPayloadDTO>,
+  ): Promise<BaseResponseTypeDTO> {
     try {
-      if (!userId) {
-        throw new BadRequestException('Field userId is required');
+      let record: User;
+      if (payload.userId) {
+        validateUUIDField(payload.userId, 'userId');
+        record = await this.findOne({ id: payload.userId });
       }
-      const record = await this.findOne({ id: userId });
+      if (payload.email) {
+        validateEmailField(payload.email);
+        record = await this.findOne({ id: payload.email.toUpperCase() });
+      }
       if (!record?.id) {
-        throw new NotFoundException();
+        throw new NotFoundException('User not found');
       }
       let token = record.uniqueVerificationCode;
       if (!token) {
@@ -201,6 +210,7 @@ export class UserService extends GenericService(User) {
       throw ex;
     }
   }
+
 
   async finalizeForgotPasswordFlow(
     uniqueVerificationCode: string,

@@ -188,3 +188,11 @@ export class FincraBVNValidationResponseDTO {
   @ApiProperty({ type: () => Data })
   data: Data;
 }
+
+export class ResendOTPPayloadDTO {
+  @ApiProperty()
+  userId: string;
+
+  @ApiProperty()
+  email: string;
+}

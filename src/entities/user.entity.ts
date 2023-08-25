@@ -7,6 +7,7 @@ import {
   hashPassword,
   sendEmail,
   Gender,
+  sendSMS,
 } from '@utils/index';
 import {
   Base,
@@ -146,16 +147,23 @@ export class User extends Base {
   afterInsertHandler(): void {
     if (
       this.role !== AppRole.ADMIN &&
-      this.authProvider === AuthProvider.LOCAL &&
-      this.email
+      this.authProvider === AuthProvider.LOCAL
     ) {
-      const htmlEmailTemplate = `
-        <h2>Please copy the code below to verify your account</h2>
-        <h3>${this.uniqueVerificationCode}</h3>
-      `;
-      setTimeout(async () => {
-        await sendEmail(htmlEmailTemplate, 'Verify Account', [this.email]);
-      }, 5000);
+      if (this.email) {
+        const htmlEmailTemplate = `
+          <h2>Please copy the code below to verify your account</h2>
+          <h3>${this.uniqueVerificationCode}</h3>
+        `;
+        setTimeout(async () => {
+          await sendEmail(htmlEmailTemplate, 'Verify Account', [this.email]);
+        }, 5000);
+      }
+      if (this.phoneNumber) {
+        const message = `Please copy the code below to verify your account \n${this.uniqueVerificationCode}`;
+        setTimeout(async () => {
+          await sendSMS(message, [this.phoneNumber], 'Verify Account');
+        }, 5000);
+      }
     }
   }
 }
