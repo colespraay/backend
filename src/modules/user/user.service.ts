@@ -172,7 +172,7 @@ export class UserService extends GenericService(User) {
     email: string,
   ): Promise<BaseResponseTypeDTO> {
     try {
-      const userExists = await this.findOne({ email: email.toLowerCase() });
+      const userExists = await this.findOne({ email: email.toUpperCase() });
       if (userExists?.id) {
         const uniqueCode = generateUniqueCode();
         await this.getRepo().update(
