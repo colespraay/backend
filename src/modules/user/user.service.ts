@@ -32,6 +32,7 @@ import {
   generateRandomNumber,
   validateFutureDate,
   validateUUIDField,
+  sendSMS,
 } from '@utils/index';
 import { FindManyOptions, ILike, Not } from 'typeorm';
 import {
@@ -42,6 +43,7 @@ import {
   FincraBVNValidationResponseDTO,
   UpdatePasswordDTO,
   UpdateUserDTO,
+  OTPMedium,
   UserResponseDTO,
   UsersResponseDTO,
 } from './dto/user.dto';
@@ -139,6 +141,7 @@ export class UserService extends GenericService(User) {
 
   async resendOTPAfterLogin(
     payload: Partial<ResendOTPPayloadDTO>,
+    medium = OTPMedium.EMAIL,
   ): Promise<BaseResponseTypeDTO> {
     try {
       let record: User;
@@ -149,6 +152,9 @@ export class UserService extends GenericService(User) {
       if (payload.email) {
         validateEmailField(payload.email);
         record = await this.findOne({ id: payload.email.toUpperCase() });
+      }
+      if (payload.phoneNumber) {
+        record = await this.findOne({ phoneNumber: payload.phoneNumber });
       }
       if (!record?.id) {
         throw new NotFoundException('User not found');
@@ -161,15 +167,30 @@ export class UserService extends GenericService(User) {
           { uniqueVerificationCode: token },
         );
       }
-      const htmlEmailTemplate = `
-          <h2>Please copy the code below to verify your account</h2>
-          <h3>${token}</h3>
-        `;
-      await sendEmail(htmlEmailTemplate, 'Verify Account', [record.email]);
+      let responseMessage = 'Token has been sent';
+      switch (medium) {
+        default:
+        case OTPMedium.EMAIL:
+          // Send code
+          const htmlEmailTemplate = `
+            <h2>Please copy the code below to verify your account</h2>
+            <h3>${token}</h3>
+          `;
+          await sendEmail(htmlEmailTemplate, 'Verify Account', [record.email]);
+          // responseMessage = 'Token has been sent your email';
+          responseMessage = `Token: ${token} has been sent your email`;
+          break;
+        case OTPMedium.PHONE_NUMBER:
+          const message = `Please copy the code below to verify your account\n ${token}`;
+          await sendSMS(message, [record.phoneNumber], 'Verify Account');
+          // responseMessage = 'Token has been sent to your phone-number via sms';
+          responseMessage = `Token: ${token} has been sent to your phone-number via sms`;
+          break;
+      }
       return {
         success: true,
         code: HttpStatus.OK,
-        message: 'Token has been resent',
+        message: responseMessage,
       };
     } catch (ex) {
       this.logger.error(ex);
@@ -210,7 +231,6 @@ export class UserService extends GenericService(User) {
       throw ex;
     }
   }
-
 
   async finalizeForgotPasswordFlow(
     uniqueVerificationCode: string,

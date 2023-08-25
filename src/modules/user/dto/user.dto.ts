@@ -190,9 +190,17 @@ export class FincraBVNValidationResponseDTO {
 }
 
 export class ResendOTPPayloadDTO {
-  @ApiProperty()
+  @ApiProperty({ nullable: true })
   userId: string;
 
-  @ApiProperty()
+  @ApiProperty({ nullable: true })
   email: string;
+
+  @ApiProperty({ nullable: true })
+  phoneNumber: string;
+}
+
+export enum OTPMedium {
+  PHONE_NUMBER = 'PHONE_NUMBER',
+  EMAIL = 'EMAIL',
 }

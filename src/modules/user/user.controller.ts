@@ -35,6 +35,7 @@ import {
   UsersResponseDTO,
   UpdateUserDTO,
   FilterUserDTO,
+  OTPMedium,
 } from './dto/user.dto';
 import { UserService } from './user.service';
 
@@ -171,6 +172,22 @@ export class UserController {
     @Param('email') email: string,
   ): Promise<BaseResponseTypeDTO> {
     return await this.userSrv.resendOTPAfterLogin({ email });
+  }
+
+  @ApiOperation({
+    description: 'Resend OTP after forgot password flow is initiated',
+  })
+  @ApiProduces('json')
+  @ApiConsumes('application/json')
+  @ApiResponse({ type: BaseResponseTypeDTO })
+  @Get('verification/resend-otp-code/phone/:phoneNumber')
+  async resendOTPOnForgotPasswordPhoneNumber(
+    @Param('phoneNumber') phoneNumber: string,
+  ): Promise<BaseResponseTypeDTO> {
+    return await this.userSrv.resendOTPAfterLogin(
+      { phoneNumber },
+      OTPMedium.PHONE_NUMBER,
+    );
   }
 
   @ApiOperation({ description: 'Used to verify OTP as valid' })
