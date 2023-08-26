@@ -8,6 +8,11 @@ import {
   PaginationResponseType,
 } from '@utils/index';
 
+export enum OTPMedium {
+  PHONE_NUMBER = 'PHONE_NUMBER',
+  EMAIL = 'EMAIL',
+}
+
 export class UserResponseDTO extends BaseResponseTypeDTO {
   @ApiProperty({ type: () => User })
   data: User;
@@ -198,9 +203,4 @@ export class ResendOTPPayloadDTO {
 
   @ApiProperty({ nullable: true })
   phoneNumber: string;
-}
-
-export enum OTPMedium {
-  PHONE_NUMBER = 'PHONE_NUMBER',
-  EMAIL = 'EMAIL',
 }

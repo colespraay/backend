@@ -43,6 +43,9 @@
 [TEST]
 
 1. Test out Termii details, after device Id is verified on this url: https://accounts.termii.com/#/devices
-2. Test out forgot password flow for phone-number (SMS). Should be the same flow as for email.
-3. Send OTP to user's phone-number once their want to change their password.
-   NOTE: Check screenshots of screens sent by Frank on whatsApp for context
+
+
+[Problems]
+1. Clear issue with using Termii API
+2. Clear issue with Fincra API or move to use another one. (support@fincra.com)
+

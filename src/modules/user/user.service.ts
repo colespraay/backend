@@ -30,7 +30,7 @@ import {
   validateBvn,
   DefaultPassportLink,
   generateRandomNumber,
-  validateFutureDate,
+  validatePastDate,
   validateUUIDField,
   sendSMS,
 } from '@utils/index';
@@ -74,14 +74,17 @@ export class UserService extends GenericService(User) {
       }
       const recordExists = await this.getRepo().findOne({
         where: [{ phoneNumber: payload.phoneNumber }, { email: payload.email }],
-        select: ['id'],
+        select: ['id', 'email', 'phoneNumber'],
       });
       if (recordExists?.id) {
         let message = 'User with similar details already exists';
-        if (recordExists.email === payload.email) {
+        if (type === 'email' && recordExists.email === payload.email) {
           message = 'User with similar email already exists';
         }
-        if (recordExists.phoneNumber === payload.phoneNumber) {
+        if (
+          type === 'phoneNumber' &&
+          recordExists.phoneNumber === payload.phoneNumber
+        ) {
           message = 'User with similar phone-number already exists';
         }
         throw new ConflictException(message);
@@ -527,7 +530,7 @@ export class UserService extends GenericService(User) {
         record.allowPushNotifications = payload.allowPushNotifications;
       }
       if (payload.dob && record.dob !== payload.dob) {
-        validateFutureDate(payload.dob, 'dob');
+        validatePastDate(payload.dob, 'dob');
         record.dob = payload.dob;
       }
       if (payload.phoneNumber && payload.phoneNumber !== record.phoneNumber) {

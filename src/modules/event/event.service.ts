@@ -108,7 +108,26 @@ export class EventService extends GenericService(EventRecord) {
       checkForRequiredFields(['eventId'], { eventId });
       const record = await this.getRepo().findOne({ where: { id: eventId } });
       if (!record?.id) {
-        throw new NotFoundException();
+        throw new NotFoundException('Event not found');
+      }
+      return {
+        success: true,
+        code: HttpStatus.OK,
+        message: 'Record found',
+        data: record,
+      };
+    } catch (ex) {
+      this.logger.error(ex);
+      throw ex;
+    }
+  }
+
+  async findEventByCode(eventCode: string): Promise<EventResponseDTO> {
+    try {
+      checkForRequiredFields(['eventCode'], { eventCode });
+      const record = await this.getRepo().findOne({ where: { eventCode } });
+      if (!record?.id) {
+        throw new NotFoundException('Event not found');
       }
       return {
         success: true,

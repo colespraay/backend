@@ -691,6 +691,12 @@ export const validateFutureDate = (date: Date, field = 'date') => {
   }
 };
 
+export const validatePastDate = (date: Date, field = 'date') => {
+  if (new Date().getTime() <= new Date(date).getTime()) {
+    throw new BadRequestException(`Field ${field} must be in the past`);
+  }
+};
+
 export const validateArrayUUIDField = (arrayField: string[], field: string) => {
   if (arrayField?.length > 0) {
     for (let i = 0; i < arrayField.length; i++) {

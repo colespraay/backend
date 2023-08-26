@@ -83,6 +83,17 @@ export class EventController {
     return await this.eventSrv.findEventById(eventId);
   }
 
+  @ApiOperation({ description: 'Find event by event-code' })
+  @ApiProduces('json')
+  @ApiConsumes('application/json')
+  @ApiResponse({ type: EventResponseDTO })
+  @Get('/by-code/:eventCode')
+  async findEventByCode(
+    @Param('eventCode', ParseUUIDPipe) eventCode: string,
+  ): Promise<EventResponseDTO> {
+    return await this.eventSrv.findEventByCode(eventCode);
+  }
+
   @ApiOperation({ description: 'Update event' })
   @ApiProduces('json')
   @ApiConsumes('application/json')
