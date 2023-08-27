@@ -1,5 +1,9 @@
 import { HttpStatus, Injectable, Logger } from '@nestjs/common';
-import { FileResponseDTO, uploadFileToS3 } from '@utils/index';
+import {
+  FileResponseDTO,
+  uploadFileToImageKit,
+  uploadFileToS3,
+} from '@utils/index';
 
 @Injectable()
 export class AppService {
@@ -17,9 +21,12 @@ export class AppService {
         path: `uploads/${data.filename}`,
         mimeType: data.mimetype,
       }));
-      const filePathAsync = filePaths.map((file) =>
-        uploadFileToS3(file.path, true),
-      );
+      const filePathAsync = filePaths.map((file) => {
+        if (file.mimeType.startsWith('image')) {
+          return uploadFileToImageKit(file.path, true);
+        }
+        return uploadFileToS3(file.path, true);
+      });
       const [...uploadedFilePaths] = await Promise.all(filePathAsync);
       return {
         success: true,

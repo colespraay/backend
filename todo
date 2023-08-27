@@ -40,12 +40,7 @@
 - View wallet/transaction history
 - Withdraw from wallet into main account
 
-[TEST]
-
-1. Test out Termii details, after device Id is verified on this url: https://accounts.termii.com/#/devices
-
-
 [Problems]
-1. Clear issue with using Termii API
+1. Clear issue with using Termii API [Done]
 2. Clear issue with Fincra API or move to use another one. (support@fincra.com)
 

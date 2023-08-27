@@ -14,6 +14,9 @@ import {
   PaginationRequestType,
   PaginationResponseType,
 } from '@utils/index';
+// eslint-disable-next-line @typescript-eslint/no-var-requires
+const ImageKit = require('imagekit');
+import { UploadResponse } from 'imagekit/dist/libs/interfaces';
 
 dotenv.config();
 
@@ -105,6 +108,41 @@ export const verifyPasswordHash = async (
       resolve(passwordMatch);
     });
   });
+};
+
+export const uploadFileToImageKit = async (
+  filePath: string,
+  deleteAfterUpload = true,
+  folderName = 'uploads',
+): Promise<string> => {
+  const imagekit = new ImageKit({
+    publicKey: process.env.IMAGE_KIT_PUBLIC_KEY,
+    privateKey: process.env.IMAGE_KIT_PRIVATE_KEY,
+    urlEndpoint: process.env.IMAGE_KIT_ENDPOINT,
+  });
+  const fileExtension = filePath.split('.').pop();
+  const imagekitResponse: UploadResponse = await new Promise(
+    (resolve, reject) => {
+      fs.readFile(filePath, (err, data) => {
+        if (err) throw err;
+        imagekit.upload(
+          {
+            file: data,
+            fileName: `${uuidv4()}.${fileExtension}`,
+            folderName,
+          },
+          (error: Error, result: UploadResponse) => {
+            if (error) reject(error);
+            else resolve(result);
+          },
+        );
+      });
+    },
+  );
+  if (imagekitResponse && deleteAfterUpload) {
+    fs.unlinkSync(filePath);
+  }
+  return imagekitResponse.url;
 };
 
 export const uploadFileToS3 = async (
