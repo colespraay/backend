@@ -180,14 +180,12 @@ export class UserService extends GenericService(User) {
             <h3>${token}</h3>
           `;
           await sendEmail(htmlEmailTemplate, 'Verify Account', [record.email]);
-          // responseMessage = 'Token has been sent your email';
-          responseMessage = `Token: ${token} has been sent your email`;
+          responseMessage = 'Token has been sent your email';
           break;
         case OTPMedium.PHONE_NUMBER:
           const message = `Please copy the code below to verify your account\n ${token}`;
           await sendSMS(message, [record.phoneNumber], 'Verify Account');
-          // responseMessage = 'Token has been sent to your phone-number via sms';
-          responseMessage = `Token: ${token} has been sent to your phone-number via sms`;
+          responseMessage = 'Token has been sent to your phone-number via sms';
           break;
       }
       return {
