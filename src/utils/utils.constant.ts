@@ -49,7 +49,11 @@ export enum Gender {
 
 export enum EventCategory {
   WEDDING = 'WEDDING',
+  BIRTHDAY = 'BIRTHDAY',
+  ANNIVERSARY = 'ANNIVERSARY',
+  CHURCH_PROGRAM = 'CHURCH_PROGRAM',
   CHILD_DEDICATION = 'CHILD_DEDICATION',
+  OTHER = 'OTHER',
 }
 
 export enum NotificationType {

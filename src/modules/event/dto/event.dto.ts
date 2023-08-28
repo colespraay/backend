@@ -68,3 +68,8 @@ export class DeleteEventDTO {
   @ApiProperty({ type: () => [String] })
   eventIds: string[];
 }
+
+export class EventCategoryResponseDTO extends BaseResponseTypeDTO {
+  @ApiProperty({ type: () => [String] })
+  data: string[];
+}

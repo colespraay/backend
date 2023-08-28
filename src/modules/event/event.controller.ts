@@ -33,6 +33,7 @@ import {
   UpdateEventDTO,
   EventsResponseDTO,
   FilterEventDTO,
+  EventCategoryResponseDTO,
 } from './dto/event.dto';
 
 @ApiBearerAuth('JWT')
@@ -92,6 +93,15 @@ export class EventController {
     @Param('eventCode', ParseUUIDPipe) eventCode: string,
   ): Promise<EventResponseDTO> {
     return await this.eventSrv.findEventByCode(eventCode);
+  }
+
+  @ApiOperation({ description: 'Find event categories' })
+  @ApiProduces('json')
+  @ApiConsumes('application/json')
+  @ApiResponse({ type: EventCategoryResponseDTO })
+  @Get('/get/event-categories')
+  getEventCategories(): EventCategoryResponseDTO {
+    return this.eventSrv.getEventCategories();
   }
 
   @ApiOperation({ description: 'Update event' })

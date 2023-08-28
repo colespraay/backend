@@ -24,6 +24,7 @@ import {
   EventsResponseDTO,
   FilterEventDTO,
   UpdateEventDTO,
+  EventCategoryResponseDTO,
 } from './dto/event.dto';
 
 @Injectable()
@@ -197,6 +198,16 @@ export class EventService extends GenericService(EventRecord) {
       this.logger.error(ex);
       throw ex;
     }
+  }
+
+  getEventCategories(): EventCategoryResponseDTO {
+    const data = Object.values(EventCategory);
+    return {
+      success: true,
+      code: HttpStatus.OK,
+      message: 'Categories found',
+      data,
+    };
   }
 
   async updateEvent(payload: UpdateEventDTO): Promise<BaseResponseTypeDTO> {

@@ -6,8 +6,8 @@ import {
   UploadedFiles,
   UseInterceptors,
 } from '@nestjs/common';
-import { FilesInterceptor } from '@nestjs/platform-express';
 import { ApiResponse, ApiBody, ApiConsumes } from '@nestjs/swagger';
+import { FilesInterceptor } from '@nestjs/platform-express';
 import { Response } from 'express';
 import { diskStorage } from 'multer';
 import { FileResponseDTO, MulterValidators } from '@utils/index';
@@ -19,7 +19,7 @@ export class AppController {
 
   @Get()
   getHello(): { message: string } {
-    return { message: 'Welcome to the Spraay App Api' };
+    return this.appSrv.getHello();
   }
 
   @Get('/health-check')

@@ -9,8 +9,8 @@ import {
 export class AppService {
   private logger = new Logger(AppService.name);
 
-  getHello(): string {
-    return 'Hello World!';
+  getHello(): { message: string } {
+    return { message: 'Hello World!' };
   }
 
   async uploadMultipleFiles(
