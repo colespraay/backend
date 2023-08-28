@@ -201,12 +201,11 @@ export class EventService extends GenericService(EventRecord) {
   }
 
   getEventCategories(): EventCategoryResponseDTO {
-    const data = Object.values(EventCategory);
     return {
       success: true,
       code: HttpStatus.OK,
-      message: 'Categories found',
-      data,
+      message: 'Event categories found',
+      data: Object.values(EventCategory),
     };
   }
 
