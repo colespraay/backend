@@ -3,6 +3,8 @@ import {
   NotFoundException,
   HttpStatus,
   Injectable,
+  Inject,
+  forwardRef,
 } from '@nestjs/common';
 import { FindManyOptions, In, ILike } from 'typeorm';
 import { GenericService } from '@schematics/index';
@@ -26,9 +28,17 @@ import {
   UpdateEventDTO,
   EventCategoryResponseDTO,
 } from './dto/event.dto';
+import { EventInviteService } from '../index';
 
 @Injectable()
 export class EventService extends GenericService(EventRecord) {
+  constructor(
+    @Inject(forwardRef(() => EventInviteService))
+    private readonly eventInviteSrv: EventInviteService,
+  ) {
+    super();
+  }
+
   async createEvent(
     payload: CreateEventDTO,
     userId: string,
@@ -46,6 +56,12 @@ export class EventService extends GenericService(EventRecord) {
         ],
         payload,
       );
+      if (payload.eventGeoCoordinates) {
+        checkForRequiredFields(
+          ['longitude', 'latitude'],
+          payload.eventGeoCoordinates,
+        );
+      }
       validateFutureDate(payload.eventDate, 'eventDate');
       validateURLField(payload.eventCoverImage, 'eventCoverImage');
       compareEnumValueFields(
@@ -200,6 +216,65 @@ export class EventService extends GenericService(EventRecord) {
     }
   }
 
+  async findEventsForCurrentUser(
+    userId: string,
+    pagination?: PaginationRequestType,
+  ): Promise<EventsResponseDTO> {
+    try {
+      checkForRequiredFields(['userId'], { userId });
+      // Pull events user created
+      const events = await this.getRepo().find({
+        where: { userId, status: true },
+      });
+      let eventIds = events.map(({ id }) => id);
+      // const eventIds = [...new Set(...events.map(({ id }) => id))];
+
+      // Pull events user has been invited to
+      const eventsInvites = await this.eventInviteSrv.findAllByCondition({
+        eventId: In(eventIds),
+        userId,
+      });
+      eventIds.push(...eventsInvites.map(({ eventId }) => eventId));
+
+      // Pull from rsvp
+
+      // Remove duplicate eventIds
+      eventIds = [...new Set(eventIds)];
+
+      const filter: FindManyOptions<EventRecord> = {
+        where: { id: In(eventIds) },
+        relations: ['user', 'eventInvites', 'eventInvites.user'],
+      };
+      if (pagination?.pageNumber && pagination?.pageSize) {
+        filter.skip = (pagination.pageNumber - 1) * pagination.pageSize;
+        filter.take = pagination.pageSize;
+        const { response, paginationControl } =
+          await calculatePaginationControls<EventRecord>(
+            this.getRepo(),
+            filter,
+            pagination,
+          );
+        return {
+          success: true,
+          message: 'Records found',
+          code: HttpStatus.OK,
+          data: response,
+          paginationControl,
+        };
+      }
+      const users = await this.getRepo().find(filter);
+      return {
+        success: true,
+        message: 'Records found',
+        code: HttpStatus.OK,
+        data: users,
+      };
+    } catch (ex) {
+      this.logger.error(ex);
+      throw ex;
+    }
+  }
+
   getEventCategories(): EventCategoryResponseDTO {
     return {
       success: true,
@@ -253,15 +328,26 @@ export class EventService extends GenericService(EventRecord) {
       if (payload.venue && record.venue !== payload.venue) {
         record.venue = payload.venue;
       }
+      if (
+        payload.eventGeoCoordinates &&
+        record.eventGeoCoordinates !== payload.eventGeoCoordinates
+      ) {
+        checkForRequiredFields(
+          ['longitude', 'latitude'],
+          payload.eventGeoCoordinates,
+        );
+        record.eventGeoCoordinates = payload.eventGeoCoordinates;
+      }
       const updatedRecord: Partial<EventRecord> = {
         status: record.status,
         venue: record.venue,
-        eventCoverImage: record.eventCoverImage,
-        eventDate: record.eventDate,
         time: record.time,
-        eventName: record.eventName,
-        eventDescription: record.eventDescription,
         category: record.category,
+        eventName: record.eventName,
+        eventDate: record.eventDate,
+        eventCoverImage: record.eventCoverImage,
+        eventGeoCoordinates: record.eventGeoCoordinates,
+        eventDescription: record.eventDescription,
       };
       await this.getRepo().update({ id: record.id }, updatedRecord);
       return {

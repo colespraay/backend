@@ -6,6 +6,14 @@ import {
   PaginationResponseType,
 } from '@utils/index';
 
+export class GeoCoordinateDTO {
+  @ApiProperty()
+  longitude: number;
+
+  @ApiProperty()
+  latitude: number;
+}
+
 export class CreateEventDTO {
   @ApiProperty()
   eventName: string;
@@ -27,6 +35,9 @@ export class CreateEventDTO {
 
   @ApiProperty()
   eventCoverImage: string;
+
+  @ApiProperty({ nullable: true })
+  eventGeoCoordinates: GeoCoordinateDTO;
 }
 
 export class UpdateEventDTO extends PartialType(CreateEventDTO) {

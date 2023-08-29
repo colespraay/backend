@@ -9,6 +9,7 @@ import {
 } from 'typeorm';
 import { generateUniqueKey, generateQRCode, EventCategory } from '@utils/index';
 import { Base, EventSpraay, EventInvite, User, uuidV4 } from './index';
+import { GeoCoordinateDTO } from '@modules/event/dto/event.dto';
 
 @Entity({ name: 'EVENT' })
 export class EventRecord extends Base {
@@ -58,6 +59,10 @@ export class EventRecord extends Base {
     onUpdate: 'CASCADE',
   })
   user: User;
+
+  @ApiProperty()
+  @Column({ type: 'json', default: { longitude: 0, latitude: 0 } })
+  eventGeoCoordinates: GeoCoordinateDTO;
 
   @ApiProperty({ type: () => [EventSpraay] })
   @OneToMany(() => EventSpraay, ({ event }) => event, { cascade: true })

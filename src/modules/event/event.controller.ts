@@ -73,6 +73,20 @@ export class EventController {
     return await this.eventSrv.findEvents(payload, pagination);
   }
 
+  @ApiQuery({ name: 'pageNumber', required: false })
+  @ApiQuery({ name: 'pageSize', required: false })
+  @ApiOperation({ description: 'Find events for currently logged in user' })
+  @ApiProduces('json')
+  @ApiConsumes('application/json')
+  @ApiResponse({ type: EventsResponseDTO })
+  @Get('/events-for-current-user')
+  async findEventsForCurrentUser(
+    @CurrentUser(DecodedTokenKey.USER_ID) userId: string,
+    @Query() pagination?: PaginationRequestType,
+  ): Promise<EventsResponseDTO> {
+    return await this.eventSrv.findEventsForCurrentUser(userId, pagination);
+  }
+
   @ApiOperation({ description: 'Find event by Id' })
   @ApiProduces('json')
   @ApiConsumes('application/json')
@@ -90,7 +104,7 @@ export class EventController {
   @ApiResponse({ type: EventResponseDTO })
   @Get('/by-code/:eventCode')
   async findEventByCode(
-    @Param('eventCode', ParseUUIDPipe) eventCode: string,
+    @Param('eventCode') eventCode: string,
   ): Promise<EventResponseDTO> {
     return await this.eventSrv.findEventByCode(eventCode);
   }
