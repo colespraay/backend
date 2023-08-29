@@ -35,6 +35,7 @@ import {
   FilterEventDTO,
   EventCategoryResponseDTO,
 } from './dto/event.dto';
+import { Cron, CronExpression } from '@nestjs/schedule';
 
 @ApiBearerAuth('JWT')
 @UseGuards(RolesGuard)
@@ -138,5 +139,10 @@ export class EventController {
     @Body() { eventIds }: DeleteEventDTO,
   ): Promise<BaseResponseTypeDTO> {
     return await this.eventSrv.deleteEvents(eventIds);
+  }
+
+  @Cron(CronExpression.EVERY_2_HOURS)
+  async deactivatePastEvents(): Promise<void> {
+    await this.eventSrv.deactivatePastEvents();
   }
 }

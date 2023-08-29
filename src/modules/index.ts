@@ -18,6 +18,10 @@ export * from './event-invite/event-invite.service';
 export * from './event-spraay/event-spraay.controller';
 export * from './event-spraay/event-spraay.module';
 export * from './event-spraay/event-spraay.service';
+// [EventRSVP]
+export * from './event-rsvp/event-rsvp.controller';
+export * from './event-rsvp/event-rsvp.module';
+export * from './event-rsvp/event-rsvp.service';
 // [Notification]
 export * from './notification-message/notification-message.controller';
 export * from './notification-message/notification-message.module';

@@ -8,7 +8,14 @@ import {
   ManyToOne,
 } from 'typeorm';
 import { generateUniqueKey, generateQRCode, EventCategory } from '@utils/index';
-import { Base, EventSpraay, EventInvite, User, uuidV4 } from './index';
+import {
+  Base,
+  EventSpraay,
+  EventInvite,
+  User,
+  uuidV4,
+  EventRSVP,
+} from './index';
 import { GeoCoordinateDTO } from '@modules/event/dto/event.dto';
 
 @Entity({ name: 'EVENT' })
@@ -71,6 +78,10 @@ export class EventRecord extends Base {
   @ApiProperty({ type: () => [EventInvite] })
   @OneToMany(() => EventInvite, ({ event }) => event, { cascade: true })
   eventInvites: EventInvite[];
+
+  @ApiProperty({ type: () => [EventRSVP] })
+  @OneToMany(() => EventRSVP, ({ event }) => event, { cascade: true })
+  eventRsvps: EventRSVP[];
 
   @BeforeInsert()
   async beforeInsertHandler(): Promise<void> {

@@ -379,4 +379,24 @@ export class EventService extends GenericService(EventRecord) {
       throw ex;
     }
   }
+
+  async deactivatePastEvents(): Promise<void> {
+    try {
+      const events = await this.findAllByCondition({ status: true });
+      if (events?.length > 0) {
+        const eventIds: string[] = [];
+        const today = new Date();
+        for (const event of events) {
+          const eventDate = new Date(event.eventDate);
+          if (eventDate.getTime() > today.getTime()) {
+            eventIds.push(event.id);
+          }
+        }
+        await this.getRepo().update({ id: In(eventIds) }, { status: false });
+      }
+    } catch (ex) {
+      this.logger.error(ex);
+      throw ex;
+    }
+  }
 }

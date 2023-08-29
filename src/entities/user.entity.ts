@@ -16,6 +16,7 @@ import {
   EventSpraay,
   uuidV4,
   NotificationMessage,
+  EventRSVP,
 } from './index';
 
 @Entity({ name: 'USER' })
@@ -131,6 +132,10 @@ export class User extends Base {
   @ApiProperty({ type: () => [EventInvite] })
   @OneToMany(() => EventInvite, ({ user }) => user, { cascade: true })
   eventInvites: EventInvite[];
+
+  @ApiProperty({ type: () => [EventRSVP] })
+  @OneToMany(() => EventRSVP, ({ user }) => user, { cascade: true })
+  eventRsvps: EventRSVP[];
 
   @ApiProperty({ type: () => [NotificationMessage] })
   @OneToMany(() => NotificationMessage, ({ user }) => user, { cascade: true })
