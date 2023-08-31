@@ -58,6 +58,7 @@ export class EventController {
 
   @ApiQuery({ name: 'searchTerm', required: false })
   @ApiQuery({ name: 'status', required: false })
+  @ApiQuery({ name: 'eventStatus', required: false })
   @ApiQuery({ name: 'category', required: false })
   @ApiQuery({ name: 'userId', required: false })
   @ApiQuery({ name: 'pageNumber', required: false })
@@ -86,6 +87,41 @@ export class EventController {
     @Query() pagination?: PaginationRequestType,
   ): Promise<EventsResponseDTO> {
     return await this.eventSrv.findEventsForCurrentUser(userId, pagination);
+  }
+
+  @ApiQuery({ name: 'pageNumber', required: false })
+  @ApiQuery({ name: 'pageSize', required: false })
+  @ApiOperation({
+    description: 'Find ongoing events for currently logged in user',
+  })
+  @ApiProduces('json')
+  @ApiConsumes('application/json')
+  @ApiResponse({ type: EventsResponseDTO })
+  @Get('/ongoing/events-for-current-user')
+  async findOngoingEventsForCurrentUser(
+    @CurrentUser(DecodedTokenKey.USER_ID) userId: string,
+    @Query() pagination?: PaginationRequestType,
+  ): Promise<EventsResponseDTO> {
+    return await this.eventSrv.findOngoingEventsForCurrentUser(
+      userId,
+      pagination,
+    );
+  }
+
+  @ApiQuery({ name: 'pageNumber', required: false })
+  @ApiQuery({ name: 'pageSize', required: false })
+  @ApiOperation({
+    description: 'Find past events for currently logged in user',
+  })
+  @ApiProduces('json')
+  @ApiConsumes('application/json')
+  @ApiResponse({ type: EventsResponseDTO })
+  @Get('/past/events-for-current-user')
+  async findPastEventsForCurrentUser(
+    @CurrentUser(DecodedTokenKey.USER_ID) userId: string,
+    @Query() pagination?: PaginationRequestType,
+  ): Promise<EventsResponseDTO> {
+    return await this.eventSrv.findPastEventsForCurrentUser(userId, pagination);
   }
 
   @ApiOperation({ description: 'Find event by Id' })
@@ -126,8 +162,9 @@ export class EventController {
   @Patch()
   async updateEvent(
     @Body() payload: UpdateEventDTO,
+    @CurrentUser(DecodedTokenKey.USER_ID) userId: string,
   ): Promise<BaseResponseTypeDTO> {
-    return await this.eventSrv.updateEvent(payload);
+    return await this.eventSrv.updateEvent(payload, userId);
   }
 
   @ApiOperation({ description: 'Delete events' })
@@ -141,8 +178,16 @@ export class EventController {
     return await this.eventSrv.deleteEvents(eventIds);
   }
 
-  @Cron(CronExpression.EVERY_2_HOURS)
-  async deactivatePastEvents(): Promise<void> {
-    await this.eventSrv.deactivatePastEvents();
+  // @Cron(CronExpression.EVERY_2_HOURS)
+  // async deactivatePastEvents(): Promise<void> {
+  //   await this.eventSrv.deactivatePastEvents();
+  // }
+
+  @Cron(CronExpression.EVERY_HOUR, {
+    name: 'startOngoingEvents',
+    timeZone: 'Africa/Lagos',
+  })
+  async startOngoingEvents(): Promise<void> {
+    await this.eventSrv.startOngoingEvents();
   }
 }

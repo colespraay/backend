@@ -5,18 +5,22 @@ import {
   Injectable,
   Inject,
   forwardRef,
+  ForbiddenException,
 } from '@nestjs/common';
-import { FindManyOptions, In, ILike } from 'typeorm';
+import { FindManyOptions, In, ILike, Not } from 'typeorm';
 import { GenericService } from '@schematics/index';
 import { EventRecord } from '@entities/index';
 import {
   BaseResponseTypeDTO,
   EventCategory,
+  EventStatus,
   PaginationRequestType,
   calculatePaginationControls,
   checkForRequiredFields,
   compareEnumValueFields,
+  convert12HourTo24HourFormat,
   validateFutureDate,
+  validateTimeField,
   validateURLField,
   validateUUIDField,
 } from '@utils/index';
@@ -63,6 +67,7 @@ export class EventService extends GenericService(EventRecord) {
         );
       }
       validateFutureDate(payload.eventDate, 'eventDate');
+      validateTimeField(payload.time, 'time');
       validateURLField(payload.eventCoverImage, 'eventCoverImage');
       compareEnumValueFields(
         payload.category,
@@ -163,6 +168,12 @@ export class EventService extends GenericService(EventRecord) {
       if (filterOptions?.category) {
         filter.where = { ...filter.where, category: filterOptions.category };
       }
+      if (filterOptions?.eventStatus) {
+        filter.where = {
+          ...filter.where,
+          eventStatus: filterOptions.eventStatus,
+        };
+      }
       if (filterOptions?.userId) {
         filter.where = { ...filter.where, userId: filterOptions.userId };
       }
@@ -224,10 +235,9 @@ export class EventService extends GenericService(EventRecord) {
       checkForRequiredFields(['userId'], { userId });
       // Pull events user created
       const events = await this.getRepo().find({
-        where: { userId, status: true },
+        where: { userId, status: true, eventStatus: EventStatus.UPCOMING },
       });
       let eventIds = events.map(({ id }) => id);
-      // const eventIds = [...new Set(...events.map(({ id }) => id))];
 
       // Pull events user has been invited to
       const eventsInvites = await this.eventInviteSrv.findAllByCondition({
@@ -236,13 +246,118 @@ export class EventService extends GenericService(EventRecord) {
       });
       eventIds.push(...eventsInvites.map(({ eventId }) => eventId));
 
-      // Pull from rsvp
-
       // Remove duplicate eventIds
       eventIds = [...new Set(eventIds)];
 
       const filter: FindManyOptions<EventRecord> = {
         where: { id: In(eventIds) },
+        relations: ['user', 'eventInvites', 'eventInvites.user'],
+      };
+      if (pagination?.pageNumber && pagination?.pageSize) {
+        filter.skip = (pagination.pageNumber - 1) * pagination.pageSize;
+        filter.take = pagination.pageSize;
+        const { response, paginationControl } =
+          await calculatePaginationControls<EventRecord>(
+            this.getRepo(),
+            filter,
+            pagination,
+          );
+        return {
+          success: true,
+          message: 'Records found',
+          code: HttpStatus.OK,
+          data: response,
+          paginationControl,
+        };
+      }
+      const users = await this.getRepo().find(filter);
+      return {
+        success: true,
+        message: 'Records found',
+        code: HttpStatus.OK,
+        data: users,
+      };
+    } catch (ex) {
+      this.logger.error(ex);
+      throw ex;
+    }
+  }
+
+  async findOngoingEventsForCurrentUser(
+    userId: string,
+    pagination?: PaginationRequestType,
+  ): Promise<EventsResponseDTO> {
+    try {
+      checkForRequiredFields(['userId'], { userId });
+      const events = await this.findAllByCondition({
+        eventStatus: EventStatus.ONGOING,
+        status: true,
+      });
+      const eventsForUser = events.filter((event) => event.userId === userId);
+      const eventInvites = await this.eventInviteSrv.getRepo().find({
+        where: {
+          userId,
+          eventId: In(events.map(({ id }) => id)),
+        },
+        relations: ['event'],
+      });
+      eventsForUser.push(...eventInvites.map(({ event }) => event));
+      const eventsForUserIds = [...new Set(eventsForUser.map(({ id }) => id))];
+      const filter: FindManyOptions<EventRecord> = {
+        where: { id: In(eventsForUserIds) },
+        relations: ['user', 'eventInvites', 'eventInvites.user'],
+      };
+      if (pagination?.pageNumber && pagination?.pageSize) {
+        filter.skip = (pagination.pageNumber - 1) * pagination.pageSize;
+        filter.take = pagination.pageSize;
+        const { response, paginationControl } =
+          await calculatePaginationControls<EventRecord>(
+            this.getRepo(),
+            filter,
+            pagination,
+          );
+        return {
+          success: true,
+          message: 'Records found',
+          code: HttpStatus.OK,
+          data: response,
+          paginationControl,
+        };
+      }
+      const users = await this.getRepo().find(filter);
+      return {
+        success: true,
+        message: 'Records found',
+        code: HttpStatus.OK,
+        data: users,
+      };
+    } catch (ex) {
+      this.logger.error(ex);
+      throw ex;
+    }
+  }
+
+  async findPastEventsForCurrentUser(
+    userId: string,
+    pagination?: PaginationRequestType,
+  ): Promise<EventsResponseDTO> {
+    try {
+      checkForRequiredFields(['userId'], { userId });
+      const events = await this.findAllByCondition({
+        eventStatus: EventStatus.PAST,
+      });
+      const eventsForUser = events.filter((event) => event.userId === userId);
+      const eventInvites = await this.eventInviteSrv.getRepo().find({
+        where: {
+          userId,
+          eventId: In(events.map(({ id }) => id)),
+        },
+        relations: ['event'],
+      });
+      eventsForUser.push(...eventInvites.map(({ event }) => event));
+      const eventsForUserIds = [...new Set(eventsForUser.map(({ id }) => id))];
+      const filter: FindManyOptions<EventRecord> = {
+        where: { id: In(eventsForUserIds) },
         relations: ['user', 'eventInvites', 'eventInvites.user'],
       };
       if (pagination?.pageNumber && pagination?.pageSize) {
@@ -284,12 +399,15 @@ export class EventService extends GenericService(EventRecord) {
     };
   }
 
-  async updateEvent(payload: UpdateEventDTO): Promise<BaseResponseTypeDTO> {
+  async updateEvent(
+    payload: UpdateEventDTO,
+    userId: string,
+  ): Promise<BaseResponseTypeDTO> {
     try {
       checkForRequiredFields(['eventId'], payload);
       const record = await this.findOne({ id: payload.eventId });
       if (!record?.id) {
-        throw new NotFoundException();
+        throw new NotFoundException('Event not found');
       }
       if ('status' in payload) {
         record.status = payload.status;
@@ -302,6 +420,19 @@ export class EventService extends GenericService(EventRecord) {
         );
         record.category = payload.category;
       }
+      if (payload.eventStatus && record.eventStatus !== payload.eventStatus) {
+        compareEnumValueFields(
+          'eventStatus',
+          Object.values(EventStatus),
+          'eventStatus',
+        );
+        if (userId !== record.userId) {
+          throw new ForbiddenException(
+            'Only user who created an event can close it',
+          );
+        }
+        record.eventStatus = payload.eventStatus;
+      }
       if (payload.eventName && record.eventName !== payload.eventName) {
         record.eventName = payload.eventName.toUpperCase();
       }
@@ -311,7 +442,8 @@ export class EventService extends GenericService(EventRecord) {
       ) {
         record.eventDescription = payload.eventDescription.toUpperCase();
       }
-      if (payload.time && record.time !== record.time) {
+      if (payload.time && payload.time !== record.time) {
+        validateTimeField(payload.time, 'time');
         record.time = payload.time;
       }
       if (payload.eventDate) {
@@ -345,6 +477,7 @@ export class EventService extends GenericService(EventRecord) {
         category: record.category,
         eventName: record.eventName,
         eventDate: record.eventDate,
+        eventStatus: record.eventStatus,
         eventCoverImage: record.eventCoverImage,
         eventGeoCoordinates: record.eventGeoCoordinates,
         eventDescription: record.eventDescription,
@@ -380,6 +513,34 @@ export class EventService extends GenericService(EventRecord) {
     }
   }
 
+  async startOngoingEvents(): Promise<void> {
+    try {
+      const events = await this.findAllByCondition({
+        status: true,
+        eventStatus: EventStatus.UPCOMING,
+      });
+      if (events?.length > 0) {
+        const eventsList = events.filter(({ eventDate, time }) => {
+          const castEventDate = new Date(eventDate);
+          const timeString = convert12HourTo24HourFormat(time);
+          const [hours, minutes] = timeString.split(':').map(Number);
+          castEventDate.setHours(hours);
+          castEventDate.setMinutes(minutes);
+
+          // Return events who's start Date has opened
+          return castEventDate.getTime() >= new Date().getTime();
+        });
+        await this.getRepo().update(
+          { id: In(eventsList.map(({ id }) => id)) },
+          { eventStatus: EventStatus.ONGOING },
+        );
+      }
+    } catch (ex) {
+      this.logger.error(ex);
+      throw ex;
+    }
+  }
+
   async deactivatePastEvents(): Promise<void> {
     try {
       const events = await this.findAllByCondition({ status: true });
@@ -392,7 +553,10 @@ export class EventService extends GenericService(EventRecord) {
             eventIds.push(event.id);
           }
         }
-        await this.getRepo().update({ id: In(eventIds) }, { status: false });
+        await this.getRepo().update(
+          { id: In(eventIds) },
+          { status: false, eventStatus: EventStatus.PAST },
+        );
       }
     } catch (ex) {
       this.logger.error(ex);

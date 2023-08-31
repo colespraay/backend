@@ -3,6 +3,8 @@ import { EventRecord } from '@entities/index';
 import {
   BaseResponseTypeDTO,
   EventCategory,
+  EventStatus,
+  PaginationRequestType,
   PaginationResponseType,
 } from '@utils/index';
 
@@ -44,6 +46,9 @@ export class UpdateEventDTO extends PartialType(CreateEventDTO) {
   @ApiProperty()
   eventId: string;
 
+  @ApiProperty({ enum: EventStatus, nullable: true })
+  eventStatus?: EventStatus;
+
   @ApiProperty({ nullable: true })
   status?: boolean;
 }
@@ -54,6 +59,9 @@ export class FilterEventDTO {
 
   @ApiProperty({ enum: EventCategory, nullable: true })
   category: EventCategory;
+
+  @ApiProperty({ enum: EventStatus, nullable: true })
+  eventStatus: EventStatus;
 
   @ApiProperty({ nullable: true })
   searchTerm: string;
@@ -83,4 +91,9 @@ export class DeleteEventDTO {
 export class EventCategoryResponseDTO extends BaseResponseTypeDTO {
   @ApiProperty({ type: () => [String] })
   data: string[];
+}
+
+export class FilterForCurrentUserDTO extends PaginationRequestType {
+  @ApiProperty({ enum: EventStatus })
+  eventStatus: EventStatus;
 }

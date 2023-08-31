@@ -224,6 +224,19 @@ export const validateURL = (url: string): boolean => {
   return regEx.test(url);
 };
 
+export const validateTime = (time: string): boolean => {
+  const regEx = /\d{1,2}\:\d{1,2} (am|pm)/gim;
+  return regEx.test(time);
+};
+
+export const validateTimeField = (time: string, field = 'time'): void => {
+  if (!validateTime(time)) {
+    throw new BadRequestException(
+      `Field '${field}' has invalid time format. Expected I.E 09:40 AM`,
+    );
+  }
+};
+
 export const validateURLField = (url: string, field = 'url'): void => {
   if (!validateURL(url)) {
     throw new BadRequestException(`Field '${field}' has invalid url format`);
@@ -731,4 +744,16 @@ export const validateArrayField = (
       );
     }
   }
+};
+
+export const convert12HourTo24HourFormat = (time12: string) => {
+  const [time, period] = time12.split(' ');
+  const [hours, minutes] = time.split(':').map(Number);
+  let parsedHour = 0;
+  if (period === 'pm' && hours !== 12) {
+    parsedHour += 12;
+  }
+  return `${parsedHour.toString().padStart(2, '0')}:${minutes
+    .toString()
+    .padStart(2, '0')}`;
 };

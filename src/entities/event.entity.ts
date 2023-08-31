@@ -7,7 +7,12 @@ import {
   JoinColumn,
   ManyToOne,
 } from 'typeorm';
-import { generateUniqueKey, generateQRCode, EventCategory } from '@utils/index';
+import {
+  generateUniqueKey,
+  generateQRCode,
+  EventCategory,
+  EventStatus,
+} from '@utils/index';
 import {
   Base,
   EventSpraay,
@@ -51,6 +56,10 @@ export class EventRecord extends Base {
   @ApiProperty({ enum: EventCategory })
   @Column({ enum: EventCategory })
   category: EventCategory;
+
+  @ApiProperty({ enum: EventStatus })
+  @Column({ enum: EventStatus, default: EventStatus.UPCOMING })
+  eventStatus: EventStatus;
 
   @ApiProperty()
   @Column({ type: 'text' })

@@ -65,3 +65,9 @@ export enum NotificationType {
 export enum NotificationPurpose {
   EVENT_INVITE = 'EVENT_INVITE',
 }
+
+export enum EventStatus {
+  UPCOMING = 'UPCOMING',
+  ONGOING = 'ONGOING',
+  PAST = 'PAST',
+}

@@ -24,7 +24,7 @@ export class EventInvite extends Base {
     onDelete: 'CASCADE',
     onUpdate: 'CASCADE',
   })
-  event: Event;
+  event: EventRecord;
 
   @ApiProperty()
   @Column({ type: 'boolean', default: true })
