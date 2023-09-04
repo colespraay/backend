@@ -39,8 +39,3 @@
 - Transfer another users wallet (Spraay transfer)
 - View wallet/transaction history
 - Withdraw from wallet into main account
-
-[Problems]
-1. Clear issue with using Termii API [Done]
-2. Clear issue with Fincra API or move to use another one. (support@fincra.com)
-3. Add geoCordinates to events.[Done]

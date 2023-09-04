@@ -422,7 +422,7 @@ export class EventService extends GenericService(EventRecord) {
       }
       if (payload.eventStatus && record.eventStatus !== payload.eventStatus) {
         compareEnumValueFields(
-          'eventStatus',
+          payload.eventStatus,
           Object.values(EventStatus),
           'eventStatus',
         );
