@@ -115,7 +115,10 @@ export class EventService extends GenericService(EventRecord) {
   async findEventById(eventId: string): Promise<EventResponseDTO> {
     try {
       checkForRequiredFields(['eventId'], { eventId });
-      const record = await this.getRepo().findOne({ where: { id: eventId } });
+      const record = await this.getRepo().findOne({
+        where: { id: eventId },
+        relations: ['user', 'eventInvites', 'eventInvites.user'],
+      });
       if (!record?.id) {
         throw new NotFoundException('Event not found');
       }
@@ -134,7 +137,10 @@ export class EventService extends GenericService(EventRecord) {
   async findEventByCode(eventCode: string): Promise<EventResponseDTO> {
     try {
       checkForRequiredFields(['eventCode'], { eventCode });
-      const record = await this.getRepo().findOne({ where: { eventCode } });
+      const record = await this.getRepo().findOne({
+        where: { eventCode },
+        relations: ['user', 'eventInvites', 'eventInvites.user'],
+      });
       if (!record?.id) {
         throw new NotFoundException('Event not found');
       }
