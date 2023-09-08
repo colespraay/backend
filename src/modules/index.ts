@@ -26,3 +26,7 @@ export * from './event-rsvp/event-rsvp.service';
 export * from './notification-message/notification-message.controller';
 export * from './notification-message/notification-message.module';
 export * from './notification-message/notification-message.service';
+// [Wallet]
+export * from './wallet/wallet.controller';
+export * from './wallet/wallet.module';
+export * from './wallet/wallet.service';

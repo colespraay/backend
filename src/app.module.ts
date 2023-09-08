@@ -17,6 +17,7 @@ import {
 import {
   UserModule,
   AuthModule,
+  WalletModule,
   EventModule,
   EventInviteModule,
   EventSpraayModule,
@@ -40,6 +41,7 @@ import ormConfig from './orm.config';
     EventInviteModule,
     EventSpraayModule,
     EventRSVPModule,
+    WalletModule,
     NotificationMessageModule,
   ],
   controllers: [AppController],
