@@ -70,7 +70,10 @@ export const checkForRequiredFields = (
       Object.keys(requestPayload).indexOf(field) < 0 ||
       Object.values(requestPayload)[
         Object.keys(requestPayload).indexOf(field)
-      ] === '',
+      ] === '' ||
+      !Object.values(requestPayload)[
+        Object.keys(requestPayload).indexOf(field)
+      ],
   );
   if (missingFields.length) {
     throw new BadRequestException(
@@ -756,4 +759,12 @@ export const convert12HourTo24HourFormat = (time12: string) => {
   return `${parsedHour.toString().padStart(2, '0')}:${minutes
     .toString()
     .padStart(2, '0')}`;
+};
+
+export const addLeadingZeroes = (num: number): string => {
+  const numberToString = String(num);
+  if (numberToString.length > 1) {
+    return numberToString;
+  }
+  return `0${numberToString}`;
 };

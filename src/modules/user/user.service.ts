@@ -49,12 +49,14 @@ import {
 } from './dto/user.dto';
 import { AuthResponseDTO } from '@modules/auth/dto/auth.dto';
 import { AuthService } from '../index';
+import { EventEmitter2 } from '@nestjs/event-emitter';
 
 @Injectable()
 export class UserService extends GenericService(User) {
   constructor(
     @Inject(forwardRef(() => AuthService))
     private readonly authSrv: AuthService,
+    private readonly eventEmitterSrv: EventEmitter2,
   ) {
     super();
   }
@@ -640,6 +642,7 @@ export class UserService extends GenericService(User) {
         displayWalletBalance: record.displayWalletBalance,
       };
       await this.getRepo().update({ id: record.id }, updatedRecord);
+      this.eventEmitterSrv.emit('create-wallet', record.id);
       return {
         success: true,
         code: HttpStatus.OK,

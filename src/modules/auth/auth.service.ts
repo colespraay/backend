@@ -39,7 +39,16 @@ export class AuthService {
       );
       if (user?.data.id) {
         const {
-          data: { dateCreated, email, phoneNumber, role, id },
+          data: {
+            dateCreated,
+            email,
+            phoneNumber,
+            role,
+            id,
+            virtualAccountName,
+            virtualAccountNumber,
+            bankName,
+          },
         } = user;
         const payloadToSign = encryptData(
           JSON.stringify({
@@ -47,6 +56,9 @@ export class AuthService {
             dateCreated,
             email,
             phoneNumber,
+            virtualAccountName,
+            virtualAccountNumber,
+            bankName,
             role,
             id,
           }),
@@ -81,7 +93,16 @@ export class AuthService {
       );
       if (user?.data.id) {
         const {
-          data: { dateCreated, email, phoneNumber, role, id },
+          data: {
+            dateCreated,
+            email,
+            phoneNumber,
+            role,
+            id,
+            virtualAccountName,
+            virtualAccountNumber,
+            bankName,
+          },
         } = user;
         const payloadToSign = encryptData(
           JSON.stringify({
@@ -89,6 +110,9 @@ export class AuthService {
             dateCreated,
             email,
             phoneNumber,
+            virtualAccountName,
+            virtualAccountNumber,
+            bankName,
             role,
             id,
           }),
@@ -120,12 +144,24 @@ export class AuthService {
       const payload = await this.userSrv
         .getRepo()
         .findOne({ where: { id: userId } });
-      const { dateCreated, email, phoneNumber, role, id } = payload;
+      const {
+        dateCreated,
+        email,
+        phoneNumber,
+        role,
+        id,
+        virtualAccountName,
+        virtualAccountNumber,
+        bankName,
+      } = payload;
       const encryptedTokenData = encryptData(
         JSON.stringify({
           dateCreated,
           email,
           phoneNumber,
+          virtualAccountName,
+          virtualAccountNumber,
+          bankName,
           role,
           id,
           user: payload,
@@ -180,12 +216,24 @@ export class AuthService {
           profileImageUrl: payload.profileImageUrl,
         });
       }
-      const { dateCreated, email, phoneNumber, role, id } = record;
+      const {
+        dateCreated,
+        email,
+        phoneNumber,
+        role,
+        id,
+        virtualAccountName,
+        virtualAccountNumber,
+        bankName,
+      } = record;
       const payloadToSign = encryptData(
         JSON.stringify({
           user: record,
           dateCreated,
           phoneNumber,
+          virtualAccountName,
+          virtualAccountNumber,
+          bankName,
           email,
           role,
           id,
