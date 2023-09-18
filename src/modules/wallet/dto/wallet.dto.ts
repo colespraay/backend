@@ -148,6 +148,12 @@ export class VerifyAccountExistenceResponsePartial {
   bankCode: string;
 
   @ApiProperty()
+  bankName: string;
+
+  @ApiProperty()
+  accountName: string;
+
+  @ApiProperty()
   accountNumber: string;
 
   @ApiProperty()

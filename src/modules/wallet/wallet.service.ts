@@ -203,11 +203,16 @@ export class WalletService {
       if (!destinationAccount) {
         throw new BadGatewayException('Could not verify destination account');
       }
+      const extractedData =
+        destinationAccount.result as VerifyAccountExistenceResponsePartial;
+      const bank = (await this.getBankLists()).data.find(
+        (bank) => bank.bankCode === extractedData.bankCode,
+      );
       return {
         success: true,
         code: HttpStatus.OK,
         message: 'Accounts verified',
-        data: destinationAccount.result as VerifyAccountExistenceResponsePartial,
+        data: { ...extractedData, bankName: bank?.bankName },
       };
     } catch (ex) {
       this.logger.error(ex);
