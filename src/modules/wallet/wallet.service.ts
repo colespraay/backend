@@ -1,15 +1,31 @@
-import { Injectable, Logger, NotFoundException } from '@nestjs/common';
+import {
+  BadGatewayException,
+  HttpStatus,
+  Injectable,
+  Logger,
+  NotFoundException,
+} from '@nestjs/common';
 import { OnEvent } from '@nestjs/event-emitter';
 import {
+  BaseResponseTypeDTO,
   addLeadingZeroes,
   checkForRequiredFields,
+  generateUniqueCode,
   httpGet,
   httpPost,
 } from '@utils/index';
 import { UserService } from '../index';
 import {
   BankAccountStatementDTO,
+  BankListDTO,
+  BankListPartialDTO,
   FindStatementOfAccountDTO,
+  FindTransferChargeDTO,
+  InterbankTransferChargeDTO,
+  MakeWalletDebitTypeDTO,
+  VerifyAccountExistenceDTO,
+  VerifyAccountExistenceResponseDTO,
+  VerifyAccountExistenceResponsePartial,
 } from './dto/wallet.dto';
 
 @Injectable()
@@ -81,6 +97,194 @@ export class WalletService {
           }
         }, 50000);
       }
+    } catch (ex) {
+      this.logger.error(ex);
+      throw ex;
+    }
+  }
+
+  // https://apiplayground.alat.ng/debit-wallet/api/Shared/GetAllBanks
+  async getBankLists(): Promise<BankListDTO> {
+    try {
+      const url =
+        'https://apiplayground.alat.ng/debit-wallet/api/Shared/GetAllBanks';
+      const data = await httpGet<any>(url, {
+        'x-api-key': String(process.env.WEMA_ATLAT_X_API_KEY),
+        'Ocp-Apim-Subscription-Key': String(
+          process.env.WEMA_ATLAT_WALLET_CREATION_SUB_KEY,
+        ),
+      });
+      return {
+        success: true,
+        code: HttpStatus.OK,
+        message: 'List found',
+        data: data.result as BankListPartialDTO[],
+      };
+    } catch (ex) {
+      this.logger.error(ex);
+      throw ex;
+    }
+  }
+
+  async getListOfInterbankTransferCharges(): Promise<FindTransferChargeDTO> {
+    try {
+      const url =
+        'https://apiplayground.alat.ng/debit-wallet/api/Shared/GetNIPCharges';
+      const data = await httpGet<any>(url, {
+        'x-api-key': String(process.env.WEMA_ATLAT_X_API_KEY),
+        'Ocp-Apim-Subscription-Key': String(
+          process.env.WEMA_ATLAT_WALLET_CREATION_SUB_KEY,
+        ),
+      });
+      return {
+        success: true,
+        code: HttpStatus.OK,
+        message: 'Inter-bank charges found',
+        termsAndConditions: data.result.termsAndConditions,
+        termsAndConditionsUrl: data.result.termsAndConditionsUrl,
+        data: data.result.chargeFees as InterbankTransferChargeDTO[],
+      };
+    } catch (ex) {
+      this.logger.error(ex);
+      throw ex;
+    }
+  }
+
+  // URL: https://playground.alat.ng/api-details#api=wallet-transfer-api&operation=get-api-shared-accountnameenquiry-bankcode-accountnumber
+  async verifyAccountExistence(
+    sourceAccountNumber: string,
+    payload: VerifyAccountExistenceDTO,
+  ): Promise<VerifyAccountExistenceResponseDTO> {
+    try {
+      checkForRequiredFields(
+        [
+          'sourceAccountNumber',
+          'destinationBankCode',
+          'destinationAccountNumber',
+          'destinationAccountName',
+        ],
+        { ...payload, sourceAccountNumber },
+      );
+      try {
+        const enquiryUrl = `https://apiplayground.alat.ng/debit-wallet/api/Shared/AccountNameEnquiry/Wallet/${sourceAccountNumber}`;
+        const enquiryData = await httpGet(enquiryUrl, {
+          access: String(process.env.WEMA_ATLAT_X_API_KEY),
+          'Ocp-Apim-Subscription-Key': String(
+            process.env.WEMA_ATLAT_WALLET_CREATION_SUB_KEY,
+          ),
+        });
+        if (!enquiryData) {
+          throw new BadGatewayException(
+            `Could not verify source wallet: '${sourceAccountNumber}'`,
+          );
+        }
+      } catch (ex) {
+        this.logger.error(
+          `Source account error: ${sourceAccountNumber}: ${ex}`,
+        );
+        throw ex;
+      }
+
+      // Verify destination Account
+      const destinationAccountEnquiryUrl = `https://apiplayground.alat.ng/debit-wallet/api/Shared/AccountNameEnquiry/${
+        payload.destinationBankCode
+      }/${payload.destinationAccountNumber}?channelId=${String(
+        process.env.WEMA_ATLAT_X_API_KEY,
+      )}`;
+      const destinationAccount = await httpGet<any>(
+        destinationAccountEnquiryUrl,
+        {
+          'Cache-Control': 'no-cache',
+          'Ocp-Apim-Subscription-Key': String(
+            process.env.WEMA_ATLAT_WALLET_CREATION_SUB_KEY,
+          ),
+        },
+      );
+      if (!destinationAccount) {
+        throw new BadGatewayException('Could not verify destination account');
+      }
+      return {
+        success: true,
+        code: HttpStatus.OK,
+        message: 'Accounts verified',
+        data: destinationAccount.result as VerifyAccountExistenceResponsePartial,
+      };
+    } catch (ex) {
+      this.logger.error(ex);
+      throw ex;
+    }
+  }
+
+  // URL: https://playground.alat.ng/api-details#api=wallet-transfer-api&operation=post-api-shared-processclienttransfer
+  async makeTransferFromWallet(
+    sourceAccountNumber: string,
+    payload: MakeWalletDebitTypeDTO,
+  ): Promise<BaseResponseTypeDTO> {
+    try {
+      checkForRequiredFields(
+        [
+          'amount',
+          'sourceAccountNumber',
+          'destinationBankCode',
+          'destinationBankName',
+          'destinationAccountNumber',
+          'destinationAccountName',
+          'narration',
+        ],
+        { ...payload, sourceAccountNumber },
+      );
+      const url =
+        'https://apiplayground.alat.ng/debit-wallet/api/Shared/ProcessClientTransfer';
+      const apiResponse = await httpPost<any, any>(
+        url,
+        {
+          // securityInfo: 'string',
+          amount: payload.amount,
+          destinationBankCode: payload.destinationBankCode,
+          destinationBankName: payload.destinationBankName,
+          destinationAccountNumber: payload.destinationAccountNumber,
+          destinationAccountName: payload.destinationAccountName,
+          sourceAccountNumber: sourceAccountNumber,
+          narration:
+            payload.narration ??
+            `Debit - Destination: [${payload.destinationBankName}] ${payload.destinationAccountNumber}`,
+          transactionReference: `#Spraay-Ref-${generateUniqueCode(8)}`,
+          useCustomNarration: true,
+        },
+        {
+          access: String(process.env.WEMA_ATLAT_X_API_KEY),
+          'Cache-Control': 'no-cache',
+          'Ocp-Apim-Subscription-Key': String(
+            process.env.WEMA_ATLAT_WALLET_CREATION_SUB_KEY,
+          ),
+        },
+      );
+      /**
+       * Sample Response: 
+       * {
+              "result": {
+                  "status": "string",
+                  "message": "string",
+                  "narration": "string",
+                  "transactionReference": "string",
+                  "platformTransactionReference": "string",
+                  "transactionStan": "string",
+                  "orinalTxnTransactionDate": "string"
+              },
+              "errorMessage": "string",
+              "errorMessages": ["string"],
+              "hasError": true,
+              "timeGenerated": "string"
+          }
+       */
+      if (!apiResponse) {
+        throw new BadGatewayException('Debit payment failed');
+      }
+      return {
+        success: true,
+        message: apiResponse.result.message,
+        code: HttpStatus.OK,
+      };
     } catch (ex) {
       this.logger.error(ex);
       throw ex;

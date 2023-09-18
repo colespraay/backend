@@ -1,4 +1,5 @@
-import { ApiProperty } from '@nestjs/swagger';
+import { ApiProperty, PickType } from '@nestjs/swagger';
+import { BaseResponseTypeDTO } from '@utils/index';
 
 export class FindStatementOfAccountDTO {
   @ApiProperty()
@@ -64,4 +65,105 @@ export class BankAccountStatementDTO {
 
   @ApiProperty({ type: () => [BankAccountStatementDTO], nullable: true })
   data?: BankAccountStatementDTO[];
+}
+
+export class BankListPartialDTO {
+  @ApiProperty()
+  bankName: string;
+
+  @ApiProperty()
+  bankCode: string;
+}
+
+export class BankListDTO extends BaseResponseTypeDTO {
+  @ApiProperty({ type: () => [BankListPartialDTO] })
+  data: BankListPartialDTO[];
+}
+
+export class InterbankTransferChargeDTO {
+  @ApiProperty()
+  id: number;
+
+  @ApiProperty()
+  chargeFeeName: string;
+
+  @ApiProperty()
+  transactionType: number;
+
+  @ApiProperty()
+  charge: number;
+
+  @ApiProperty()
+  lower: number;
+
+  @ApiProperty()
+  upper: number;
+}
+
+export class FindTransferChargeDTO extends BaseResponseTypeDTO {
+  @ApiProperty()
+  termsAndConditions: string;
+
+  @ApiProperty()
+  termsAndConditionsUrl: string;
+
+  @ApiProperty({ type: () => [InterbankTransferChargeDTO] })
+  data: InterbankTransferChargeDTO[];
+}
+
+export class MakeWalletDebitTypeDTO {
+  @ApiProperty()
+  securityInfo: string;
+
+  @ApiProperty()
+  amount: number;
+
+  @ApiProperty()
+  destinationBankCode: string;
+
+  @ApiProperty()
+  destinationBankName: string;
+
+  @ApiProperty()
+  destinationAccountNumber: string;
+
+  @ApiProperty()
+  destinationAccountName: string;
+
+  @ApiProperty()
+  narration: string;
+}
+
+export class VerifyAccountExistenceDTO extends PickType(
+  MakeWalletDebitTypeDTO,
+  [
+    'destinationAccountName',
+    'destinationAccountNumber',
+    'destinationBankCode',
+  ] as const,
+) {}
+
+export class VerifyAccountExistenceResponsePartial {
+  @ApiProperty()
+  bankCode: string;
+
+  @ApiProperty()
+  accountNumber: string;
+
+  @ApiProperty()
+  currency: string;
+
+  @ApiProperty()
+  termsAndConditions: string;
+
+  @ApiProperty()
+  termsAndConditionsUrl: string;
+
+  @ApiProperty({ type: () => [InterbankTransferChargeDTO] })
+  chargeFee: InterbankTransferChargeDTO[];
+}
+
+export class VerifyAccountExistenceResponseDTO extends BaseResponseTypeDTO {
+  @ApiProperty({ type: () => VerifyAccountExistenceResponsePartial })
+  data: VerifyAccountExistenceResponsePartial;
 }
