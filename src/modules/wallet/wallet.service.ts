@@ -291,6 +291,8 @@ export class WalletService {
     }
   }
 
+  // URL: (payment APIs) https://playground.alat.ng/api-details#api=pay-with-bank-account-api&operation=initiate-fund-transfer-request
+
   // URL: https://playground.alat.ng/api-details#api=get-statement-service&operation=getcustomertransactions
   async getStatementOfAccounts(
     accountNumber: string,
