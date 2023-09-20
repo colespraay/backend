@@ -6,6 +6,7 @@ import {
   Query,
   UseGuards,
   Body,
+  Req,
 } from '@nestjs/common';
 import {
   ApiBearerAuth,
@@ -15,7 +16,7 @@ import {
   ApiResponse,
   ApiTags,
 } from '@nestjs/swagger';
-import { Response } from 'express';
+import { Response, Request } from 'express';
 import { CurrentUser, RolesGuard } from '@schematics/index';
 import { BaseResponseTypeDTO, DecodedTokenKey } from '@utils/index';
 import { WalletService } from './wallet.service';
@@ -112,14 +113,22 @@ export class WalletController {
   }
 
   @Post('/webhook')
-  async wemaBankWebhook(@Res() res: Response): Promise<void> {
+  async wemaBankWebhook(
+    @Req() req: Request,
+    @Res() res: Response,
+  ): Promise<void> {
     console.log({ res });
+    console.log({ body: req.body });
   }
 
   // URL: https://playground.alat.ng/api-transaction-notification
   @Post('/wallet-notifications')
-  async notificationAPI(@Res() res: Response): Promise<void> {
+  async notificationAPI(
+    @Req() req: Request,
+    @Res() res: Response,
+  ): Promise<void> {
     console.log({ res });
+    console.log({ body: req.body });
 
     // {
     //   "accountNumber": "{accountNumber}",
