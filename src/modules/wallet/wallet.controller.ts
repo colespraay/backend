@@ -114,21 +114,19 @@ export class WalletController {
 
   @Post('/webhook')
   async wemaBankWebhook(
-    @Req() req: Request,
-    @Res() res: Response,
+    // @Req() req: Request,
+    @Body() body: any,
   ): Promise<void> {
-    console.log({ res });
-    console.log({ body: req.body });
+    console.log({ body });
   }
 
   // URL: https://playground.alat.ng/api-transaction-notification
   @Post('/wallet-notifications')
   async notificationAPI(
-    @Req() req: Request,
-    @Res() res: Response,
+    // @Req() req: Request,
+    @Body() body: any,
   ): Promise<void> {
-    console.log({ res });
-    console.log({ body: req.body });
+    console.log({ body });
 
     // {
     //   "accountNumber": "{accountNumber}",
