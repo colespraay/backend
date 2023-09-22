@@ -213,12 +213,22 @@ export class TransactionService extends GenericService(Transaction) {
           endDate: payload.endDate,
         })
         .getMany();
+      if (transactionRecords?.length <= 0) {
+        throw new NotFoundException(
+          'No transactions were done during this period',
+        );
+      }
+      const firstTransactionWithinRange = transactionRecords[0];
+      const lastTransactionWithinRange =
+        transactionRecords[transactionRecords.length - 1];
       const groupedData = groupBy(transactionRecords, 'createdDate');
       const html = this.formatHtmlForAccountStatements(
         groupedData,
         payload.startDate,
         payload.endDate,
         user.data,
+        firstTransactionWithinRange,
+        lastTransactionWithinRange,
       );
       const tag = 'Statement of Accounts';
       const savedPdf = await convertHtmlToPDF(html, tag, 'account-statements');
@@ -241,6 +251,8 @@ export class TransactionService extends GenericService(Transaction) {
     startDate: Date,
     endDate: Date,
     user: User,
+    firstTransaction: Transaction,
+    lastTransaction: Transaction,
   ): string {
     // FORMAT: { '12/10/2023': [Transactions] }
     startDate = new Date(startDate);
@@ -324,8 +336,8 @@ export class TransactionService extends GenericService(Transaction) {
     <h3 style="color: #959292">Statement of Accounts</h3>
     <p style="color: #959292">${startDateString} - ${endDateString}</p>
     
-    <h3 class="bg-dark padding-10">Opening Balance<br /> &#8358;40,000</h3>
-    <h3 class="bg-dark padding-10">Closing Balance<br /> &#8358;40,000</h3>
+    <h3 class="bg-dark padding-10">Opening Balance<br /> &#8358;${firstTransaction.currentBalanceBeforeTransaction?.toLocaleString()}</h3>
+    <h3 class="bg-dark padding-10">Closing Balance<br /> &#8358;${lastTransaction.currentBalanceBeforeTransaction?.toLocaleString()}</h3>
    `;
     for (const item of Object.keys(payload)) {
       html += `<section>
