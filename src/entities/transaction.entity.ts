@@ -16,6 +16,17 @@ export class Transaction extends Base {
   })
   user: User;
 
+  @Column({ type: 'uuid', nullable: true })
+  receiverUserId: string;
+
+  @ApiProperty({ type: () => User })
+  @JoinColumn({ name: 'userId' })
+  @ManyToOne(() => User, ({ receivedTransactions }) => receivedTransactions, {
+    onDelete: 'CASCADE',
+    onUpdate: 'CASCADE',
+  })
+  receiverUser: User;
+
   @ApiProperty()
   @Column({ type: 'float', default: 0 })
   amount: number;

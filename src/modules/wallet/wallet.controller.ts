@@ -1,13 +1,4 @@
-import {
-  Controller,
-  Get,
-  Res,
-  Post,
-  Query,
-  UseGuards,
-  Body,
-  Req,
-} from '@nestjs/common';
+import { Controller, Get, Post, Query, UseGuards, Body } from '@nestjs/common';
 import {
   ApiBearerAuth,
   ApiConsumes,
@@ -16,7 +7,6 @@ import {
   ApiResponse,
   ApiTags,
 } from '@nestjs/swagger';
-import { Response, Request } from 'express';
 import { CurrentUser, RolesGuard } from '@schematics/index';
 import { BaseResponseTypeDTO, DecodedTokenKey } from '@utils/index';
 import { WalletService } from './wallet.service';
@@ -28,6 +18,7 @@ import {
   VerifyAccountExistenceDTO,
   VerifyAccountExistenceResponseDTO,
   MakeWalletDebitTypeDTO,
+  WebhookResponseDTO,
 } from './dto/wallet.dto';
 
 @ApiTags('wallet')
@@ -113,11 +104,8 @@ export class WalletController {
   }
 
   @Post('/webhook')
-  async wemaBankWebhook(
-    // @Req() req: Request,
-    @Body() body: any,
-  ): Promise<void> {
-    console.log({ body });
+  async wemaBankWebhook(@Body() body: WebhookResponseDTO): Promise<void> {
+    await this.walletSrv.webhookHandler(body);
   }
 
   // URL: https://playground.alat.ng/api-transaction-notification

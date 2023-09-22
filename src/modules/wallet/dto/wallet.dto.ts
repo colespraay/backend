@@ -173,3 +173,44 @@ export class VerifyAccountExistenceResponseDTO extends BaseResponseTypeDTO {
   @ApiProperty({ type: () => VerifyAccountExistenceResponsePartial })
   data: VerifyAccountExistenceResponsePartial;
 }
+
+// TODO: Probably change to carmelCase
+export class WebhookData {
+  @ApiProperty()
+  Email: string;
+
+  @ApiProperty()
+  Nuban: string;
+
+  @ApiProperty()
+  NubanName: string;
+
+  @ApiProperty()
+  Type: number;
+
+  @ApiProperty()
+  CustomerID: string;
+
+  @ApiProperty()
+  NubanStatus: string;
+
+  @ApiProperty()
+  PhoneNumber: string;
+
+  @ApiProperty()
+  RequestId: string;
+}
+
+export class WebhookResponseDTO {
+  @ApiProperty()
+  Title: string;
+
+  @ApiProperty()
+  Message: string;
+
+  @ApiProperty({ type: () => WebhookData })
+  Data: WebhookData;
+
+  @ApiProperty()
+  Request: number;
+}

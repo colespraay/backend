@@ -26,6 +26,7 @@ import {
   VerifyAccountExistenceDTO,
   VerifyAccountExistenceResponseDTO,
   VerifyAccountExistenceResponsePartial,
+  WebhookResponseDTO,
 } from './dto/wallet.dto';
 
 @Injectable()
@@ -359,5 +360,34 @@ export class WalletService {
     }
   }
 
-  // TODO: Endpoint for downloading statement of accounts
+  // URL: https://playground.alat.ng/api-wallet-creation
+  async webhookHandler(payload: WebhookResponseDTO): Promise<void> {
+    try {
+      console.log({ body: payload });
+      const user = await this.userSrv.getRepo().findOne({
+        where: { email: payload.Data.Email?.toUpperCase() },
+      });
+      if (user?.id) {
+        if (
+          !user.virtualAccountNumber &&
+          user.virtualAccountNumber !== payload.Data.Nuban
+        ) {
+          user.virtualAccountNumber = payload.Data.Nuban;
+          user.virtualAccountName = payload.Data.NubanName;
+          user.bankCustomerId = payload.Data.CustomerID;
+        }
+        await this.userSrv.getRepo().update(
+          { id: user.id },
+          {
+            virtualAccountNumber: user.virtualAccountNumber,
+            virtualAccountName: user.virtualAccountName,
+            bankCustomerId: user.bankCustomerId,
+          },
+        );
+      }
+    } catch (ex) {
+      this.logger.error(ex);
+      throw ex;
+    }
+  }
 }

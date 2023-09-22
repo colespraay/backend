@@ -150,6 +150,12 @@ export class User extends Base {
   @OneToMany(() => Transaction, ({ user }) => user, { cascade: true })
   transactions: Transaction[];
 
+  @ApiProperty({ type: () => [Transaction] })
+  @OneToMany(() => Transaction, ({ receiverUser }) => receiverUser, {
+    cascade: true,
+  })
+  receivedTransactions: Transaction[];
+
   @BeforeInsert()
   async beforeInsertHandler(): Promise<void> {
     this.id = uuidV4();
