@@ -17,6 +17,7 @@ import {
   ApiTags,
 } from '@nestjs/swagger';
 import { TransactionType } from '@utils/index';
+import { RolesGuard } from '@schematics/index';
 import { Response } from 'express';
 import { TransactionService } from './transaction.service';
 import { FindStatementOfAccountDTO } from '@modules/wallet/dto/wallet.dto';
@@ -25,7 +26,6 @@ import {
   TransactionResponseDTO,
   TransactionsResponseDTO,
 } from './dto/transaction.dto';
-import { RolesGuard } from '@schematics/index';
 
 @ApiTags('transaction')
 @Controller('transaction')

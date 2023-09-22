@@ -212,6 +212,7 @@ export class TransactionService extends GenericService(Transaction) {
           startDate: payload.startDate,
           endDate: payload.endDate,
         })
+        .andWhere('t.userId = :userId', { userId })
         .getMany();
       if (transactionRecords?.length <= 0) {
         throw new NotFoundException(
