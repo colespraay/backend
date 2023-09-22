@@ -23,6 +23,7 @@ import {
   FindTransferChargeDTO,
   InterbankTransferChargeDTO,
   MakeWalletDebitTypeDTO,
+  TransactionNotificationResponseDTO,
   VerifyAccountExistenceDTO,
   VerifyAccountExistenceResponseDTO,
   VerifyAccountExistenceResponsePartial,
@@ -385,6 +386,25 @@ export class WalletService {
           },
         );
       }
+    } catch (ex) {
+      this.logger.error(ex);
+      throw ex;
+    }
+  }
+
+  // URL: https://playground.alat.ng/api-transaction-notification
+  async transactionNotificationWebhook(
+    payload: TransactionNotificationResponseDTO,
+  ): Promise<void> {
+    try {
+      console.log({ body: payload });
+      // {
+      //   "accountNumber": "{accountNumber}",
+      //   "transactionType": "Credit",
+      //   "amount": 10000,
+      //   "narration": "Custom narration",
+      //   "transactionDate": "1990-07-09T08:34:37.504Z"
+      // }
     } catch (ex) {
       this.logger.error(ex);
       throw ex;

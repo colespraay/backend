@@ -111,17 +111,9 @@ export class WalletController {
 
   // URL: https://playground.alat.ng/api-transaction-notification
   @Post('/wallet-notifications')
-  async notificationAPI(
+  async transactionNotificationWebhook(
     @Body() body: TransactionNotificationResponseDTO,
   ): Promise<void> {
-    console.log({ body });
-
-    // {
-    //   "accountNumber": "{accountNumber}",
-    //   "transactionType": "Credit",
-    //   "amount": 10000,
-    //   "narration": "Custom narration",
-    //   "transactionDate": "1990-07-09T08:34:37.504Z"
-    // }
+    await this.walletSrv.transactionNotificationWebhook(body);
   }
 }
