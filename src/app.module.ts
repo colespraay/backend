@@ -22,6 +22,7 @@ import {
   EventInviteModule,
   EventSpraayModule,
   EventRSVPModule,
+  TransactionModule,
   NotificationMessageModule,
 } from '@modules/index';
 import { AppService } from './app.service';
@@ -42,6 +43,7 @@ import ormConfig from './orm.config';
     EventSpraayModule,
     EventRSVPModule,
     WalletModule,
+    TransactionModule,
     NotificationMessageModule,
   ],
   controllers: [AppController],

@@ -17,6 +17,7 @@ import {
   uuidV4,
   NotificationMessage,
   EventRSVP,
+  Transaction,
 } from './index';
 
 @Entity({ name: 'USER' })
@@ -140,6 +141,10 @@ export class User extends Base {
   @ApiProperty({ type: () => [NotificationMessage] })
   @OneToMany(() => NotificationMessage, ({ user }) => user, { cascade: true })
   notifications: NotificationMessage[];
+
+  @ApiProperty({ type: () => [Transaction] })
+  @OneToMany(() => Transaction, ({ user }) => user, { cascade: true })
+  transactions: Transaction[];
 
   @BeforeInsert()
   async beforeInsertHandler(): Promise<void> {

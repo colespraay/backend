@@ -30,3 +30,7 @@ export * from './notification-message/notification-message.service';
 export * from './wallet/wallet.controller';
 export * from './wallet/wallet.module';
 export * from './wallet/wallet.service';
+// [Transaction]
+export * from './transaction/transaction.controller';
+export * from './transaction/transaction.module';
+export * from './transaction/transaction.service';

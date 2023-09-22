@@ -50,6 +50,11 @@ export enum Gender {
   FEMALE = 'FEMALE',
 }
 
+export enum TransactionType {
+  DEBIT = 'DEBIT',
+  CREDIT = 'CREDIT',
+}
+
 export enum EventCategory {
   WEDDING = 'WEDDING',
   BIRTHDAY = 'BIRTHDAY',
