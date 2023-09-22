@@ -22,6 +22,40 @@ dotenv.config();
 
 const logger = new Logger('UtilFunctions');
 
+export const convertHtmlToPDF = async (
+  html: string,
+  tag = 'NBA Manifest',
+  pdfName?: string,
+  data = {},
+): Promise<{ filename: string }> => {
+  try {
+    // eslint-disable-next-line @typescript-eslint/no-var-requires
+    const pdf = require('pdf-creator-node');
+    const fileName = `./uploads/${pdfName ?? uuidv4()}.pdf`;
+    const document = {
+      html,
+      data,
+      path: fileName,
+      type: '',
+    };
+    const options = {
+      format: 'A2',
+      orientation: 'landscape',
+      border: '10mm',
+      childProcessOptions: { env: { OPENSSL_CONF: '/dev/null' } },
+      header: {
+        height: '5mm',
+        contents: `<div style="text-align: center;font-size: 15px;">${tag}</div>`,
+      },
+      footer: { height: '28mm' },
+    };
+    return await pdf.create(document, options);
+  } catch (ex) {
+    logger.error(ex);
+    throw ex;
+  }
+};
+
 export const encryptData = <T>(rawData: T, encryptionKey: string): string => {
   let data: any = rawData;
   if (typeof rawData !== 'string') {

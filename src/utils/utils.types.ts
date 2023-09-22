@@ -17,6 +17,14 @@ export const ApiMessageList = {
   BAD_NUMERIC_ERROR_MESSAGE: 'Any numerical data must be > 0',
 };
 
+export class FileExportDataResponseDTO {
+  @ApiProperty()
+  fileName: string;
+
+  @ApiProperty()
+  path: string;
+}
+
 export class DefaultResponseType<T> {
   message: string;
   status: RequestStatus;

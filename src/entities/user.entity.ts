@@ -71,6 +71,10 @@ export class User extends Base {
   bvn: string;
 
   @ApiProperty({ nullable: true })
+  @Column({ type: 'varchar', length: 255, nullable: true })
+  bankCustomerId: string;
+
+  @ApiProperty({ nullable: true })
   @Column({ type: 'varchar', length: 20, nullable: true })
   virtualAccountName: string;
 
