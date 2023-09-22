@@ -51,8 +51,8 @@ export enum Gender {
 }
 
 export enum TransactionType {
-  DEBIT = 'DEBIT',
-  CREDIT = 'CREDIT',
+  DEBIT = 'Debit',
+  CREDIT = 'Credit',
 }
 
 export enum EventCategory {

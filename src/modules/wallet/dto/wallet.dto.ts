@@ -1,5 +1,5 @@
 import { ApiProperty, PickType } from '@nestjs/swagger';
-import { BaseResponseTypeDTO } from '@utils/index';
+import { BaseResponseTypeDTO, TransactionType } from '@utils/index';
 
 export class FindStatementOfAccountDTO {
   @ApiProperty()
@@ -213,4 +213,21 @@ export class WebhookResponseDTO {
 
   @ApiProperty()
   Request: number;
+}
+
+export class TransactionNotificationResponseDTO {
+  @ApiProperty()
+  accountNumber: string;
+
+  @ApiProperty({ enum: TransactionType })
+  transactionType: TransactionType;
+
+  @ApiProperty()
+  amount: number;
+
+  @ApiProperty()
+  narration: string;
+
+  @ApiProperty()
+  transactionDate: Date;
 }

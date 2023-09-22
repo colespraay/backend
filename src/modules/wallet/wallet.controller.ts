@@ -19,6 +19,7 @@ import {
   VerifyAccountExistenceResponseDTO,
   MakeWalletDebitTypeDTO,
   WebhookResponseDTO,
+  TransactionNotificationResponseDTO,
 } from './dto/wallet.dto';
 
 @ApiTags('wallet')
@@ -111,8 +112,7 @@ export class WalletController {
   // URL: https://playground.alat.ng/api-transaction-notification
   @Post('/wallet-notifications')
   async notificationAPI(
-    // @Req() req: Request,
-    @Body() body: any,
+    @Body() body: TransactionNotificationResponseDTO,
   ): Promise<void> {
     console.log({ body });
 
