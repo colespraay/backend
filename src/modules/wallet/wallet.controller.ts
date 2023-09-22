@@ -114,6 +114,6 @@ export class WalletController {
   async transactionNotificationWebhook(
     @Body() body: TransactionNotificationResponseDTO,
   ): Promise<void> {
-    await this.walletSrv.transactionNotificationWebhook(body);
+    await this.walletSrv.transactionNotificationWebhookHandler(body);
   }
 }

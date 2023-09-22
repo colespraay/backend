@@ -393,7 +393,7 @@ export class WalletService {
   }
 
   // URL: https://playground.alat.ng/api-transaction-notification
-  async transactionNotificationWebhook(
+  async transactionNotificationWebhookHandler(
     payload: TransactionNotificationResponseDTO,
   ): Promise<void> {
     try {
