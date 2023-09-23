@@ -5,7 +5,7 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { OnEvent } from '@nestjs/event-emitter';
-import { FindManyOptions, ILike } from 'typeorm';
+import { FindManyOptions, ILike, In, IsNull, Not } from 'typeorm';
 import { GenericService } from '@schematics/index';
 import { Transaction, User } from '@entities/index';
 import {
@@ -17,6 +17,7 @@ import {
   FileExportDataResponseDTO,
   groupBy,
   convertHtmlToPDF,
+  PaginationRequestType,
 } from '@utils/index';
 import {
   TransactionResponseDTO,
@@ -26,11 +27,61 @@ import {
 } from './dto/transaction.dto';
 import { UserService } from '../index';
 import { FindStatementOfAccountDTO } from '@modules/wallet/dto/wallet.dto';
+import { UsersResponseDTO } from '@modules/user/dto/user.dto';
 
 @Injectable()
 export class TransactionService extends GenericService(Transaction) {
   constructor(private readonly userSrv: UserService) {
     super();
+  }
+
+  // Recent recipients
+  async findRecentRecipients(
+    userId: string,
+    pagination: PaginationRequestType,
+  ): Promise<UsersResponseDTO> {
+    try {
+      checkForRequiredFields(['userId'], { userId });
+      validateUUIDField(userId, 'userId');
+      const transactions = await this.getRepo().find({
+        where: { userId, receiverUserId: Not(IsNull()) },
+        select: ['userId', 'receiverUserId'],
+      });
+      let receivers = transactions.map(({ receiverUserId }) => receiverUserId);
+      receivers = [...new Set(receivers)];
+
+      const filter: FindManyOptions<User> = {
+        where: { id: In(receivers) },
+        order: { firstName: 'ASC' },
+      };
+      if (pagination?.pageNumber && pagination?.pageSize) {
+        filter.skip = (pagination.pageNumber - 1) * pagination.pageSize;
+        filter.take = pagination.pageSize;
+        const { response, paginationControl } =
+          await calculatePaginationControls<User>(
+            this.userSrv.getRepo(),
+            filter,
+            pagination,
+          );
+        return {
+          success: true,
+          message: 'Records found',
+          code: HttpStatus.OK,
+          data: response,
+          paginationControl,
+        };
+      }
+      const users = await this.userSrv.getRepo().find(filter);
+      return {
+        success: true,
+        message: 'Records found',
+        code: HttpStatus.OK,
+        data: users,
+      };
+    } catch (ex) {
+      this.logger.error(ex);
+      throw ex;
+    }
   }
 
   @OnEvent('transaction.log', { async: true })

@@ -33,6 +33,7 @@ import {
   validatePastDate,
   validateUUIDField,
   sendSMS,
+  groupBy,
 } from '@utils/index';
 import { FindManyOptions, ILike, Not } from 'typeorm';
 import {
@@ -46,6 +47,7 @@ import {
   OTPMedium,
   UserResponseDTO,
   UsersResponseDTO,
+  GroupedUserListDTO,
 } from './dto/user.dto';
 import { AuthResponseDTO } from '@modules/auth/dto/auth.dto';
 import { AuthService } from '../index';
@@ -372,6 +374,29 @@ export class UserService extends GenericService(User) {
       }
       throw new NotFoundException('User not found');
     } catch (ex) {
+      this.logger.error(ex);
+      throw ex;
+    }
+  }
+
+  async groupUserList(): Promise<GroupedUserListDTO> {
+    try {
+      let users: any[] = await this.getRepo().find({
+        where: { status: true },
+      });
+      users = users.map((user) => ({
+        ...user,
+        firstLetter: (user.firstName ?? 'null').charAt(0),
+      }));
+      const data = groupBy(users, 'firstLetter');
+      return {
+        success: true,
+        code: HttpStatus.OK,
+        message: 'List found',
+        data,
+      };
+    } catch (ex) {
+      this.logger.error(ex);
       throw ex;
     }
   }

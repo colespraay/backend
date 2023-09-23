@@ -36,6 +36,7 @@ import {
   UpdateUserDTO,
   FilterUserDTO,
   OTPMedium,
+  GroupedUserListDTO,
 } from './dto/user.dto';
 import { UserService } from './user.service';
 
@@ -100,6 +101,15 @@ export class UserController {
     @Param('userTag') userTag: string,
   ): Promise<UserResponseDTO> {
     return await this.userSrv.findUserByUserTag(userTag);
+  }
+
+  @ApiOperation({ description: 'Group user list alphabetically' })
+  @ApiProduces('json')
+  @ApiConsumes('application/json')
+  @ApiResponse({ type: GroupedUserListDTO })
+  @Get('/group/user-list/alphabetically')
+  async groupUserList(): Promise<GroupedUserListDTO> {
+    return await this.userSrv.groupUserList();
   }
 
   @ApiOperation({ description: 'Find user by ID' })

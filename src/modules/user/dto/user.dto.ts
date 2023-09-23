@@ -204,3 +204,12 @@ export class ResendOTPPayloadDTO {
   @ApiProperty({ nullable: true })
   phoneNumber: string;
 }
+
+export class GroupedUserListPartial {
+  [key: string]: User[];
+}
+
+export class GroupedUserListDTO extends BaseResponseTypeDTO {
+  @ApiProperty({ type: GroupedUserListPartial })
+  data: GroupedUserListPartial;
+}

@@ -16,16 +16,21 @@ import {
   ApiResponse,
   ApiTags,
 } from '@nestjs/swagger';
-import { TransactionType } from '@utils/index';
-import { RolesGuard } from '@schematics/index';
+import {
+  DecodedTokenKey,
+  PaginationRequestType,
+  TransactionType,
+} from '@utils/index';
+import { CurrentUser, RolesGuard } from '@schematics/index';
 import { Response } from 'express';
 import { TransactionService } from './transaction.service';
-import { FindStatementOfAccountDTO } from '@modules/wallet/dto/wallet.dto';
 import {
   FindTransactionDTO,
   TransactionResponseDTO,
   TransactionsResponseDTO,
 } from './dto/transaction.dto';
+import { UsersResponseDTO } from '@modules/user/dto/user.dto';
+import { FindStatementOfAccountDTO } from '@modules/wallet/dto/wallet.dto';
 
 @ApiTags('transaction')
 @Controller('transaction')
@@ -73,6 +78,23 @@ export class TransactionController {
     @Query() payload: FindTransactionDTO,
   ): Promise<TransactionsResponseDTO> {
     return await this.transactionSrv.findTransactions(payload);
+  }
+
+  @ApiBearerAuth('JWT')
+  @UseGuards(RolesGuard)
+  @ApiQuery({ name: 'pageNumber', required: false })
+  @ApiQuery({ name: 'pageSize', required: false })
+  @ApiProduces('json')
+  @ApiOperation({
+    description: 'Find recent recipients logged-in user has made payments to',
+  })
+  @ApiResponse({ type: () => UsersResponseDTO })
+  @Get('/find/recent-recipients')
+  async findRecentRecipients(
+    @CurrentUser(DecodedTokenKey.USER_ID) userId: string,
+    @Query() pagination: PaginationRequestType,
+  ): Promise<UsersResponseDTO> {
+    return await this.transactionSrv.findRecentRecipients(userId, pagination);
   }
 
   @ApiOperation({
