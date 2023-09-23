@@ -381,19 +381,26 @@ export class UserService extends GenericService(User) {
 
   async groupUserList(): Promise<GroupedUserListDTO> {
     try {
-      let users: any[] = await this.getRepo().find({
+      let users: (User | any)[] = await this.getRepo().find({
         where: { status: true },
       });
       users = users.map((user) => ({
         ...user,
-        firstLetter: (user.firstName ?? 'null').charAt(0),
+        firstLetter: (user.firstName ?? 'null').toUpperCase().charAt(0),
       }));
       const data = groupBy(users, 'firstLetter');
+
+      const sortedData = {};
+      Object.keys(data)
+        .sort()
+        .forEach((key) => {
+          sortedData[key] = data[key];
+        });
       return {
         success: true,
         code: HttpStatus.OK,
         message: 'List found',
-        data,
+        data: sortedData,
       };
     } catch (ex) {
       this.logger.error(ex);
