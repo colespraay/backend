@@ -18,6 +18,7 @@ import {
   NotificationMessage,
   EventRSVP,
   Transaction,
+  Gifting,
 } from './index';
 
 @Entity({ name: 'USER' })
@@ -41,6 +42,10 @@ export class User extends Base {
   @ApiProperty()
   @Column({ type: 'varchar', length: 255 })
   password: string;
+
+  @ApiProperty()
+  @Column({ type: 'float', default: 0 })
+  walletBalance: number;
 
   @ApiProperty()
   @Column({ type: 'varchar', length: 10, nullable: true })
@@ -155,6 +160,12 @@ export class User extends Base {
     cascade: true,
   })
   receivedTransactions: Transaction[];
+
+  @ApiProperty({ type: () => [Gifting] })
+  @OneToMany(() => Gifting, ({ receiverUser }) => receiverUser, {
+    cascade: true,
+  })
+  gifts: Gifting[];
 
   @BeforeInsert()
   async beforeInsertHandler(): Promise<void> {

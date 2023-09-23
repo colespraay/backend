@@ -5,9 +5,10 @@ import {
   Logger,
   NotFoundException,
 } from '@nestjs/common';
-import { OnEvent } from '@nestjs/event-emitter';
+import { EventEmitter2, OnEvent } from '@nestjs/event-emitter';
 import {
   BaseResponseTypeDTO,
+  TransactionType,
   addLeadingZeroes,
   checkForRequiredFields,
   generateUniqueCode,
@@ -24,6 +25,7 @@ import {
   InterbankTransferChargeDTO,
   MakeWalletDebitTypeDTO,
   TransactionNotificationResponseDTO,
+  TransferResponseDTO,
   VerifyAccountExistenceDTO,
   VerifyAccountExistenceResponseDTO,
   VerifyAccountExistenceResponsePartial,
@@ -41,7 +43,10 @@ export class WalletService {
   );
   private xApiKey = String(process.env.WEMA_ATLAT_X_API_KEY);
 
-  constructor(private readonly userSrv: UserService) {}
+  constructor(
+    private readonly userSrv: UserService,
+    private readonly eventEmitterSrv: EventEmitter2,
+  ) {}
 
   // URL: https://playground.alat.ng/api-details#api=wallet-creation-api&operation=generate-account-for-partnership
   @OnEvent('create-wallet', { async: true })
@@ -99,6 +104,18 @@ export class WalletService {
           }
         }, 50000);
       }
+    } catch (ex) {
+      this.logger.error(ex);
+      throw ex;
+    }
+  }
+
+  async findBankByName(bankName: string): Promise<BankListPartialDTO> {
+    try {
+      const banks = await this.getBankLists();
+      return banks.data.find(
+        (bank) => bank.bankName?.toUpperCase() === bankName?.toUpperCase(),
+      );
     } catch (ex) {
       this.logger.error(ex);
       throw ex;
@@ -226,7 +243,7 @@ export class WalletService {
   async makeTransferFromWallet(
     sourceAccountNumber: string,
     payload: MakeWalletDebitTypeDTO,
-  ): Promise<BaseResponseTypeDTO> {
+  ): Promise<TransferResponseDTO> {
     try {
       checkForRequiredFields(
         [
@@ -291,6 +308,13 @@ export class WalletService {
         success: true,
         message: apiResponse.result.message,
         code: HttpStatus.OK,
+        data: {
+          narration: apiResponse.result.narration,
+          orinalTxnTransactionDate: apiResponse.result.orinalTxnTransactionDate,
+          platformTransactionReference:
+            apiResponse.result.platformTransactionReference,
+          transactionReference: apiResponse.result.transactionReference,
+        },
       };
     } catch (ex) {
       this.logger.error(ex);
@@ -398,13 +422,41 @@ export class WalletService {
   ): Promise<void> {
     try {
       console.log({ body: payload });
-      // {
-      //   "accountNumber": "{accountNumber}",
-      //   "transactionType": "Credit",
-      //   "amount": 10000,
-      //   "narration": "Custom narration",
-      //   "transactionDate": "1990-07-09T08:34:37.504Z"
-      // }
+      const user = await this.userSrv.findOne({
+        virtualAccountNumber: payload.accountNumber,
+      });
+      if (user?.id) {
+        switch (payload.transactionType) {
+          case TransactionType.CREDIT:
+            this.eventEmitterSrv.emit('transaction.log', {
+              type: TransactionType.CREDIT,
+              userId: user.id,
+              narration: payload.narration,
+              amount: payload.amount,
+              transactionDate: payload.transactionDate,
+              currentBalanceBeforeTransaction: user.walletBalance,
+            });
+            const accountBalance = user.walletBalance + payload.amount;
+            await this.userSrv
+              .getRepo()
+              .update({ id: user.id }, { walletBalance: accountBalance });
+            break;
+          case TransactionType.DEBIT:
+            this.eventEmitterSrv.emit('transaction.log', {
+              type: TransactionType.DEBIT,
+              userId: user.id,
+              narration: payload.narration,
+              amount: payload.amount,
+              transactionDate: payload.transactionDate,
+              currentBalanceBeforeTransaction: user.walletBalance,
+            });
+            const debitAccountBalance = user.walletBalance - payload.amount;
+            await this.userSrv
+              .getRepo()
+              .update({ id: user.id }, { walletBalance: debitAccountBalance });
+            break;
+        }
+      }
     } catch (ex) {
       this.logger.error(ex);
       throw ex;

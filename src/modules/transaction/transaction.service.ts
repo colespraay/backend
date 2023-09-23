@@ -33,7 +33,7 @@ export class TransactionService extends GenericService(Transaction) {
     super();
   }
 
-  @OnEvent('transaction.log')
+  @OnEvent('transaction.log', { async: true })
   async createTransaction(
     payload: CreateTransactionDTO,
   ): Promise<TransactionResponseDTO> {
@@ -42,8 +42,8 @@ export class TransactionService extends GenericService(Transaction) {
         [
           'type',
           'userId',
-          'reference',
           'narration',
+          'transactionDate',
           'amount',
           'currentBalanceBeforeTransaction',
         ],

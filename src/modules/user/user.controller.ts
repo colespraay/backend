@@ -91,6 +91,17 @@ export class UserController {
     return await this.userSrv.findUserById(userId);
   }
 
+  @ApiOperation({ description: 'Find user by Tag' })
+  @ApiProduces('json')
+  @ApiConsumes('application/json')
+  @ApiResponse({ type: UserResponseDTO })
+  @Get('/find-by-tag/:userTag')
+  async findUserByUserTag(
+    @Param('userTag') userTag: string,
+  ): Promise<UserResponseDTO> {
+    return await this.userSrv.findUserByUserTag(userTag);
+  }
+
   @ApiOperation({ description: 'Find user by ID' })
   @ApiProduces('json')
   @ApiConsumes('application/json')

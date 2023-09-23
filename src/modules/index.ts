@@ -33,4 +33,7 @@ export * from './wallet/wallet.service';
 // [Transaction]
 export * from './transaction/transaction.controller';
 export * from './transaction/transaction.module';
-export * from './transaction/transaction.service';
+// [Gifting]
+export * from './gifting/gifting.controller';
+export * from './gifting/gifting.module';
+export * from './gifting/gifting.service';

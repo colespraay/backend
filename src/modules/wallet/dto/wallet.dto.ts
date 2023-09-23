@@ -112,8 +112,8 @@ export class FindTransferChargeDTO extends BaseResponseTypeDTO {
 }
 
 export class MakeWalletDebitTypeDTO {
-  @ApiProperty()
-  securityInfo: string;
+  @ApiProperty({ nullable: true })
+  securityInfo?: string;
 
   @ApiProperty()
   amount: number;
@@ -230,4 +230,23 @@ export class TransactionNotificationResponseDTO {
 
   @ApiProperty()
   transactionDate: Date;
+}
+
+export class TransferResponsePartial {
+  @ApiProperty()
+  narration: string;
+
+  @ApiProperty()
+  transactionReference: string;
+
+  @ApiProperty()
+  platformTransactionReference: string;
+
+  @ApiProperty()
+  orinalTxnTransactionDate: string;
+}
+
+export class TransferResponseDTO extends BaseResponseTypeDTO {
+  @ApiProperty({ type: () => TransferResponsePartial })
+  data: TransferResponsePartial;
 }

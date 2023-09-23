@@ -33,11 +33,14 @@ export class CreateTransactionDTO {
   @ApiProperty()
   narration: string;
 
-  @ApiProperty()
-  reference: string;
-
   @ApiProperty({ enum: TransactionType })
   type: TransactionType;
+
+  @ApiProperty()
+  transactionDate: string;
+
+  @ApiProperty({ nullable: true })
+  reference?: string;
 }
 
 export class FindTransactionDTO extends PaginationRequestType {

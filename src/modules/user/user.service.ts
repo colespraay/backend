@@ -357,6 +357,25 @@ export class UserService extends GenericService(User) {
     }
   }
 
+  async findUserByUserTag(userTag: string): Promise<UserResponseDTO> {
+    try {
+      const data = await this.getRepo().findOne({
+        where: { userTag },
+      });
+      if (data?.id) {
+        return {
+          success: true,
+          code: HttpStatus.OK,
+          data,
+          message: 'User found',
+        };
+      }
+      throw new NotFoundException('User not found');
+    } catch (ex) {
+      throw ex;
+    }
+  }
+
   async findUsers(
     filterOptions: FilterUserDTO,
     pagination?: PaginationRequestType,

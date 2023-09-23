@@ -1,7 +1,14 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { Column, Entity, JoinColumn, ManyToOne, BeforeInsert } from 'typeorm';
-import { TransactionType } from '@utils/index';
-import { Base, User, uuidV4 } from './index';
+import {
+  Column,
+  Entity,
+  JoinColumn,
+  OneToMany,
+  ManyToOne,
+  BeforeInsert,
+} from 'typeorm';
+import { TransactionType, generateUniqueCode } from '@utils/index';
+import { Base, User, Gifting, uuidV4 } from './index';
 
 @Entity({ name: 'TRANSACTION' })
 export class Transaction extends Base {
@@ -48,6 +55,10 @@ export class Transaction extends Base {
   type: TransactionType;
 
   @ApiProperty()
+  @Column({ type: 'varchar', length: 100 })
+  transactionDate: string;
+
+  @ApiProperty()
   @Column({ type: 'varchar', length: 20 })
   createdTime: string;
 
@@ -55,12 +66,21 @@ export class Transaction extends Base {
   @Column({ type: 'varchar', length: 20 })
   createdDate: string;
 
+  @ApiProperty({ type: () => [Gifting] })
+  @OneToMany(() => Gifting, ({ transaction }) => transaction, {
+    cascade: true,
+  })
+  gifts: Gifting[];
+
   @BeforeInsert()
   beforeInsertHandler(): void {
     this.id = uuidV4();
 
+    if (!this.reference) {
+      this.reference = `#Spraay-Ref-${generateUniqueCode(8)}`;
+    }
     // Create time and date for transaction to enable faster filtering
-    const dateTime = new Date();
+    const dateTime = new Date(this.transactionDate);
     this.createdDate = `${dateTime.getDate()}/${
       dateTime.getMonth() + 1
     }/${dateTime.getFullYear()}`;
