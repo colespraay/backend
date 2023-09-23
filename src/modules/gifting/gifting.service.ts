@@ -11,6 +11,7 @@ import { GenericService } from '@schematics/index';
 import {
   TransactionType,
   checkForRequiredFields,
+  validateUUIDField,
   verifyPasswordHash,
 } from '@utils/index';
 import { UserService, WalletService } from '../index';
@@ -32,11 +33,11 @@ export class GiftingService extends GenericService(Gifting) {
     userId: string,
   ): Promise<GiftingResponseDTO> {
     try {
-      payload.transactionPin;
       checkForRequiredFields(
         ['amount', 'userId', 'receiverTag', 'transactionPin'],
         { ...payload, userId },
       );
+      validateUUIDField(userId, 'userId');
       // Check account balance
       const user = await this.userSrv.findUserById(userId);
       const isPinValid = await verifyPasswordHash(
@@ -44,7 +45,7 @@ export class GiftingService extends GenericService(Gifting) {
         user.data.transactionPin,
       );
       if (!isPinValid) {
-        throw new UnauthorizedException('Invalid transaction pin');
+        throw new UnauthorizedException('Invalid/unknown transaction pin');
       }
       if (payload.amount > user.data.walletBalance) {
         throw new ConflictException('Insufficient balance');
