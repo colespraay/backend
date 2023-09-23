@@ -47,8 +47,9 @@ export class TransactionService extends GenericService(Transaction) {
         where: { userId, receiverUserId: Not(IsNull()) },
         select: ['userId', 'receiverUserId'],
       });
-      let receivers = transactions.map(({ receiverUserId }) => receiverUserId);
-      receivers = [...new Set(receivers)];
+      const receivers = [
+        ...new Set(transactions.map(({ receiverUserId }) => receiverUserId)),
+      ];
 
       const filter: FindManyOptions<User> = {
         where: { id: In(receivers) },
