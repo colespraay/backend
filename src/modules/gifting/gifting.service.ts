@@ -1,5 +1,6 @@
 import {
   BadGatewayException,
+  ConflictException,
   HttpStatus,
   Injectable,
   NotFoundException,
@@ -46,7 +47,7 @@ export class GiftingService extends GenericService(Gifting) {
         throw new UnauthorizedException('Invalid transaction pin');
       }
       if (payload.amount > user.data.walletBalance) {
-        throw new NotFoundException('Insufficient balance in your wallet');
+        throw new ConflictException('Insufficient balance');
       }
       const receiver = await this.userSrv.findOne({
         userTag: payload.receiverTag,
