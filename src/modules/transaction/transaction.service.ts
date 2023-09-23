@@ -38,7 +38,7 @@ export class TransactionService extends GenericService(Transaction) {
   // Recent recipients
   async findRecentRecipients(
     userId: string,
-    pagination: PaginationRequestType,
+    pagination?: PaginationRequestType,
   ): Promise<UsersResponseDTO> {
     try {
       checkForRequiredFields(['userId'], { userId });
