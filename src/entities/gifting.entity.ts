@@ -1,6 +1,6 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { Column, Entity, JoinColumn, ManyToOne } from 'typeorm';
-import { User, Base, Transaction } from './index';
+import { Column, Entity, JoinColumn, ManyToOne, BeforeInsert } from 'typeorm';
+import { User, Base, Transaction, uuidV4 } from './index';
 
 @Entity({ name: 'GIFTING' })
 export class Gifting extends Base {
@@ -29,4 +29,9 @@ export class Gifting extends Base {
     onUpdate: 'CASCADE',
   })
   transaction: Transaction;
+
+  @BeforeInsert()
+  beforeInsertHandler(): void {
+    this.id = uuidV4();
+  }
 }
