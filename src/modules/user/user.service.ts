@@ -9,6 +9,8 @@ import {
   InternalServerErrorException,
   NotFoundException,
 } from '@nestjs/common';
+import { EventEmitter2 } from '@nestjs/event-emitter';
+import { FindManyOptions, ILike, Not } from 'typeorm';
 import { User } from '@entities/index';
 import { GenericService } from '@schematics/index';
 import {
@@ -35,7 +37,6 @@ import {
   sendSMS,
   groupBy,
 } from '@utils/index';
-import { FindManyOptions, ILike, Not } from 'typeorm';
 import {
   ChangePasswordDTO,
   CreateUserDTO,
@@ -49,9 +50,8 @@ import {
   UsersResponseDTO,
   GroupedUserListDTO,
 } from './dto/user.dto';
-import { AuthResponseDTO } from '@modules/auth/dto/auth.dto';
 import { AuthService } from '../index';
-import { EventEmitter2 } from '@nestjs/event-emitter';
+import { AuthResponseDTO } from '@modules/auth/dto/auth.dto';
 
 @Injectable()
 export class UserService extends GenericService(User) {
