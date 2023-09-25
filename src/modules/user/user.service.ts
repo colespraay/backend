@@ -119,6 +119,61 @@ export class UserService extends GenericService(User) {
     }
   }
 
+  async doesUserHaveEnoughBalanceInWallet(
+    userId: string,
+    withdrawalSum: number,
+  ): Promise<boolean> {
+    try {
+      const user = await this.getRepo().findOne({
+        where: { id: userId },
+        select: ['id', 'walletBalance'],
+      });
+      if (user?.id) {
+        throw new NotFoundException('User not found');
+      }
+      return withdrawalSum > user.walletBalance ? false : true;
+    } catch (ex) {
+      this.logger.error(ex);
+      throw ex;
+    }
+  }
+
+  async getCurrentWalletBalance(userId: string): Promise<number> {
+    try {
+      const user = await this.getRepo().findOne({
+        where: { id: userId },
+        select: ['id', 'walletBalance'],
+      });
+      if (user?.id) {
+        throw new NotFoundException('User not found');
+      }
+      return user.walletBalance;
+    } catch (ex) {
+      this.logger.error(ex);
+      throw ex;
+    }
+  }
+
+  async verifyTransactionPin(userId: string, pin: string): Promise<boolean> {
+    try {
+      const user = await this.getRepo().findOne({
+        where: { id: userId },
+        select: ['id'],
+      });
+      if (user?.id) {
+        throw new NotFoundException('User not found');
+      }
+      const isValid = await verifyPasswordHash(user.transactionPin, pin);
+      if (!isValid) {
+        throw new BadRequestException('Invalid pin');
+      }
+      return true;
+    } catch (ex) {
+      this.logger.error(ex);
+      throw ex;
+    }
+  }
+
   async verifyCodeAfterSignup(
     uniqueVerificationCode: string,
     userId: string,

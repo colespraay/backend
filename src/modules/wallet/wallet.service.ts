@@ -113,9 +113,13 @@ export class WalletService {
   async findBankByName(bankName: string): Promise<BankListPartialDTO> {
     try {
       const banks = await this.getBankLists();
-      return banks.data.find(
+      const bank = banks.data.find(
         (bank) => bank.bankName?.toUpperCase() === bankName?.toUpperCase(),
       );
+      if (!bank?.bankCode) {
+        throw new NotFoundException(`Bank with name: ${bankName} not found`);
+      }
+      return bank;
     } catch (ex) {
       this.logger.error(ex);
       throw ex;
