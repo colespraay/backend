@@ -7,5 +7,6 @@ export * from './event-invite.entity';
 export * from './event-spray.entity';
 export * from './transaction.entity';
 export * from './gifting.entity';
+export * from './user-account.entity';
 export * from './notification-message.entity';
 export { v4 as uuidV4 } from 'uuid';

@@ -19,6 +19,7 @@ import {
   EventRSVP,
   Transaction,
   Gifting,
+  UserAccount,
 } from './index';
 
 @Entity({ name: 'USER' })
@@ -160,6 +161,10 @@ export class User extends Base {
     cascade: true,
   })
   receivedTransactions: Transaction[];
+
+  @ApiProperty({ type: () => [UserAccount] })
+  @OneToMany(() => UserAccount, ({ user }) => user, { cascade: true })
+  userAccounts: UserAccount[];
 
   @ApiProperty({ type: () => [Gifting] })
   @OneToMany(() => Gifting, ({ receiverUser }) => receiverUser, {
