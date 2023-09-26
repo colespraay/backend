@@ -25,6 +25,7 @@ import {
   MakeWalletDebitTypeDTO,
   TransactionNotificationResponseDTO,
   TransferResponseDTO,
+  VerifiesAccountDetailDTO,
   VerifyAccountExistenceDTO,
   VerifyAccountExistenceResponseDTO,
   VerifyAccountExistenceResponsePartial,
@@ -172,6 +173,76 @@ export class WalletService {
     }
   }
 
+  async verifyExternalAccountNumber(
+    userBankCode: string,
+    userAccountNumber: string,
+  ): Promise<VerifiesAccountDetailDTO> {
+    try {
+      // Verify destination Account
+      const destinationAccountEnquiryUrl = `https://apiplayground.alat.ng/debit-wallet/api/Shared/AccountNameEnquiry/${userBankCode}/${userAccountNumber}?channelId=${String(
+        process.env.WEMA_ATLAT_X_API_KEY,
+      )}`;
+      const destinationAccount = await httpGet<any>(
+        destinationAccountEnquiryUrl,
+        {
+          'Cache-Control': 'no-cache',
+          'Ocp-Apim-Subscription-Key': String(
+            process.env.WEMA_ATLAT_WALLET_CREATION_SUB_KEY,
+          ),
+        },
+      );
+      if (!destinationAccount?.result) {
+        throw new BadGatewayException('Could not verify destination account');
+      }
+      const {
+        result: { accountName, accountNumber, bankCode, currency },
+      } = destinationAccount;
+      return {
+        accountName,
+        accountNumber,
+        bankCode,
+        currency,
+      };
+    } catch (ex) {
+      this.logger.error(ex);
+      throw ex;
+    }
+  }
+
+  async verifyWalletAccountNumber(
+    userAccountNumber: string,
+  ): Promise<VerifiesAccountDetailDTO> {
+    try {
+      // Verify destination Account
+      const destinationAccountEnquiryUrl = `https://apiplayground.alat.ng/debit-wallet/api/Shared/AccountNameEnquiry/Wallet/${userAccountNumber}`;
+      const destinationAccount = await httpGet<any>(
+        destinationAccountEnquiryUrl,
+        {
+          'Cache-Control': 'no-cache',
+          access: String(process.env.WEMA_ATLAT_X_API_KEY),
+          'Ocp-Apim-Subscription-Key': String(
+            process.env.WEMA_ATLAT_WALLET_CREATION_SUB_KEY,
+          ),
+        },
+      );
+      if (!destinationAccount?.result) {
+        throw new BadGatewayException('Could not verify wallet');
+      }
+      const {
+        result: { accountName, accountNumber, bankCode, currency },
+      } = destinationAccount;
+      return {
+        accountName,
+        accountNumber,
+        bankCode,
+        currency,
+      };
+    } catch (ex) {
+      this.logger.error(ex);
+      throw ex;
+    }
+  }
+
   // URL: https://playground.alat.ng/api-details#api=wallet-transfer-api&operation=get-api-shared-accountnameenquiry-bankcode-accountnumber
   async verifyAccountExistence(
     sourceAccountNumber: string,
@@ -246,6 +317,7 @@ export class WalletService {
   async makeTransferFromWallet(
     sourceAccountNumber: string,
     payload: MakeWalletDebitTypeDTO,
+    env = 'TEST',
   ): Promise<TransferResponseDTO> {
     try {
       checkForRequiredFields(
@@ -260,50 +332,51 @@ export class WalletService {
         ],
         { ...payload, sourceAccountNumber },
       );
-      const url =
-        'https://apiplayground.alat.ng/debit-wallet/api/Shared/ProcessClientTransfer';
-      const apiResponse = await httpPost<any, any>(
-        url,
-        {
-          // securityInfo: 'string',
-          amount: payload.amount,
-          destinationBankCode: payload.destinationBankCode,
-          destinationBankName: payload.destinationBankName,
-          destinationAccountNumber: payload.destinationAccountNumber,
-          destinationAccountName: payload.destinationAccountName,
-          sourceAccountNumber: sourceAccountNumber,
-          narration:
-            payload.narration ??
-            `Debit - Destination: [${payload.destinationBankName}] ${payload.destinationAccountNumber}`,
-          transactionReference: `#Spraay-Ref-${generateUniqueCode(8)}`,
-          useCustomNarration: true,
+      const transactionReference = `#Spraay-Ref-${generateUniqueCode(8)}`;
+      const narration =
+        payload.narration ??
+        `Debit - Destination: [${payload.destinationBankName}] ${payload.destinationAccountNumber}`;
+      let apiResponse = {
+        result: {
+          status: 'Successful',
+          message: 'Transfer successful',
+          narration,
+          transactionReference,
+          platformTransactionReference: transactionReference,
+          transactionStan: 'string',
+          orinalTxnTransactionDate: 'string',
         },
-        {
-          access: String(process.env.WEMA_ATLAT_X_API_KEY),
-          'Cache-Control': 'no-cache',
-          'Ocp-Apim-Subscription-Key': String(
-            process.env.WEMA_ATLAT_WALLET_CREATION_SUB_KEY,
-          ),
-        },
-      );
-      /**
-       * Sample Response: 
-       * {
-              "result": {
-                  "status": "string",
-                  "message": "string",
-                  "narration": "string",
-                  "transactionReference": "string",
-                  "platformTransactionReference": "string",
-                  "transactionStan": "string",
-                  "orinalTxnTransactionDate": "string"
-              },
-              "errorMessage": "string",
-              "errorMessages": ["string"],
-              "hasError": true,
-              "timeGenerated": "string"
-          }
-       */
+        errorMessage: null,
+        errorMessages: [],
+        hasError: true,
+        timeGenerated: 'string',
+      };
+      if (env !== 'TEST') {
+        const url =
+          'https://apiplayground.alat.ng/debit-wallet/api/Shared/ProcessClientTransfer';
+        apiResponse = await httpPost<any, any>(
+          url,
+          {
+            // securityInfo: 'string',
+            amount: payload.amount,
+            destinationBankCode: payload.destinationBankCode,
+            destinationBankName: payload.destinationBankName,
+            destinationAccountNumber: payload.destinationAccountNumber,
+            destinationAccountName: payload.destinationAccountName,
+            sourceAccountNumber: sourceAccountNumber,
+            narration,
+            transactionReference,
+            useCustomNarration: true,
+          },
+          {
+            access: String(process.env.WEMA_ATLAT_X_API_KEY),
+            'Cache-Control': 'no-cache',
+            'Ocp-Apim-Subscription-Key': String(
+              process.env.WEMA_ATLAT_WALLET_CREATION_SUB_KEY,
+            ),
+          },
+        );
+      }
       if (!apiResponse) {
         throw new BadGatewayException('Debit payment failed');
       }

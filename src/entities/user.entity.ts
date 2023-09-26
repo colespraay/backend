@@ -46,7 +46,8 @@ export class User extends Base {
   password: string;
 
   @ApiProperty()
-  @Column({ type: 'float', default: 0 })
+  @Column({ type: 'float', default: 10000 })
+  // @Column({ type: 'float', default: 0 })
   walletBalance: number;
 
   @ApiProperty()
@@ -178,7 +179,6 @@ export class User extends Base {
     cascade: true,
   })
   withdrawals: Withdrawal[];
-
 
   @BeforeInsert()
   async beforeInsertHandler(): Promise<void> {

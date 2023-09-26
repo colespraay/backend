@@ -250,3 +250,17 @@ export class TransferResponseDTO extends BaseResponseTypeDTO {
   @ApiProperty({ type: () => TransferResponsePartial })
   data: TransferResponsePartial;
 }
+
+export class VerifiesAccountDetailDTO {
+  @ApiProperty()
+  bankCode: string;
+
+  @ApiProperty()
+  accountName: string;
+
+  @ApiProperty()
+  accountNumber: string;
+
+  @ApiProperty()
+  currency: string;
+}

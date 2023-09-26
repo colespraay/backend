@@ -53,6 +53,13 @@ export class WithdrawalService extends GenericService(Withdrawal) {
       if (payload.amount > currentBalance) {
         throw new ConflictException('Insufficient balance');
       }
+      // Verify account existence
+      const destinationAccount =
+        await this.walletSrv.verifyExternalAccountNumber(
+          payload.bankCode,
+          payload.accountNumber,
+        );
+      this.logger.log({ destinationAccount });
       await this.userSrv.verifyTransactionPin(userId, payload.transactionPin);
 
       const bank = await this.userAccountSrv.findOne({
@@ -65,19 +72,19 @@ export class WithdrawalService extends GenericService(Withdrawal) {
         await this.userAccountSrv.create<Partial<UserAccount>>({
           bankCode: payload.bankCode,
           bankName: payload.bankName,
-          accountName: '',
+          accountName: destinationAccount.accountName,
           accountNumber: payload.accountNumber,
           userId,
         });
       }
-
       const user = await this.userSrv.findUserById(userId);
+
       // make transfer via wema bank
       const debitResponse = await this.walletSrv.makeTransferFromWallet(
         user.data.virtualAccountNumber,
         {
           amount: payload.amount,
-          destinationAccountName: '',
+          destinationAccountName: destinationAccount.accountName,
           destinationAccountNumber: payload.accountNumber,
           destinationBankCode: payload.bankCode,
           destinationBankName: payload.bankName,

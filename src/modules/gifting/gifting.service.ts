@@ -64,6 +64,10 @@ export class GiftingService extends GenericService(Gifting) {
       if (!destinationBank?.bankCode) {
         throw new BadGatewayException('Could not verify destination bank');
       }
+      const walletVerified = await this.walletSrv.verifyWalletAccountNumber(
+        receiver.virtualAccountNumber,
+      );
+      this.logger.log({ walletVerified });
       // make transfer via wema bank
       const debitResponse = await this.walletSrv.makeTransferFromWallet(
         user.data.virtualAccountNumber,

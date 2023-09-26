@@ -74,6 +74,10 @@ export class EventSpraayService extends GenericService(EventSpraay) {
       const currentWalletBalance = await this.userSrv.getCurrentWalletBalance(
         user.id,
       );
+      const walletVerified = await this.walletSrv.verifyWalletAccountNumber(
+        event.data.user.virtualAccountNumber,
+      );
+      this.logger.log({ walletVerified });
       const narration = `Spraayed by ${user?.firstName} ${user?.lastName}`;
       const debitTransaction = await this.walletSrv.makeTransferFromWallet(
         user.virtualAccountNumber,
