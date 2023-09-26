@@ -806,6 +806,30 @@ export class UserService extends GenericService(User) implements OnModuleInit {
     }
   }
 
+  @OnEvent('wallet.debit', { async: true })
+  async debitUserWallet(
+    payload: CreditUserWalletDTO,
+  ): Promise<BaseResponseTypeDTO> {
+    try {
+      checkForRequiredFields(['amount', 'userId'], payload);
+      validateUUIDField(payload.userId, 'userId');
+      const user = await this.findUserById(payload.userId);
+      const newBalance = user.data.walletBalance - payload.amount;
+      await this.getRepo().update(
+        { id: payload.userId },
+        { walletBalance: newBalance },
+      );
+      return {
+        success: true,
+        code: HttpStatus.OK,
+        message: 'Wallet credited',
+      };
+    } catch (ex) {
+      this.logger.error(ex);
+      throw ex;
+    }
+  }
+
   private async createBankAccount(
     { firstName, lastName }: User,
     env = 'TEST',
