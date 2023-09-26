@@ -7,7 +7,6 @@ import {
 } from '@nestjs/common';
 import { EventEmitter2, OnEvent } from '@nestjs/event-emitter';
 import {
-  BaseResponseTypeDTO,
   TransactionType,
   addLeadingZeroes,
   checkForRequiredFields,

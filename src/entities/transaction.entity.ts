@@ -8,7 +8,7 @@ import {
   BeforeInsert,
 } from 'typeorm';
 import { TransactionType, generateUniqueCode } from '@utils/index';
-import { Base, User, Gifting, uuidV4, EventSpraay } from './index';
+import { Base, User, Gifting, uuidV4, EventSpraay, Withdrawal } from './index';
 
 @Entity({ name: 'TRANSACTION' })
 export class Transaction extends Base {
@@ -77,6 +77,12 @@ export class Transaction extends Base {
     cascade: true,
   })
   spraays: EventSpraay[];
+
+  @ApiProperty({ type: () => [Withdrawal] })
+  @OneToMany(() => Withdrawal, ({ transaction }) => transaction, {
+    cascade: true,
+  })
+  withdrawals: Withdrawal[];
 
   @BeforeInsert()
   beforeInsertHandler(): void {

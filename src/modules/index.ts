@@ -37,6 +37,10 @@ export * from './transaction/transaction.module';
 export * from './gifting/gifting.controller';
 export * from './gifting/gifting.module';
 export * from './gifting/gifting.service';
+// [Withdrawal]
+export * from './withdrawal/withdrawal.controller';
+export * from './withdrawal/withdrawal.module';
+export * from './withdrawal/withdrawal.service';
 // [UserAccount]
 export * from './user-account/user-account.controller';
 export * from './user-account/user-account.module';

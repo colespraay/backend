@@ -1,4 +1,11 @@
-import { Get, Param, Query, Controller, UseGuards } from '@nestjs/common';
+import {
+  Get,
+  Param,
+  Query,
+  Controller,
+  UseGuards,
+  ParseUUIDPipe,
+} from '@nestjs/common';
 import {
   ApiBearerAuth,
   ApiConsumes,
@@ -45,7 +52,7 @@ export class UserAccountController {
   @ApiResponse({ type: UserAccountResponseDTO })
   @Get('/:userAccountId')
   async findUserAccountById(
-    @Param('userAccountId') userAccountId: string,
+    @Param('userAccountId', ParseUUIDPipe) userAccountId: string,
   ): Promise<UserAccountResponseDTO> {
     return await this.userAccountSrv.findUserAccountById(userAccountId);
   }

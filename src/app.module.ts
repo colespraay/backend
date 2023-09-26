@@ -26,6 +26,7 @@ import {
   EventRSVPModule,
   TransactionModule,
   NotificationMessageModule,
+  WithdrawalModule,
 } from '@modules/index';
 import { AppService } from './app.service';
 import ormConfig from './orm.config';
@@ -41,6 +42,7 @@ import ormConfig from './orm.config';
     AuthModule,
     UserModule,
     GiftingModule,
+    WithdrawalModule,
     UserAccountModule,
     EventModule,
     EventInviteModule,

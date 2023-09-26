@@ -20,6 +20,7 @@ import {
   Transaction,
   Gifting,
   UserAccount,
+  Withdrawal,
 } from './index';
 
 @Entity({ name: 'USER' })
@@ -171,6 +172,13 @@ export class User extends Base {
     cascade: true,
   })
   gifts: Gifting[];
+
+  @ApiProperty({ type: () => [Withdrawal] })
+  @OneToMany(() => Withdrawal, ({ user }) => user, {
+    cascade: true,
+  })
+  withdrawals: Withdrawal[];
+
 
   @BeforeInsert()
   async beforeInsertHandler(): Promise<void> {
