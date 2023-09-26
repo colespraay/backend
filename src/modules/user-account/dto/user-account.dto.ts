@@ -6,6 +6,14 @@ import {
   PaginationResponseType,
 } from '@utils/index';
 
+export class CreateUserBankAccountDTO {
+  @ApiProperty()
+  bankCode: string;
+
+  @ApiProperty()
+  accountNumber: string;
+}
+
 export class UserAccountResponseDTO extends BaseResponseTypeDTO {
   @ApiProperty({ type: () => UserAccount })
   data: UserAccount;

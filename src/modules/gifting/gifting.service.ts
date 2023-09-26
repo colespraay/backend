@@ -6,6 +6,7 @@ import {
   NotFoundException,
   UnauthorizedException,
 } from '@nestjs/common';
+import { EventEmitter2 } from '@nestjs/event-emitter';
 import { Gifting, Transaction } from '@entities/index';
 import { GenericService } from '@schematics/index';
 import {
@@ -23,6 +24,7 @@ export class GiftingService extends GenericService(Gifting) {
   constructor(
     private readonly userSrv: UserService,
     private readonly walletSrv: WalletService,
+    private readonly eventEmitterSrv: EventEmitter2,
     private readonly transactionSrv: TransactionService,
   ) {
     super();
@@ -67,10 +69,13 @@ export class GiftingService extends GenericService(Gifting) {
       if (!destinationBank?.bankCode) {
         throw new BadGatewayException('Could not verify destination bank');
       }
-      const walletVerified = await this.walletSrv.verifyWalletAccountNumber(
-        receiver.virtualAccountNumber,
-      );
-      this.logger.log({ walletVerified });
+
+      // TODO: Uncomment for controlled test
+      // const walletVerified = await this.walletSrv.verifyWalletAccountNumber(
+      //   receiver.virtualAccountNumber,
+      // );
+      // this.logger.log({ walletVerified });
+
       // make transfer via wema bank
       const debitResponse = await this.walletSrv.makeTransferFromWallet(
         user.data.virtualAccountNumber,
@@ -108,6 +113,11 @@ export class GiftingService extends GenericService(Gifting) {
         await this.userSrv
           .getRepo()
           .update({ id: user.data.id }, { walletBalance: newAccountBalance });
+        // Credit account of event owner
+        this.eventEmitterSrv.emit('wallet.credit', {
+          userId: receiver.id,
+          amount: payload.amount,
+        });
         return {
           success: true,
           code: HttpStatus.CREATED,

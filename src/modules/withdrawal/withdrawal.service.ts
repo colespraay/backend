@@ -111,6 +111,10 @@ export class WithdrawalService extends GenericService(Withdrawal) {
           transactionId: createdTransaction.id,
           userId,
         });
+        const newAccountBalance = user.data.walletBalance - payload.amount;
+        await this.userSrv
+          .getRepo()
+          .update({ id: user.data.id }, { walletBalance: newAccountBalance });
         return {
           success: true,
           code: HttpStatus.CREATED,

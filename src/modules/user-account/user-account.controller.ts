@@ -2,6 +2,8 @@ import {
   Get,
   Param,
   Query,
+  Body,
+  Post,
   Controller,
   UseGuards,
   ParseUUIDPipe,
@@ -19,6 +21,7 @@ import { CurrentUser, RolesGuard } from '@schematics/index';
 import { DecodedTokenKey } from '@utils/index';
 import { UserAccountService } from './user-account.service';
 import {
+  CreateUserBankAccountDTO,
   FilterUserAccountsDTO,
   UserAccountResponseDTO,
   UserAccountsResponseDTO,
@@ -30,6 +33,18 @@ import {
 @Controller('user-account')
 export class UserAccountController {
   constructor(private readonly userAccountSrv: UserAccountService) {}
+
+  @ApiOperation({ description: 'Create bank account record' })
+  @ApiProduces('json')
+  @ApiConsumes('application/json')
+  @ApiResponse({ type: UserAccountResponseDTO })
+  @Post()
+  async createUserAccount(
+    @Body() payload: CreateUserBankAccountDTO,
+    @CurrentUser(DecodedTokenKey.USER_ID) userId: string,
+  ): Promise<UserAccountResponseDTO> {
+    return await this.userAccountSrv.createUserAccount(payload, userId);
+  }
 
   @ApiQuery({ name: 'searchTerm', required: false })
   @ApiQuery({ name: 'pageSize', required: false })

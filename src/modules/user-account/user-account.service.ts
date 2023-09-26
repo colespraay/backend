@@ -8,13 +8,55 @@ import {
   validateUUIDField,
 } from '@utils/index';
 import {
+  CreateUserBankAccountDTO,
   FilterUserAccountsDTO,
   UserAccountResponseDTO,
   UserAccountsResponseDTO,
 } from './dto/user-account.dto';
+import { WalletService } from '..';
 
 @Injectable()
 export class UserAccountService extends GenericService(UserAccount) {
+  constructor(private readonly walletSrv: WalletService) {
+    super();
+  }
+
+  async createUserAccount(
+    payload: CreateUserBankAccountDTO,
+    userId: string,
+  ): Promise<UserAccountResponseDTO> {
+    try {
+      checkForRequiredFields(['userId', 'bankCode', 'accountNumber'], {
+        ...payload,
+        userId,
+      });
+      const bank = await this.walletSrv.findBankByCode(payload.bankCode);
+      const bankDetails = await this.walletSrv.verifyExternalAccountNumber(
+        payload.bankCode,
+        payload.accountNumber,
+      );
+      if (!bankDetails?.accountName) {
+        throw new NotFoundException('Could not verify account');
+      }
+      const createdAccount = await this.create<Partial<UserAccount>>({
+        userId,
+        accountName: bankDetails.accountName,
+        accountNumber: payload.accountNumber,
+        bankCode: payload.bankCode,
+        bankName: bank.bankName,
+      });
+      return {
+        success: true,
+        code: HttpStatus.CREATED,
+        message: 'Created',
+        data: createdAccount,
+      };
+    } catch (ex) {
+      this.logger.error(ex);
+      throw ex;
+    }
+  }
+
   async findUserAccountById(
     userAccountId: string,
   ): Promise<UserAccountResponseDTO> {

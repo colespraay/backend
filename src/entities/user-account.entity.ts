@@ -4,17 +4,6 @@ import { Base, User } from './index';
 
 @Entity({ name: 'USER_ACCOUNT' })
 export class UserAccount extends Base {
-  @Column({ type: 'uuid' })
-  userId: string;
-
-  @ApiProperty({ type: () => User })
-  @JoinColumn({ name: 'userId' })
-  @ManyToOne(() => User, ({ userAccounts }) => userAccounts, {
-    onDelete: 'CASCADE',
-    onUpdate: 'CASCADE',
-  })
-  user: User;
-
   @ApiProperty()
   @Column({ type: 'varchar', length: 100 })
   bankName: string;
@@ -30,4 +19,15 @@ export class UserAccount extends Base {
   @ApiProperty()
   @Column({ type: 'varchar', length: 100 })
   accountName: string;
+
+  @Column({ type: 'uuid' })
+  userId: string;
+
+  @ApiProperty({ type: () => User })
+  @JoinColumn({ name: 'userId' })
+  @ManyToOne(() => User, ({ userAccounts }) => userAccounts, {
+    onDelete: 'CASCADE',
+    onUpdate: 'CASCADE',
+  })
+  user: User;
 }

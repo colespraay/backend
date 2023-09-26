@@ -132,6 +132,20 @@ export class WalletService {
     }
   }
 
+  async findBankByCode(bankCode: string): Promise<BankListPartialDTO> {
+    try {
+      const banks = await this.getBankLists();
+      const bank = banks.data.find((bank) => bank.bankCode === bankCode);
+      if (!bank?.bankCode) {
+        throw new NotFoundException(`Bank with code: ${bankCode} not found`);
+      }
+      return bank;
+    } catch (ex) {
+      this.logger.error(ex);
+      throw ex;
+    }
+  }
+
   // https://apiplayground.alat.ng/debit-wallet/api/Shared/GetAllBanks
   async getBankLists(): Promise<BankListDTO> {
     try {
@@ -199,7 +213,7 @@ export class WalletService {
         },
       );
       if (!destinationAccount?.result) {
-        throw new BadGatewayException('Could not verify destination account');
+        throw new BadGatewayException('Could not verify account');
       }
       const {
         result: { accountName, accountNumber, bankCode, currency },
