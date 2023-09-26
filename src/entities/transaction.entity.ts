@@ -12,28 +12,6 @@ import { Base, User, Gifting, uuidV4, EventSpraay, Withdrawal } from './index';
 
 @Entity({ name: 'TRANSACTION' })
 export class Transaction extends Base {
-  @Column({ type: 'uuid' })
-  userId: string;
-
-  @ApiProperty({ type: () => User })
-  @JoinColumn({ name: 'userId' })
-  @ManyToOne(() => User, ({ transactions }) => transactions, {
-    onDelete: 'CASCADE',
-    onUpdate: 'CASCADE',
-  })
-  user: User;
-
-  @Column({ type: 'uuid', nullable: true })
-  receiverUserId: string;
-
-  @ApiProperty({ type: () => User })
-  @JoinColumn({ name: 'userId' })
-  @ManyToOne(() => User, ({ receivedTransactions }) => receivedTransactions, {
-    onDelete: 'CASCADE',
-    onUpdate: 'CASCADE',
-  })
-  receiverUser: User;
-
   @ApiProperty()
   @Column({ type: 'float', default: 0 })
   amount: number;
@@ -65,6 +43,28 @@ export class Transaction extends Base {
   @ApiProperty()
   @Column({ type: 'varchar', length: 20 })
   createdDate: string;
+
+  @Column({ type: 'uuid' })
+  userId: string;
+
+  @ApiProperty({ type: () => User })
+  @JoinColumn({ name: 'userId' })
+  @ManyToOne(() => User, ({ transactions }) => transactions, {
+    onDelete: 'CASCADE',
+    onUpdate: 'CASCADE',
+  })
+  user: User;
+
+  @Column({ type: 'uuid', nullable: true })
+  receiverUserId: string;
+
+  @ApiProperty({ type: () => User })
+  @JoinColumn({ name: 'userId' })
+  @ManyToOne(() => User, ({ receivedTransactions }) => receivedTransactions, {
+    onDelete: 'CASCADE',
+    onUpdate: 'CASCADE',
+  })
+  receiverUser: User;
 
   @ApiProperty({ type: () => [Gifting] })
   @OneToMany(() => Gifting, ({ transaction }) => transaction, {

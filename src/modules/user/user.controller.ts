@@ -9,6 +9,7 @@ import {
   Post,
   Query,
   UseGuards,
+  ParseIntPipe,
 } from '@nestjs/common';
 import {
   ApiBearerAuth,
@@ -37,6 +38,7 @@ import {
   FilterUserDTO,
   OTPMedium,
   GroupedUserListDTO,
+  AccountBalanceDTO,
 } from './dto/user.dto';
 import { UserService } from './user.service';
 
@@ -68,6 +70,33 @@ export class UserController {
     @Param('pin') pin: string,
   ): Promise<BaseResponseTypeDTO> {
     return await this.userSrv.verifyTransactionPin(userId, pin);
+  }
+
+  @UseGuards(RolesGuard)
+  @ApiBearerAuth('JWT')
+  @ApiOperation({ description: 'Get user account balance' })
+  @ApiProduces('json')
+  @ApiConsumes('application/json')
+  @ApiResponse({ type: AccountBalanceDTO })
+  @Get('/account/balance')
+  async getAccountBalance(
+    @CurrentUser(DecodedTokenKey.USER_ID) userId: string,
+  ): Promise<AccountBalanceDTO> {
+    return await this.userSrv.getAccountBalance(userId);
+  }
+
+  @UseGuards(RolesGuard)
+  @ApiBearerAuth('JWT')
+  @ApiOperation({ description: 'Get user account balance before debit' })
+  @ApiProduces('json')
+  @ApiConsumes('application/json')
+  @ApiResponse({ type: AccountBalanceDTO })
+  @Get('/account/check-balance-before-debit/:amount')
+  async checkForPotentialBalance(
+    @CurrentUser(DecodedTokenKey.USER_ID) userId: string,
+    @Param('amount', ParseIntPipe) amount: number,
+  ): Promise<AccountBalanceDTO> {
+    return await this.userSrv.checkForPotentialBalance(userId, amount);
   }
 
   @ApiOperation({ description: 'Sign up with phone-number and password' })
@@ -280,5 +309,16 @@ export class UserController {
     @Param('email') email: string,
   ): Promise<BaseResponseTypeDTO> {
     return await this.userSrv.deleteUserByEmail(email);
+  }
+
+  @ApiOperation({ description: 'Delete user account by phone number' })
+  @ApiProduces('json')
+  @ApiConsumes('application/json')
+  @ApiResponse({ type: BaseResponseTypeDTO })
+  @Delete('/delete-by-phone-number/:phoneNumber')
+  async deleteUserByPhoneNumber(
+    @Param('phoneNumber') phoneNumber: string,
+  ): Promise<BaseResponseTypeDTO> {
+    return await this.userSrv.deleteUserByPhoneNumber(phoneNumber);
   }
 }

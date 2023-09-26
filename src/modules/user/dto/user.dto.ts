@@ -221,3 +221,9 @@ export class CreditUserWalletDTO {
   @ApiProperty()
   amount: number;
 }
+
+export class AccountBalanceDTO extends OmitType(BaseResponseTypeDTO, [
+  'data',
+] as const) {
+  currentBalance: number;
+}

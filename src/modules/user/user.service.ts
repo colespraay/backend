@@ -51,6 +51,7 @@ import {
   UsersResponseDTO,
   GroupedUserListDTO,
   CreditUserWalletDTO,
+  AccountBalanceDTO,
 } from './dto/user.dto';
 import { AuthService } from '../index';
 import { AuthResponseDTO } from '@modules/auth/dto/auth.dto';
@@ -170,6 +171,38 @@ export class UserService extends GenericService(User) implements OnModuleInit {
         throw new NotFoundException('User not found');
       }
       return user.walletBalance;
+    } catch (ex) {
+      this.logger.error(ex);
+      throw ex;
+    }
+  }
+
+  async checkForPotentialBalance(
+    userId: string,
+    amount: number,
+  ): Promise<AccountBalanceDTO> {
+    try {
+      const userBalance = await this.getAccountBalance(userId);
+      if (amount > userBalance.currentBalance) {
+        throw new ConflictException('Insufficient balance');
+      }
+      return userBalance;
+    } catch (ex) {
+      this.logger.error(ex);
+      throw ex;
+    }
+  }
+
+  async getAccountBalance(userId: string): Promise<AccountBalanceDTO> {
+    try {
+      checkForRequiredFields(['userId'], { userId });
+      const user = await this.findUserById(userId);
+      return {
+        success: true,
+        code: HttpStatus.OK,
+        message: 'Account balance',
+        currentBalance: user.data.walletBalance,
+      };
     } catch (ex) {
       this.logger.error(ex);
       throw ex;
@@ -627,6 +660,25 @@ export class UserService extends GenericService(User) implements OnModuleInit {
       const userExists = await this.findOne({ email });
       if (userExists?.id) {
         await this.delete({ email });
+        return {
+          code: HttpStatus.OK,
+          message: 'User deleted',
+          success: true,
+        };
+      }
+      throw new NotFoundException('User was not found');
+    } catch (ex) {
+      throw ex;
+    }
+  }
+
+  async deleteUserByPhoneNumber(
+    phoneNumber: string,
+  ): Promise<BaseResponseTypeDTO> {
+    try {
+      const userExists = await this.findOne({ phoneNumber });
+      if (userExists?.id) {
+        await this.delete({ phoneNumber });
         return {
           code: HttpStatus.OK,
           message: 'User deleted',
