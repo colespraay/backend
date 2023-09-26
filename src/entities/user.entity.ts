@@ -90,8 +90,13 @@ export class User extends Base {
   @Column({ type: 'varchar', length: 20, nullable: true })
   virtualAccountNumber: string;
 
-  @ApiProperty({ nullable: true })
-  @Column({ type: 'varchar', length: 255, nullable: true })
+  @ApiProperty()
+  @Column({
+    type: 'varchar',
+    length: 255,
+    nullable: true,
+    default: String(process.env.DEFAULT_BANK),
+  })
   bankName: string;
 
   @ApiProperty({ enum: Gender, nullable: true })

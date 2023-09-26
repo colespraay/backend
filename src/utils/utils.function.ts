@@ -639,7 +639,7 @@ export const httpDelete = async <U>(url: string, headers = {}): Promise<U> => {
 export const appendPrefixToString = (prefix: string, word: string): string =>
   word.startsWith(prefix) ? word : `${prefix}${word}`;
 
-export const generateRandomNumber = (prefix = '7'): string => {
+export const generateRandomNumber = (prefix = '0'): string => {
   // Generate a random number between 100000000 and 999999999 (inclusive) 9 digits
   const randomNumber = Math.floor(Math.random() * 900000000) + 100000000;
   return `${prefix}${randomNumber.toString()}`;

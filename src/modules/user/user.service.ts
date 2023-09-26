@@ -8,8 +8,9 @@ import {
   forwardRef,
   InternalServerErrorException,
   NotFoundException,
+  OnModuleInit,
 } from '@nestjs/common';
-import { EventEmitter2 } from '@nestjs/event-emitter';
+import { EventEmitter2, OnEvent } from '@nestjs/event-emitter';
 import { FindManyOptions, ILike, Not } from 'typeorm';
 import { User } from '@entities/index';
 import { GenericService } from '@schematics/index';
@@ -49,18 +50,39 @@ import {
   UserResponseDTO,
   UsersResponseDTO,
   GroupedUserListDTO,
+  CreditUserWalletDTO,
 } from './dto/user.dto';
 import { AuthService } from '../index';
 import { AuthResponseDTO } from '@modules/auth/dto/auth.dto';
 
 @Injectable()
-export class UserService extends GenericService(User) {
+export class UserService extends GenericService(User) implements OnModuleInit {
   constructor(
     @Inject(forwardRef(() => AuthService))
     private readonly authSrv: AuthService,
     private readonly eventEmitterSrv: EventEmitter2,
   ) {
     super();
+  }
+
+  async onModuleInit() {
+    // const records = await this.getRepo().find({
+    //   where: [
+    //     { virtualAccountNumber: IsNull() },
+    //     { virtualAccountName: IsNull() },
+    //     { bankName: IsNull() },
+    //   ],
+    // });
+    // console.log({ records });
+    // const mapped = records.map((record) => ({
+    //   id: record.id,
+    //   bankName: 'WEMA BANK',
+    //   virtualAccountName: generateRandomName(),
+    //   virtualAccountNumber: generateRandomNumber(),
+    // }));
+    // for (const item of mapped) {
+    //   await this.getRepo().update({ id: item.id }, item);
+    // }
   }
 
   async createUser(
@@ -128,7 +150,7 @@ export class UserService extends GenericService(User) {
         where: { id: userId },
         select: ['id', 'walletBalance'],
       });
-      if (user?.id) {
+      if (!user?.id) {
         throw new NotFoundException('User not found');
       }
       return withdrawalSum > user.walletBalance ? false : true;
@@ -144,7 +166,7 @@ export class UserService extends GenericService(User) {
         where: { id: userId },
         select: ['id', 'walletBalance'],
       });
-      if (user?.id) {
+      if (!user?.id) {
         throw new NotFoundException('User not found');
       }
       return user.walletBalance;
@@ -158,12 +180,12 @@ export class UserService extends GenericService(User) {
     try {
       const user = await this.getRepo().findOne({
         where: { id: userId },
-        select: ['id'],
+        select: ['id', 'transactionPin'],
       });
-      if (user?.id) {
+      if (!user?.id) {
         throw new NotFoundException('User not found');
       }
-      const isValid = await verifyPasswordHash(user.transactionPin, pin);
+      const isValid = await verifyPasswordHash(pin, user.transactionPin);
       if (!isValid) {
         throw new BadRequestException('Invalid pin');
       }
@@ -753,6 +775,30 @@ export class UserService extends GenericService(User) {
         success: true,
         code: HttpStatus.OK,
         message: 'Updated',
+      };
+    } catch (ex) {
+      this.logger.error(ex);
+      throw ex;
+    }
+  }
+
+  @OnEvent('wallet.credit', { async: true })
+  async creditUserWallet(
+    payload: CreditUserWalletDTO,
+  ): Promise<BaseResponseTypeDTO> {
+    try {
+      checkForRequiredFields(['amount', 'userId'], payload);
+      validateUUIDField(payload.userId, 'userId');
+      const user = await this.findUserById(payload.userId);
+      const newBalance = user.data.walletBalance + payload.amount;
+      await this.getRepo().update(
+        { id: payload.userId },
+        { walletBalance: newBalance },
+      );
+      return {
+        success: true,
+        code: HttpStatus.OK,
+        message: 'Wallet credited',
       };
     } catch (ex) {
       this.logger.error(ex);

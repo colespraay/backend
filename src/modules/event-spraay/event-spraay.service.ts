@@ -7,6 +7,7 @@ import {
   NotFoundException,
   forwardRef,
 } from '@nestjs/common';
+import { EventEmitter2 } from '@nestjs/event-emitter';
 import { FindManyOptions } from 'typeorm';
 import { EventSpraay, User } from '@entities/index';
 import { GenericService } from '@schematics/index';
@@ -35,6 +36,7 @@ export class EventSpraayService extends GenericService(EventSpraay) {
     private readonly walletSrv: WalletService,
     @Inject(forwardRef(() => TransactionService))
     private readonly transactionSrv: TransactionService,
+    private readonly eventEmitterSrv: EventEmitter2,
   ) {
     super();
   }
@@ -68,16 +70,22 @@ export class EventSpraayService extends GenericService(EventSpraay) {
         throw new ConflictException('Insufficient balance');
       }
       const event = await this.eventSrv.findEventById(payload.eventId);
+      if (event.data.userId === user.id) {
+        throw new ConflictException('Cannot spraay at your own event');
+      }
       const bank = await this.walletSrv.findBankByName(
-        event.data.user.bankName,
+        event.data.user.bankName ?? String(process.env.DEFAULT_BANK),
       );
       const currentWalletBalance = await this.userSrv.getCurrentWalletBalance(
         user.id,
       );
-      const walletVerified = await this.walletSrv.verifyWalletAccountNumber(
-        event.data.user.virtualAccountNumber,
-      );
-      this.logger.log({ walletVerified });
+
+      // TODO: Uncomment during controlled test
+      // const walletVerified = await this.walletSrv.verifyWalletAccountNumber(
+      //   event.data.user.virtualAccountNumber,
+      // );
+      // this.logger.log({ walletVerified });
+
       const narration = `Spraayed by ${user?.firstName} ${user?.lastName}`;
       const debitTransaction = await this.walletSrv.makeTransferFromWallet(
         user.virtualAccountNumber,
@@ -103,6 +111,11 @@ export class EventSpraayService extends GenericService(EventSpraay) {
         ...payload,
         userId: user.id,
         transactionId: newTransaction.data.id,
+      });
+      // Credit account of event owner
+      this.eventEmitterSrv.emit('wallet.credit', {
+        userId: event.data.userId,
+        amount: payload.amount,
       });
       return {
         success: true,

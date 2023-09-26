@@ -58,6 +58,9 @@ export class GiftingService extends GenericService(Gifting) {
           `Could not identify receiver with tag: '${payload.receiverTag}'`,
         );
       }
+      if (userId === receiver.id) {
+        throw new ConflictException('Cannot Gift to yourself');
+      }
       const destinationBank = await this.walletSrv.findBankByName(
         receiver.bankName,
       );

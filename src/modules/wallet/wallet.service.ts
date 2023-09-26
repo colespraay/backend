@@ -10,6 +10,8 @@ import {
   TransactionType,
   addLeadingZeroes,
   checkForRequiredFields,
+  generateRandomName,
+  generateRandomNumber,
   generateUniqueCode,
   httpGet,
   httpPost,
@@ -91,18 +93,22 @@ export class WalletService {
             'Ocp-Apim-Subscription-Key': this.walletCreationSubKey,
             'x-api-key': this.xApiKey,
           });
-          if (walletData?.data?.accountNumber) {
-            // Save account details for user
-            await this.userSrv.getRepo().update(
-              { id: user.id },
-              {
-                bankName: 'WEMA BANK',
-                virtualAccountNumber: walletData.data.accountNumber,
-                virtualAccountName: `${user.firstName} ${user.lastName}`,
-              },
-            );
-          }
-        }, 50000);
+          this.logger.log({ walletData });
+          const accountCreationPayload = {
+            bankName: 'WEMA BANK',
+            virtualAccountNumber:
+              walletData?.data?.accountNumber ?? generateRandomNumber(),
+            virtualAccountName:
+              user.firstName && user.lastName
+                ? `${user.firstName} ${user.lastName}`
+                : generateRandomName(),
+          };
+          this.logger.log({ accountCreationPayload });
+          // Save account details for user
+          await this.userSrv
+            .getRepo()
+            .update({ id: user.id }, accountCreationPayload);
+        }, 5000);
       }
     } catch (ex) {
       this.logger.error(ex);
@@ -186,6 +192,7 @@ export class WalletService {
         destinationAccountEnquiryUrl,
         {
           'Cache-Control': 'no-cache',
+          access: String(process.env.WEMA_ATLAT_X_API_KEY),
           'Ocp-Apim-Subscription-Key': String(
             process.env.WEMA_ATLAT_WALLET_CREATION_SUB_KEY,
           ),
@@ -211,6 +218,7 @@ export class WalletService {
 
   async verifyWalletAccountNumber(
     userAccountNumber: string,
+    env = 'TEST',
   ): Promise<VerifiesAccountDetailDTO> {
     try {
       // Verify destination Account
@@ -239,6 +247,9 @@ export class WalletService {
       };
     } catch (ex) {
       this.logger.error(ex);
+      if (env === 'TEST') {
+        throw new NotFoundException('Could not verify wallet');
+      }
       throw ex;
     }
   }
@@ -344,7 +355,7 @@ export class WalletService {
           transactionReference,
           platformTransactionReference: transactionReference,
           transactionStan: 'string',
-          orinalTxnTransactionDate: 'string',
+          orinalTxnTransactionDate: new Date().toLocaleString(),
         },
         errorMessage: null,
         errorMessages: [],
@@ -512,10 +523,6 @@ export class WalletService {
               transactionDate: payload.transactionDate,
               currentBalanceBeforeTransaction: user.walletBalance,
             });
-            const accountBalance = user.walletBalance + payload.amount;
-            await this.userSrv
-              .getRepo()
-              .update({ id: user.id }, { walletBalance: accountBalance });
             break;
           case TransactionType.DEBIT:
             this.eventEmitterSrv.emit('transaction.log', {
@@ -526,10 +533,6 @@ export class WalletService {
               transactionDate: payload.transactionDate,
               currentBalanceBeforeTransaction: user.walletBalance,
             });
-            const debitAccountBalance = user.walletBalance - payload.amount;
-            await this.userSrv
-              .getRepo()
-              .update({ id: user.id }, { walletBalance: debitAccountBalance });
             break;
         }
       }

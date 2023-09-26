@@ -213,3 +213,11 @@ export class GroupedUserListDTO extends BaseResponseTypeDTO {
   @ApiProperty({ type: GroupedUserListPartial })
   data: GroupedUserListPartial;
 }
+
+export class CreditUserWalletDTO {
+  @ApiProperty()
+  userId: string;
+
+  @ApiProperty()
+  amount: number;
+}

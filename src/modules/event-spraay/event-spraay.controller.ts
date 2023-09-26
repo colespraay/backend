@@ -16,7 +16,8 @@ import {
   ApiConsumes,
   ApiProduces,
 } from '@nestjs/swagger';
-import { User } from '@entities/user';
+import { User } from '@entities/index';
+import { DecodedTokenKey } from '@utils/index';
 import { CurrentUser, RolesGuard } from '@schematics/index';
 import { EventSpraayService } from './event-spraay.service';
 import {
@@ -40,7 +41,7 @@ export class EventSpraayController {
   @Post()
   async spraayCash(
     @Body() payload: CreateEventSpraayDTO,
-    @CurrentUser() user: User,
+    @CurrentUser(DecodedTokenKey.USER) user: User,
   ): Promise<EventSpraayCreatedResponseDTO> {
     return await this.eventSpraaySrv.spraayCash(payload, user);
   }
