@@ -58,7 +58,7 @@ export class EventSpraayService extends GenericService(EventSpraay) {
         user.id,
         payload.transactionPin,
       );
-      if (!isPinValid) {
+      if (!isPinValid?.success) {
         throw new BadRequestException('Invalid pin');
       }
       const enoughBalance =

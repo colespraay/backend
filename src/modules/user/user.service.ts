@@ -176,7 +176,10 @@ export class UserService extends GenericService(User) implements OnModuleInit {
     }
   }
 
-  async verifyTransactionPin(userId: string, pin: string): Promise<boolean> {
+  async verifyTransactionPin(
+    userId: string,
+    pin: string,
+  ): Promise<BaseResponseTypeDTO> {
     try {
       const user = await this.getRepo().findOne({
         where: { id: userId },
@@ -189,7 +192,11 @@ export class UserService extends GenericService(User) implements OnModuleInit {
       if (!isValid) {
         throw new BadRequestException('Invalid pin');
       }
-      return true;
+      return {
+        success: true,
+        code: HttpStatus.OK,
+        message: 'Pin verified',
+      };
     } catch (ex) {
       this.logger.error(ex);
       throw ex;

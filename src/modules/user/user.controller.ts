@@ -56,6 +56,20 @@ export class UserController {
     return await this.userSrv.createUser(payload);
   }
 
+  @UseGuards(RolesGuard)
+  @ApiBearerAuth('JWT')
+  @ApiOperation({ description: 'Verify transaction pin' })
+  @ApiProduces('json')
+  @ApiConsumes('application/json')
+  @ApiResponse({ type: BaseResponseTypeDTO })
+  @Get('/verify/transaction-pin/:pin')
+  async verifyTransactionPin(
+    @CurrentUser(DecodedTokenKey.USER_ID) userId: string,
+    @Param('pin') pin: string,
+  ): Promise<BaseResponseTypeDTO> {
+    return await this.userSrv.verifyTransactionPin(userId, pin);
+  }
+
   @ApiOperation({ description: 'Sign up with phone-number and password' })
   @ApiProduces('json')
   @ApiConsumes('application/json')
