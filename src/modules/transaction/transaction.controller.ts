@@ -121,4 +121,24 @@ export class TransactionController {
       response.download(filePath.path);
     }
   }
+
+  @ApiOperation({ description: 'Download Transaction receipt' })
+  @ApiOkResponse({ schema: { type: 'string', format: 'binary' } })
+  @ApiProduces('application/pdf')
+  @Get('/download-receipt/:transactionId')
+  async downloadTransactionReceipt(
+    @Param('transactionId', ParseUUIDPipe) transactionId: string,
+    @Res() response: Response,
+  ) {
+    const filePath = await this.transactionSrv.downloadTransactionReceipt(
+      transactionId,
+    );
+    if (filePath?.fileName) {
+      response.set({
+        'Content-Type': 'application/pdf',
+        'Content-Disposition': `attachment; filename="${filePath.fileName}"`,
+      });
+      response.download(filePath.path);
+    }
+  }
 }

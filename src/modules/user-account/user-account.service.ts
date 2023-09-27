@@ -13,7 +13,7 @@ import {
   UserAccountResponseDTO,
   UserAccountsResponseDTO,
 } from './dto/user-account.dto';
-import { WalletService } from '..';
+import { WalletService } from '../index';
 
 @Injectable()
 export class UserAccountService extends GenericService(UserAccount) {

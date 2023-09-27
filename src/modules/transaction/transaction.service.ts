@@ -270,6 +270,29 @@ export class TransactionService extends GenericService(Transaction) {
     }
   }
 
+  async downloadTransactionReceipt(
+    transactionId: string,
+  ): Promise<FileExportDataResponseDTO> {
+    try {
+      checkForRequiredFields(['transactionId'], { transactionId });
+      const record = await this.findTransactionById(transactionId);
+      const html = this.formatHtmlForReceipt(record.data);
+      const tag = 'Transaction Receipt';
+      const savedPdf = await convertHtmlToPDF(html, tag, 'transaction-receipt');
+      const fileName = savedPdf.filename.split('/').pop();
+      if (!fileName) {
+        throw new NotFoundException('No pdf file found');
+      }
+      return {
+        fileName,
+        path: `./uploads/${fileName}`,
+      };
+    } catch (ex) {
+      this.logger.error(ex);
+      throw ex;
+    }
+  }
+
   async downloadStatementOfAccounts(
     payload: FindStatementOfAccountDTO,
     userId: string,
@@ -320,6 +343,118 @@ export class TransactionService extends GenericService(Transaction) {
       this.logger.error(ex);
       throw ex;
     }
+  }
+
+  private formatHtmlForReceipt(transaction: Transaction): string {
+    return `<!DOCTYPE html>
+    <html>
+    <head>
+    <style>
+      .tt {
+        text-transform: uppercase;
+      }
+        body {
+          font-family: Arial, Helvetica, sans-serif;
+          background: #09090B;
+          color: #fff;
+          padding: 10px 20px 50px 20px;
+        }
+    
+        .no-margin {
+          margin: 0;
+        }
+    
+        .no-padding {
+          padding: 0;
+        }
+    
+        table {
+          font-family: arial, sans-serif;
+          border-collapse: collapse;
+          width: 100%;
+        }
+    
+        td, th {
+          border: 1px solid #1e1e39;
+          text-align: left;
+          padding: 8px;
+        }
+    
+        tr:nth-child(even) {
+          background-color: #1e1e39;
+        }
+    
+        .bg-dark {
+          background: #1e1e39;
+        }
+    
+        .padding-10 {
+          padding: 10px ;
+        }
+    
+        .fs-40 {
+          font-size: 40px;
+        }
+    
+        .fs-18 {
+          font-size: 18px;
+        }
+    
+        h1, h2, h3, h4, p, td, th {
+          font-weight: 300;
+        }
+    
+        .text-danger {
+            color: indianred;
+        }
+    
+        .text-success {
+            color: green;
+        }
+    
+        .text-bold {
+            font-weight: bold;
+        }
+    </style>
+    </head>
+    <body>
+    <h1 class="fs-40 bg-dark padding-10">
+        Receipt <span class="fs-18" style="color: #959292;">[Reference: ${transaction.reference}]</span>
+    </h1>
+    <section>
+        <table>
+            <tbody>
+              <tr>
+                <td>Transaction Amount</td>
+                <td>&#8358;${transaction.amount}</td>
+              </tr>
+              <tr>
+                <td>Transaction Type</td>
+                <td>${transaction.type}</td>
+              </tr>
+              <tr>
+                <td>Transaction Date</td>
+                <td>${transaction.createdDate}, ${transaction.createdTime}</td>
+              </tr>
+              <tr>
+                <td>Transaction Reference</td>
+                <td>${transaction.reference}</td>
+              </tr>
+              <tr>
+                <td>Transaction Status</td>
+                <td>
+                    <span class="text-success text-bold">Successful</span><br />
+                    <!-- <span class="text-danger text-bold">Failed</span><br /> -->
+                </td>
+              </tr>
+            </tbody>
+          </table>
+    </section>
+    
+    </body>
+    </html>
+    
+    `;
   }
 
   private formatHtmlForAccountStatements(

@@ -106,7 +106,7 @@ export class WithdrawalService extends GenericService(Withdrawal) {
           userId,
         });
         this.logger.log({ createdTransaction });
-        const newWithdrawal = await this.create<Partial<Withdrawal>>({
+        const createdWithdrawal = await this.create<Partial<Withdrawal>>({
           amount: payload.amount,
           transactionId: createdTransaction.id,
           userId,
@@ -115,6 +115,10 @@ export class WithdrawalService extends GenericService(Withdrawal) {
         await this.userSrv
           .getRepo()
           .update({ id: user.data.id }, { walletBalance: newAccountBalance });
+        const newWithdrawal = await this.getRepo().findOne({
+          where: { id: createdWithdrawal.id },
+          relations: ['transaction'],
+        });
         return {
           success: true,
           code: HttpStatus.CREATED,
