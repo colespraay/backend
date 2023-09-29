@@ -36,7 +36,6 @@ import {
   validateUUIDField,
   sendSMS,
   groupBy,
-  generateRandomName,
 } from '@utils/index';
 import {
   ChangePasswordDTO,
