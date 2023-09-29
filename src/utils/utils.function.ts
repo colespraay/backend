@@ -400,7 +400,6 @@ export const sendSMS = async (
       },
       headers,
     );
-    console.log({ smsApiResponse });
     if (smsApiResponse?.code === 'ok') {
       return {
         success: true,

@@ -15,7 +15,6 @@ import {
   TransactionType,
   calculatePaginationControls,
   checkForRequiredFields,
-  sendSMS,
   validateUUIDField,
 } from '@utils/index';
 import {
@@ -40,10 +39,6 @@ export class EventSpraayService extends GenericService(EventSpraay) {
     private readonly eventEmitterSrv: EventEmitter2,
   ) {
     super();
-    // setTimeout(async () => {
-    //   const ttl = await sendSMS('Hello Abel', ['08173749456'], 'Hello');
-    //   console.log({ ttl });
-    // }, 5000);
   }
 
   async spraayCash(

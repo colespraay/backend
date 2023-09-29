@@ -1,13 +1,11 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { Entity, Column, BeforeInsert, AfterInsert, OneToMany } from 'typeorm';
+import { Entity, Column, BeforeInsert, OneToMany } from 'typeorm';
 import {
   DefaultPassportLink,
   AppRole,
   AuthProvider,
   hashPassword,
-  sendEmail,
   Gender,
-  sendSMS,
 } from '@utils/index';
 import {
   Base,
@@ -190,29 +188,5 @@ export class User extends Base {
     this.id = uuidV4();
     this.email = this.email?.toUpperCase();
     this.password = await hashPassword(this.password ?? '12345');
-  }
-
-  @AfterInsert()
-  afterInsertHandler(): void {
-    if (
-      this.role !== AppRole.ADMIN &&
-      this.authProvider === AuthProvider.LOCAL
-    ) {
-      if (this.email) {
-        const htmlEmailTemplate = `
-          <h2>Please copy the code below to verify your account</h2>
-          <h3>${this.uniqueVerificationCode}</h3>
-        `;
-        setTimeout(async () => {
-          await sendEmail(htmlEmailTemplate, 'Verify Account', [this.email]);
-        }, 5000);
-      }
-      if (this.phoneNumber) {
-        const message = `Please copy the code below to verify your account \n${this.uniqueVerificationCode}`;
-        setTimeout(async () => {
-          await sendSMS(message, [this.phoneNumber], 'Verify Account');
-        }, 5000);
-      }
-    }
   }
 }

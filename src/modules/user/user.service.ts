@@ -86,6 +86,33 @@ export class UserService extends GenericService(User) implements OnModuleInit {
     // }
   }
 
+  @OnEvent('after.sign-up', { async: true })
+  async onSignup(user: User): Promise<void> {
+    try {
+      if (user.email) {
+        const htmlEmailTemplate = `
+        <h2>Please copy the code below to verify your account</h2>
+        <h3>${user.uniqueVerificationCode}</h3>
+      `;
+        await sendEmail(htmlEmailTemplate, 'Verify Account', [user.email]);
+      }
+      if (user.phoneNumber) {
+        const code = user.uniqueVerificationCode;
+        const message = `Use this OTP to validate your Spraay account: ${code}`;
+        await sendSMS(
+          // `Please use this code: '008' to verify your account`,
+          // `102023092918100200000011222' + 'CO: 102023092918100200000011222'`,
+          message,
+          [user.phoneNumber],
+          'Verify Account',
+        );
+      }
+    } catch (ex) {
+      this.logger.error(ex);
+      throw ex;
+    }
+  }
+
   async createUser(
     payload: CreateUserDTO,
     type: 'email' | 'phoneNumber' = 'email',
@@ -117,10 +144,11 @@ export class UserService extends GenericService(User) implements OnModuleInit {
         throw new ConflictException(message);
       }
       const verificationCode = generateUniqueKey(4);
-      await this.create<Partial<User>>({
+      const newUser = await this.create<Partial<User>>({
         ...payload,
         uniqueVerificationCode: verificationCode,
       });
+      this.eventEmitterSrv.emit('after.sign-up', newUser);
       const response =
         type === 'email'
           ? await this.authSrv.login({
