@@ -4,8 +4,9 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
-import { OnEvent } from '@nestjs/event-emitter';
+import { OnEvent, EventEmitter2 } from '@nestjs/event-emitter';
 import { FindManyOptions, ILike, In, IsNull, Not } from 'typeorm';
+import { createReadStream, unlinkSync } from 'fs';
 import { GenericService } from '@schematics/index';
 import { Transaction, User } from '@entities/index';
 import {
@@ -18,12 +19,16 @@ import {
   groupBy,
   convertHtmlToPDF,
   PaginationRequestType,
+  sendEmail,
+  BaseResponseTypeDTO,
 } from '@utils/index';
 import {
   TransactionResponseDTO,
   CreateTransactionDTO,
   TransactionsResponseDTO,
   FindTransactionDTO,
+  ExportSOADTO,
+  ExportReceiptDTO,
 } from './dto/transaction.dto';
 import { UserService } from '../index';
 import { FindStatementOfAccountDTO } from '@modules/wallet/dto/wallet.dto';
@@ -31,7 +36,10 @@ import { UsersResponseDTO } from '@modules/user/dto/user.dto';
 
 @Injectable()
 export class TransactionService extends GenericService(Transaction) {
-  constructor(private readonly userSrv: UserService) {
+  constructor(
+    private readonly userSrv: UserService,
+    private readonly eventEmitterSrv: EventEmitter2,
+  ) {
     super();
   }
 
@@ -270,6 +278,71 @@ export class TransactionService extends GenericService(Transaction) {
     }
   }
 
+  @OnEvent('export.receipt', { async: true })
+  private async exportTransactionReceipt(
+    payload: ExportReceiptDTO,
+  ): Promise<void> {
+    try {
+      const subject = `Transaction Receipt ${payload.transaction.reference}`;
+      const response = await sendEmail(
+        `<h2>Find receipt to transaction: ${payload.transaction.reference} below</h2>`,
+        subject,
+        [...payload.recipients],
+        [
+          {
+            content: createReadStream(payload.path),
+            filename: payload.fileName,
+          },
+        ],
+      );
+      if (response?.success) {
+        unlinkSync(payload.path);
+      }
+    } catch (ex) {
+      this.logger.error(ex);
+      throw ex;
+    }
+  }
+
+  async exportTransactionReceiptToEmail(
+    transactionId: string,
+    userId: string,
+  ): Promise<BaseResponseTypeDTO> {
+    try {
+      checkForRequiredFields(['transactionId', 'userId'], {
+        userId,
+        transactionId,
+      });
+      validateUUIDField('userId', userId);
+      const record = await this.findTransactionById(transactionId);
+      const user = await this.userSrv.findUserById(userId);
+      const html = this.formatHtmlForReceipt(record.data);
+      const tag = 'Transaction Receipt';
+      const savedPdf = await convertHtmlToPDF(html, tag, 'transaction-receipt');
+      const fileName = savedPdf.filename.split('/').pop();
+      if (!fileName) {
+        throw new NotFoundException('No pdf file found');
+      }
+      const resp = {
+        fileName,
+        path: `./uploads/${fileName}`,
+      };
+      this.eventEmitterSrv.emit('export.receipt', {
+        ...resp,
+        transaction: record.data,
+        recipients: [user.data.email],
+      });
+      return {
+        success: true,
+        code: HttpStatus.OK,
+        message: 'Receipt exported to your email',
+      };
+    } catch (ex) {
+      this.logger.error(ex);
+      throw ex;
+    }
+  }
+
   async downloadTransactionReceipt(
     transactionId: string,
   ): Promise<FileExportDataResponseDTO> {
@@ -339,6 +412,95 @@ export class TransactionService extends GenericService(Transaction) {
         fileName,
         path: `./uploads/${fileName}`,
       };
+    } catch (ex) {
+      this.logger.error(ex);
+      throw ex;
+    }
+  }
+
+  async exportStatementOfAccounts(
+    payload: FindStatementOfAccountDTO,
+    userId: string,
+  ): Promise<BaseResponseTypeDTO> {
+    try {
+      checkForRequiredFields(['startDate', 'endDate', 'userId'], {
+        ...payload,
+        userId,
+      });
+      const user = await this.userSrv.findUserById(userId);
+      const transactionRecords = await this.getRepo()
+        .createQueryBuilder('t')
+        .orderBy('t.dateCreated', 'DESC')
+        .where('t.dateCreated >= :startDate AND t.dateCreated <= :endDate', {
+          startDate: payload.startDate,
+          endDate: payload.endDate,
+        })
+        .andWhere('t.userId = :userId', { userId })
+        .getMany();
+      if (transactionRecords?.length <= 0) {
+        throw new NotFoundException(
+          'No transactions were done during this period',
+        );
+      }
+      const firstTransactionWithinRange = transactionRecords[0];
+      const lastTransactionWithinRange =
+        transactionRecords[transactionRecords.length - 1];
+      const groupedData = groupBy(transactionRecords, 'createdDate');
+      const html = this.formatHtmlForAccountStatements(
+        groupedData,
+        payload.startDate,
+        payload.endDate,
+        user.data,
+        firstTransactionWithinRange,
+        lastTransactionWithinRange,
+      );
+      const tag = 'Statement of Accounts';
+      const savedPdf = await convertHtmlToPDF(html, tag, 'account-statements');
+      const fileName = savedPdf.filename.split('/').pop();
+      if (!fileName) {
+        throw new NotFoundException('No pdf file found');
+      }
+      const resp = {
+        fileName,
+        path: `./uploads/${fileName}`,
+      };
+      this.eventEmitterSrv.emit('export.soa', {
+        ...resp,
+        startDate: payload.startDate,
+        endDate: payload.endDate,
+        recipients: [user.data.email],
+      });
+      return {
+        success: true,
+        message: 'Statement of account sent to your mailbox',
+        code: HttpStatus.OK,
+      };
+    } catch (ex) {
+      this.logger.error(ex);
+      throw ex;
+    }
+  }
+
+  @OnEvent('export.soa', { async: true })
+  private async exportSOA(payload: ExportSOADTO): Promise<void> {
+    try {
+      payload.startDate = new Date(payload.startDate);
+      payload.endDate = new Date(payload.endDate);
+      const subject = `Statement of Accounts ${payload.startDate.toLocaleDateString()} - ${payload.endDate.toLocaleDateString()}`;
+      const response = await sendEmail(
+        `<h2>Find a version of your statement of accounts attached to this mail</h2>`,
+        subject,
+        [...payload.recipients],
+        [
+          {
+            content: createReadStream(payload.path),
+            filename: payload.fileName,
+          },
+        ],
+      );
+      if (response?.success) {
+        unlinkSync(payload.path);
+      }
     } catch (ex) {
       this.logger.error(ex);
       throw ex;

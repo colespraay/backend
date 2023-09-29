@@ -1,6 +1,7 @@
 import { HttpStatus } from '@nestjs/common';
 import { ApiProperty } from '@nestjs/swagger';
-import { RequestStatus } from './utils.constant';
+import { ReadStream } from 'fs';
+import { RequestStatus } from './index';
 
 export const ApiMessageList = {
   GENERIC_ERROR_MESSAGE: 'An error occured',
@@ -100,4 +101,9 @@ export class MailJetEmailInputType {
 export class FileResponseDTO extends BaseResponseTypeDTO {
   @ApiProperty({ type: () => [String] })
   data: string[];
+}
+
+export class EmailAttachmentDTO {
+  filename: string;
+  content: ReadStream;
 }

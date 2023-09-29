@@ -2,6 +2,7 @@ import { ApiProperty } from '@nestjs/swagger';
 import { Transaction } from '@entities/index';
 import {
   BaseResponseTypeDTO,
+  FileExportDataResponseDTO,
   PaginationRequestType,
   PaginationResponseType,
   TransactionType,
@@ -58,4 +59,23 @@ export class FindTransactionDTO extends PaginationRequestType {
 
   @ApiProperty({ enum: TransactionType })
   type: TransactionType;
+}
+
+export class ExportSOADTO extends FileExportDataResponseDTO {
+  @ApiProperty()
+  recipients: string[];
+
+  @ApiProperty()
+  startDate: Date;
+
+  @ApiProperty()
+  endDate: Date;
+}
+
+export class ExportReceiptDTO extends FileExportDataResponseDTO {
+  @ApiProperty()
+  recipients: string[];
+
+  @ApiProperty({ type: () => Transaction })
+  transaction: Transaction;
 }

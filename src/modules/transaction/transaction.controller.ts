@@ -16,13 +16,14 @@ import {
   ApiResponse,
   ApiTags,
 } from '@nestjs/swagger';
+import { Response } from 'express';
 import {
+  BaseResponseTypeDTO,
   DecodedTokenKey,
   PaginationRequestType,
   TransactionType,
 } from '@utils/index';
 import { CurrentUser, RolesGuard } from '@schematics/index';
-import { Response } from 'express';
 import { TransactionService } from './transaction.service';
 import {
   FindTransactionDTO,
@@ -97,6 +98,21 @@ export class TransactionController {
     return await this.transactionSrv.findRecentRecipients(userId, pagination);
   }
 
+  @ApiBearerAuth('JWT')
+  @UseGuards(RolesGuard)
+  @ApiProduces('json')
+  @ApiOperation({
+    description: 'Export statement of account to mailbox',
+  })
+  @ApiResponse({ type: () => BaseResponseTypeDTO })
+  @Get('/export-soa')
+  async exportStatementOfAccounts(
+    @Query() payload: FindStatementOfAccountDTO,
+    @CurrentUser(DecodedTokenKey.USER_ID) userId: string,
+  ): Promise<BaseResponseTypeDTO> {
+    return await this.transactionSrv.exportStatementOfAccounts(payload, userId);
+  }
+
   @ApiOperation({
     description: 'Download SOA for date range in pdf format',
   })
@@ -140,5 +156,23 @@ export class TransactionController {
       });
       response.download(filePath.path);
     }
+  }
+
+  @ApiBearerAuth('JWT')
+  @UseGuards(RolesGuard)
+  @ApiProduces('json')
+  @ApiOperation({
+    description: 'Export transaction receipt to mailbox',
+  })
+  @ApiResponse({ type: () => BaseResponseTypeDTO })
+  @Get('/export-receipt/:transactionId')
+  async exportTransactionReceiptToEmail(
+    @Param('transactionId', ParseUUIDPipe) transactionId: string,
+    @CurrentUser(DecodedTokenKey.USER_ID) userId: string,
+  ): Promise<BaseResponseTypeDTO> {
+    return await this.transactionSrv.exportTransactionReceiptToEmail(
+      transactionId,
+      userId,
+    );
   }
 }

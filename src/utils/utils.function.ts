@@ -11,12 +11,14 @@ import * as bcrypt from 'bcrypt';
 import * as fs from 'fs';
 import {
   BaseResponseTypeDTO,
+  EmailAttachmentDTO,
   PaginationRequestType,
   PaginationResponseType,
 } from '@utils/index';
 // eslint-disable-next-line @typescript-eslint/no-var-requires
 const ImageKit = require('imagekit');
 import { UploadResponse } from 'imagekit/dist/libs/interfaces';
+import { ReadStream, createReadStream } from 'fs';
 
 dotenv.config();
 
@@ -464,6 +466,7 @@ export const sendEmail = async (
   html: string,
   subject: string,
   recipientEmails: string[],
+  attachments?: EmailAttachmentDTO[],
 ): Promise<BaseResponseTypeDTO> => {
   const serverHost = 'smtp.gmail.com';
   // eslint-disable-next-line @typescript-eslint/no-var-requires
@@ -476,12 +479,15 @@ export const sendEmail = async (
       pass: process.env.EMAIL_PASS,
     },
   });
-  const mailOptions = {
+  const mailOptions: any = {
     from: `"Spraay App" <${process.env.EMAIL_ADMIN}>`,
     to: recipientEmails.join(','),
     subject,
     html,
   };
+  if (attachments?.length > 0) {
+    mailOptions.attachments = attachments;
+  }
   try {
     const response: any = await new Promise((resolve, reject) => {
       transporter.sendMail(mailOptions, (error, info) => {
