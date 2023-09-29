@@ -8,10 +8,9 @@ import {
   forwardRef,
   InternalServerErrorException,
   NotFoundException,
-  OnModuleInit,
 } from '@nestjs/common';
 import { EventEmitter2, OnEvent } from '@nestjs/event-emitter';
-import { FindManyOptions, ILike, IsNull, Not } from 'typeorm';
+import { FindManyOptions, ILike, Not } from 'typeorm';
 import { User } from '@entities/index';
 import { GenericService } from '@schematics/index';
 import {
@@ -58,34 +57,13 @@ import { AuthService } from '../index';
 import { AuthResponseDTO } from '@modules/auth/dto/auth.dto';
 
 @Injectable()
-export class UserService extends GenericService(User) implements OnModuleInit {
+export class UserService extends GenericService(User) {
   constructor(
     @Inject(forwardRef(() => AuthService))
     private readonly authSrv: AuthService,
     private readonly eventEmitterSrv: EventEmitter2,
   ) {
     super();
-  }
-
-  async onModuleInit() {
-    const records = await this.getRepo().find({
-      where: [
-        { virtualAccountNumber: IsNull() },
-        { virtualAccountName: IsNull() },
-        { bankName: IsNull() },
-      ],
-    });
-    console.log({ records });
-    const mapped = records.map((record) => ({
-      id: record.id,
-      bankName: 'WEMA BANK',
-      virtualAccountName: generateRandomName(),
-      virtualAccountNumber: generateRandomNumber(),
-    }));
-    for (const item of mapped) {
-      console.log({ item });
-      await this.getRepo().update({ id: item.id }, item);
-    }
   }
 
   @OnEvent('after.sign-up', { async: true })
