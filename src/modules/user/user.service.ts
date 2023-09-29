@@ -293,17 +293,19 @@ export class UserService extends GenericService(User) implements OnModuleInit {
       }
       let responseMessage = 'Token has been sent';
       switch (medium) {
-        default:
         case OTPMedium.EMAIL:
+          console.log({ msg: 'Yes oo', medium });
           // Send code
           const htmlEmailTemplate = `
             <h2>Please copy the code below to verify your account</h2>
             <h3>${token}</h3>
           `;
           await sendEmail(htmlEmailTemplate, 'Verify Account', [record.email]);
-          responseMessage = 'Token has been sent your email';
+          responseMessage = 'Token has been sent to your email';
           break;
+        default:
         case OTPMedium.PHONE_NUMBER:
+          console.log({ msg: 'Yes oo', medium });
           const message = `Please copy the code below to verify your account\n ${token}`;
           await sendSMS(message, [record.phoneNumber], 'Verify Account');
           responseMessage = 'Token has been sent to your phone-number via sms';
