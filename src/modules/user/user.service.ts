@@ -83,6 +83,7 @@ export class UserService extends GenericService(User) implements OnModuleInit {
       virtualAccountNumber: generateRandomNumber(),
     }));
     for (const item of mapped) {
+      console.log({ item });
       await this.getRepo().update({ id: item.id }, item);
     }
   }
