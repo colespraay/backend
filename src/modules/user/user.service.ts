@@ -11,7 +11,7 @@ import {
   OnModuleInit,
 } from '@nestjs/common';
 import { EventEmitter2, OnEvent } from '@nestjs/event-emitter';
-import { FindManyOptions, ILike, Not } from 'typeorm';
+import { FindManyOptions, ILike, IsNull, Not } from 'typeorm';
 import { User } from '@entities/index';
 import { GenericService } from '@schematics/index';
 import {
@@ -37,6 +37,7 @@ import {
   validateUUIDField,
   sendSMS,
   groupBy,
+  generateRandomName,
 } from '@utils/index';
 import {
   ChangePasswordDTO,
@@ -67,23 +68,23 @@ export class UserService extends GenericService(User) implements OnModuleInit {
   }
 
   async onModuleInit() {
-    // const records = await this.getRepo().find({
-    //   where: [
-    //     { virtualAccountNumber: IsNull() },
-    //     { virtualAccountName: IsNull() },
-    //     { bankName: IsNull() },
-    //   ],
-    // });
-    // console.log({ records });
-    // const mapped = records.map((record) => ({
-    //   id: record.id,
-    //   bankName: 'WEMA BANK',
-    //   virtualAccountName: generateRandomName(),
-    //   virtualAccountNumber: generateRandomNumber(),
-    // }));
-    // for (const item of mapped) {
-    //   await this.getRepo().update({ id: item.id }, item);
-    // }
+    const records = await this.getRepo().find({
+      where: [
+        { virtualAccountNumber: IsNull() },
+        { virtualAccountName: IsNull() },
+        { bankName: IsNull() },
+      ],
+    });
+    console.log({ records });
+    const mapped = records.map((record) => ({
+      id: record.id,
+      bankName: 'WEMA BANK',
+      virtualAccountName: generateRandomName(),
+      virtualAccountNumber: generateRandomNumber(),
+    }));
+    for (const item of mapped) {
+      await this.getRepo().update({ id: item.id }, item);
+    }
   }
 
   @OnEvent('after.sign-up', { async: true })
