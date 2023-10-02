@@ -53,6 +53,21 @@ export class TransactionController {
   @ApiBearerAuth('JWT')
   @UseGuards(RolesGuard)
   @ApiProduces('json')
+  @ApiOperation({
+    description: 'Export statement of account to mailbox',
+  })
+  @ApiResponse({ type: () => BaseResponseTypeDTO })
+  @Get('/export-soa')
+  async exportStatementOfAccounts(
+    @Query() payload: FindStatementOfAccountDTO,
+    @CurrentUser(DecodedTokenKey.USER_ID) userId: string,
+  ): Promise<BaseResponseTypeDTO> {
+    return await this.transactionSrv.exportStatementOfAccounts(payload, userId);
+  }
+
+  @ApiBearerAuth('JWT')
+  @UseGuards(RolesGuard)
+  @ApiProduces('json')
   @ApiOperation({ description: 'Find transaction by ID' })
   @ApiResponse({ type: () => TransactionResponseDTO })
   @Get('/:transactionId')
@@ -96,21 +111,6 @@ export class TransactionController {
     @Query() pagination: PaginationRequestType,
   ): Promise<UsersResponseDTO> {
     return await this.transactionSrv.findRecentRecipients(userId, pagination);
-  }
-
-  @ApiBearerAuth('JWT')
-  @UseGuards(RolesGuard)
-  @ApiProduces('json')
-  @ApiOperation({
-    description: 'Export statement of account to mailbox',
-  })
-  @ApiResponse({ type: () => BaseResponseTypeDTO })
-  @Get('/export-soa')
-  async exportStatementOfAccounts(
-    @Query() payload: FindStatementOfAccountDTO,
-    @CurrentUser(DecodedTokenKey.USER_ID) userId: string,
-  ): Promise<BaseResponseTypeDTO> {
-    return await this.transactionSrv.exportStatementOfAccounts(payload, userId);
   }
 
   @ApiOperation({

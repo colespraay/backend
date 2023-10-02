@@ -235,7 +235,7 @@ export class UserController {
   async resendOTPOnForgotPassword(
     @Param('email') email: string,
   ): Promise<BaseResponseTypeDTO> {
-    return await this.userSrv.resendOTPAfterLogin({ email });
+    return await this.userSrv.resendOTPAfterLogin({ email }, OTPMedium.EMAIL);
   }
 
   @ApiOperation({

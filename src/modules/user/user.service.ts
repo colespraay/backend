@@ -272,7 +272,7 @@ export class UserService extends GenericService(User) {
 
   async resendOTPAfterLogin(
     payload: Partial<ResendOTPPayloadDTO>,
-    medium = OTPMedium.EMAIL,
+    medium = OTPMedium.PHONE_NUMBER,
   ): Promise<BaseResponseTypeDTO> {
     try {
       let record: User;
@@ -301,7 +301,6 @@ export class UserService extends GenericService(User) {
       let responseMessage = 'Token has been sent';
       switch (medium) {
         case OTPMedium.EMAIL:
-          console.log({ msg: 'Yes oo', medium });
           // Send code
           const htmlEmailTemplate = `
             <h2>Please copy the code below to verify your account</h2>
