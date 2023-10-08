@@ -783,17 +783,6 @@ export class UserService extends GenericService(User) {
       ) {
         record.uniqueVerificationCode = payload.uniqueVerificationCode;
       }
-      // if (record.firstName && record.lastName && !record.virtualAccountNumber) {
-      //   // Generate a WEMA bank account for the user
-      //   const { accountName, accountNumber } = await this.createBankAccount(
-      //     record,
-      //   );
-      //   if (accountName && accountNumber) {
-      //     record.virtualAccountName = accountName;
-      //     record.virtualAccountNumber = accountNumber;
-      //     record.bankName = 'WEMA BANK';
-      //   }
-      // }
       if (payload.bvn && record.bvn !== payload.bvn) {
         validateBvn(payload.bvn, 'bvn');
         const bvnValidationResponse = await this.resolveUserBvn(payload.bvn);
@@ -920,11 +909,13 @@ export class UserService extends GenericService(User) {
       checkForRequiredFields(['amount', 'userId'], payload);
       validateUUIDField(payload.userId, 'userId');
       const user = await this.findUserById(payload.userId);
-      const newBalance = user.data.walletBalance - payload.amount;
-      await this.getRepo().update(
-        { id: payload.userId },
-        { walletBalance: newBalance },
-      );
+      if (payload.amount <= user.data.walletBalance) {
+        const newBalance = user.data.walletBalance - payload.amount;
+        await this.getRepo().update(
+          { id: payload.userId },
+          { walletBalance: newBalance },
+        );
+      }
       return {
         success: true,
         code: HttpStatus.OK,
