@@ -783,6 +783,17 @@ export class UserService extends GenericService(User) {
       ) {
         record.uniqueVerificationCode = payload.uniqueVerificationCode;
       }
+      // if (record.firstName && record.lastName && !record.virtualAccountNumber) {
+      //   // Generate a WEMA bank account for the user
+      //   const { accountName, accountNumber } = await this.createBankAccount(
+      //     record,
+      //   );
+      //   if (accountName && accountNumber) {
+      //     record.virtualAccountName = accountName;
+      //     record.virtualAccountNumber = accountNumber;
+      //     record.bankName = 'WEMA BANK';
+      //   }
+      // }
       if (payload.bvn && record.bvn !== payload.bvn) {
         validateBvn(payload.bvn, 'bvn');
         const bvnValidationResponse = await this.resolveUserBvn(payload.bvn);
@@ -837,12 +848,40 @@ export class UserService extends GenericService(User) {
         displayWalletBalance: record.displayWalletBalance,
       };
       await this.getRepo().update({ id: record.id }, updatedRecord);
+      this.eventEmitterSrv.emit('test:wallet.create', record.id);
       this.eventEmitterSrv.emit('create-wallet', record.id);
       return {
         success: true,
         code: HttpStatus.OK,
         message: 'Updated',
       };
+    } catch (ex) {
+      this.logger.error(ex);
+      throw ex;
+    }
+  }
+
+  // TODO: Remove after testing phase
+  @OnEvent('test:wallet.create', { async: true })
+  async createRemoteAccount(userId: string): Promise<void> {
+    try {
+      checkForRequiredFields(['userId'], { userId });
+      const record = await this.findUserById(userId);
+      if (record?.data.firstName && record.data.lastName) {
+        const { accountName, accountNumber } = await this.createBankAccount(
+          record.data,
+        );
+        if (accountName && accountNumber) {
+          await this.getRepo().update(
+            { id: userId },
+            {
+              virtualAccountName: accountName,
+              virtualAccountNumber: accountNumber,
+              bankName: 'WEMA BANK',
+            },
+          );
+        }
+      }
     } catch (ex) {
       this.logger.error(ex);
       throw ex;
