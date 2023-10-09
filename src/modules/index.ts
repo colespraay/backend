@@ -45,3 +45,7 @@ export * from './withdrawal/withdrawal.service';
 export * from './user-account/user-account.controller';
 export * from './user-account/user-account.module';
 export * from './user-account/user-account.service';
+// [Bank]
+export * from './bank/bank.module';
+export * from './bank/bank.service';
+export * from './bank/bank.controller';

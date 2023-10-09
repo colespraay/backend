@@ -10,8 +10,8 @@ import {
 import { TransactionType, generateUniqueCode } from '@utils/index';
 import { Base, User, Gifting, uuidV4, EventSpraay, Withdrawal } from './index';
 
-@Entity({ name: 'TRANSACTION' })
-export class Transaction extends Base {
+@Entity({ name: 'transaction_record' })
+export class TransactionRecord extends Base {
   @ApiProperty()
   @Column({ type: 'float', default: 0 })
   amount: number;
@@ -48,7 +48,11 @@ export class Transaction extends Base {
   userId: string;
 
   @ApiProperty({ type: () => User })
-  @JoinColumn({ name: 'userId' })
+  @JoinColumn({
+    name: 'userId',
+    referencedColumnName: 'id',
+    foreignKeyConstraintName: 'user_fk_name',
+  })
   @ManyToOne(() => User, ({ transactions }) => transactions, {
     onDelete: 'CASCADE',
     onUpdate: 'CASCADE',

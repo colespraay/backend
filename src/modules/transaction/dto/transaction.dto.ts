@@ -1,5 +1,5 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { Transaction } from '@entities/index';
+import { TransactionRecord } from '@entities/index';
 import {
   BaseResponseTypeDTO,
   FileExportDataResponseDTO,
@@ -9,13 +9,13 @@ import {
 } from '@utils/index';
 
 export class TransactionResponseDTO extends BaseResponseTypeDTO {
-  @ApiProperty({ type: () => Transaction })
-  data: Transaction;
+  @ApiProperty({ type: () => TransactionRecord })
+  data: TransactionRecord;
 }
 
 export class TransactionsResponseDTO extends BaseResponseTypeDTO {
-  @ApiProperty({ type: () => [Transaction] })
-  data: Transaction[];
+  @ApiProperty({ type: () => [TransactionRecord] })
+  data: TransactionRecord[];
 
   @ApiProperty({ type: () => PaginationResponseType })
   paginationControl?: PaginationResponseType;
@@ -76,6 +76,6 @@ export class ExportReceiptDTO extends FileExportDataResponseDTO {
   @ApiProperty()
   recipients: string[];
 
-  @ApiProperty({ type: () => Transaction })
-  transaction: Transaction;
+  @ApiProperty({ type: () => TransactionRecord })
+  transaction: TransactionRecord;
 }

@@ -8,7 +8,7 @@ import { OnEvent, EventEmitter2 } from '@nestjs/event-emitter';
 import { FindManyOptions, ILike, In, IsNull, Not } from 'typeorm';
 import { createReadStream, unlinkSync } from 'fs';
 import { GenericService } from '@schematics/index';
-import { Transaction, User } from '@entities/index';
+import { TransactionRecord, User } from '@entities/index';
 import {
   TransactionType,
   calculatePaginationControls,
@@ -35,7 +35,7 @@ import { FindStatementOfAccountDTO } from '@modules/wallet/dto/wallet.dto';
 import { UsersResponseDTO } from '@modules/user/dto/user.dto';
 
 @Injectable()
-export class TransactionService extends GenericService(Transaction) {
+export class TransactionService extends GenericService(TransactionRecord) {
   constructor(
     private readonly userSrv: UserService,
     private readonly eventEmitterSrv: EventEmitter2,
@@ -123,7 +123,9 @@ export class TransactionService extends GenericService(Transaction) {
           `Transaction with reference '${payload.reference}' already exists`,
         );
       }
-      const createdRecord = await this.create<Partial<Transaction>>(payload);
+      const createdRecord = await this.create<Partial<TransactionRecord>>(
+        payload,
+      );
       const walletBalance = await this.userSrv.getCurrentWalletBalance(
         payload.userId,
       );
@@ -163,7 +165,7 @@ export class TransactionService extends GenericService(Transaction) {
     payload: FindTransactionDTO,
   ): Promise<TransactionsResponseDTO> {
     try {
-      const filter: FindManyOptions<Transaction> = {};
+      const filter: FindManyOptions<TransactionRecord> = {};
       if (payload.date) {
         filter.where = { ...filter.where, createdDate: payload.date };
       }
@@ -206,7 +208,7 @@ export class TransactionService extends GenericService(Transaction) {
         filter.skip = (payload.pageNumber - 1) * payload.pageSize;
         filter.take = payload.pageSize;
         const { response, paginationControl } =
-          await calculatePaginationControls<Transaction>(
+          await calculatePaginationControls<TransactionRecord>(
             this.getRepo(),
             filter,
             payload,
@@ -507,7 +509,7 @@ export class TransactionService extends GenericService(Transaction) {
     }
   }
 
-  private formatHtmlForReceipt(transaction: Transaction): string {
+  private formatHtmlForReceipt(transaction: TransactionRecord): string {
     return `<!DOCTYPE html>
     <html>
     <head>
@@ -624,8 +626,8 @@ export class TransactionService extends GenericService(Transaction) {
     startDate: Date,
     endDate: Date,
     user: User,
-    firstTransaction: Transaction,
-    lastTransaction: Transaction,
+    firstTransaction: TransactionRecord,
+    lastTransaction: TransactionRecord,
   ): string {
     // FORMAT: { '12/10/2023': [Transactions] }
     startDate = new Date(startDate);
@@ -725,7 +727,7 @@ export class TransactionService extends GenericService(Transaction) {
               <th>Money Out</th>
               <th>Balance</th>
             </tr>`;
-      for (const transaction of payload[item] as Transaction[]) {
+      for (const transaction of payload[item] as TransactionRecord[]) {
         html += ` <tr>
         <td>${transaction.createdTime}</td>
         <td>${transaction.type}</td>

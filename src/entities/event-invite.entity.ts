@@ -2,7 +2,7 @@ import { ApiProperty } from '@nestjs/swagger';
 import { BeforeInsert, Column, Entity, JoinColumn, ManyToOne } from 'typeorm';
 import { Base, User, uuidV4, EventRecord } from './index';
 
-@Entity({ name: 'EVENT_INVITE' })
+@Entity({ name: 'event_invite' })
 export class EventInvite extends Base {
   @Column({ type: 'uuid' })
   userId: string;

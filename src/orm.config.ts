@@ -49,5 +49,4 @@ switch (NODE_ENV) {
     };
     break;
 }
-
 export default config;

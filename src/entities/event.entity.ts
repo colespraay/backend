@@ -23,7 +23,7 @@ import {
 } from './index';
 import { GeoCoordinateDTO } from '@modules/event/dto/event.dto';
 
-@Entity({ name: 'EVENT' })
+@Entity({ name: 'event' })
 export class EventRecord extends Base {
   @ApiProperty()
   @Column({ type: 'varchar', length: 255 })

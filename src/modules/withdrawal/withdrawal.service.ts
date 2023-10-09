@@ -5,7 +5,7 @@ import {
   Injectable,
   forwardRef,
 } from '@nestjs/common';
-import { Transaction, UserAccount, Withdrawal } from '@entities/index';
+import { TransactionRecord, UserAccount, Withdrawal } from '@entities/index';
 import { GenericService } from '@schematics/index';
 import {
   TransactionType,
@@ -95,7 +95,7 @@ export class WithdrawalService extends GenericService(Withdrawal) {
       );
       if (debitResponse.success) {
         const createdTransaction = await this.transactionSrv.create<
-          Partial<Transaction>
+          Partial<TransactionRecord>
         >({
           transactionDate: debitResponse.data.orinalTxnTransactionDate,
           currentBalanceBeforeTransaction: user.data.walletBalance,

@@ -1,13 +1,19 @@
-import { Module } from '@nestjs/common';
+import { Module, forwardRef } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { Gifting } from '@entities/index';
 import { GiftingService } from './gifting.service';
 import { GiftingController } from './gifting.controller';
-import { TransactionModule, UserModule, WalletModule } from '../index';
+import {
+  BankModule,
+  TransactionModule,
+  UserModule,
+  WalletModule,
+} from '../index';
 
 @Module({
   imports: [
     TypeOrmModule.forFeature([Gifting]),
+    forwardRef(() => BankModule),
     UserModule,
     TransactionModule,
     WalletModule,

@@ -1,8 +1,8 @@
 import { ApiProperty } from '@nestjs/swagger';
 import { Entity, Column, BeforeInsert, JoinColumn, ManyToOne } from 'typeorm';
-import { Base, Transaction, User, uuidV4 } from './index';
+import { Base, TransactionRecord, User, uuidV4 } from './index';
 
-@Entity({ name: 'WITHDRAWAL' })
+@Entity({ name: 'withdrawal' })
 export class Withdrawal extends Base {
   @Column({ type: 'uuid' })
   userId: string;
@@ -18,13 +18,13 @@ export class Withdrawal extends Base {
   @Column({ type: 'uuid' })
   transactionId: string;
 
-  @ApiProperty({ type: () => Transaction })
+  @ApiProperty({ type: () => TransactionRecord })
   @JoinColumn({ name: 'transactionId' })
-  @ManyToOne(() => Transaction, ({ withdrawals }) => withdrawals, {
+  @ManyToOne(() => TransactionRecord, ({ withdrawals }) => withdrawals, {
     onDelete: 'CASCADE',
     onUpdate: 'CASCADE',
   })
-  transaction: Transaction;
+  transaction: TransactionRecord;
 
   @ApiProperty()
   @Column({ type: 'float', default: 0 })

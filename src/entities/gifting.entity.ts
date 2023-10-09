@@ -1,8 +1,8 @@
 import { ApiProperty } from '@nestjs/swagger';
 import { Column, Entity, JoinColumn, ManyToOne, BeforeInsert } from 'typeorm';
-import { User, Base, Transaction, uuidV4 } from './index';
+import { User, Base, TransactionRecord, uuidV4 } from './index';
 
-@Entity({ name: 'GIFTING' })
+@Entity({ name: 'gifting' })
 export class Gifting extends Base {
   @Column({ type: 'uuid' })
   receiverUserId: string;
@@ -22,13 +22,13 @@ export class Gifting extends Base {
   @Column({ type: 'uuid' })
   transactionId: string;
 
-  @ApiProperty({ type: () => Transaction })
+  @ApiProperty({ type: () => TransactionRecord })
   @JoinColumn({ name: 'transactionId' })
-  @ManyToOne(() => Transaction, ({ gifts }) => gifts, {
+  @ManyToOne(() => TransactionRecord, ({ gifts }) => gifts, {
     onDelete: 'CASCADE',
     onUpdate: 'CASCADE',
   })
-  transaction: Transaction;
+  transaction: TransactionRecord;
 
   @BeforeInsert()
   beforeInsertHandler(): void {

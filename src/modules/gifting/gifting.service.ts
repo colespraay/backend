@@ -7,7 +7,7 @@ import {
   UnauthorizedException,
 } from '@nestjs/common';
 import { EventEmitter2 } from '@nestjs/event-emitter';
-import { Gifting, Transaction } from '@entities/index';
+import { Gifting, TransactionRecord } from '@entities/index';
 import { GenericService } from '@schematics/index';
 import {
   TransactionType,
@@ -92,7 +92,7 @@ export class GiftingService extends GenericService(Gifting) {
       );
       if (debitResponse.success) {
         const createdTransaction = await this.transactionSrv.create<
-          Partial<Transaction>
+          Partial<TransactionRecord>
         >({
           transactionDate: debitResponse.data.orinalTxnTransactionDate,
           currentBalanceBeforeTransaction: user.data.walletBalance,

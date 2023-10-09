@@ -15,13 +15,13 @@ import {
   uuidV4,
   NotificationMessage,
   EventRSVP,
-  Transaction,
+  TransactionRecord,
   Gifting,
   UserAccount,
   Withdrawal,
 } from './index';
 
-@Entity({ name: 'USER' })
+@Entity({ name: 'user' })
 export class User extends Base {
   @ApiProperty()
   @Column({ type: 'varchar', length: 255, nullable: true })
@@ -157,15 +157,15 @@ export class User extends Base {
   @OneToMany(() => NotificationMessage, ({ user }) => user, { cascade: true })
   notifications: NotificationMessage[];
 
-  @ApiProperty({ type: () => [Transaction] })
-  @OneToMany(() => Transaction, ({ user }) => user, { cascade: true })
-  transactions: Transaction[];
+  @ApiProperty({ type: () => [TransactionRecord] })
+  @OneToMany(() => TransactionRecord, ({ user }) => user, { cascade: true })
+  transactions: TransactionRecord[];
 
-  @ApiProperty({ type: () => [Transaction] })
-  @OneToMany(() => Transaction, ({ receiverUser }) => receiverUser, {
+  @ApiProperty({ type: () => [TransactionRecord] })
+  @OneToMany(() => TransactionRecord, ({ receiverUser }) => receiverUser, {
     cascade: true,
   })
-  receivedTransactions: Transaction[];
+  receivedTransactions: TransactionRecord[];
 
   @ApiProperty({ type: () => [UserAccount] })
   @OneToMany(() => UserAccount, ({ user }) => user, { cascade: true })

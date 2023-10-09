@@ -3,7 +3,7 @@ import { Column, BeforeInsert, Entity, JoinColumn, ManyToOne } from 'typeorm';
 import { NotificationType, NotificationPurpose } from '@utils/index';
 import { Base, User, uuidV4 } from './index';
 
-@Entity({ name: 'NOTIFICATION_MESSAGE' })
+@Entity({ name: 'notification_message' })
 export class NotificationMessage extends Base {
   @ApiProperty()
   @Column({ type: 'varchar', length: 255 })

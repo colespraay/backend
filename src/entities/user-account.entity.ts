@@ -2,7 +2,7 @@ import { ApiProperty } from '@nestjs/swagger';
 import { Column, Entity, JoinColumn, ManyToOne } from 'typeorm';
 import { Base, User } from './index';
 
-@Entity({ name: 'USER_ACCOUNT' })
+@Entity({ name: 'user_account' })
 export class UserAccount extends Base {
   @ApiProperty()
   @Column({ type: 'varchar', length: 100 })

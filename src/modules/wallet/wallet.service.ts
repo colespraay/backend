@@ -1,9 +1,11 @@
 import {
   BadGatewayException,
   HttpStatus,
+  Inject,
   Injectable,
   Logger,
   NotFoundException,
+  forwardRef,
 } from '@nestjs/common';
 import { EventEmitter2, OnEvent } from '@nestjs/event-emitter';
 import {
@@ -15,8 +17,9 @@ import {
   generateUniqueCode,
   httpGet,
   httpPost,
+  validateEmailField,
 } from '@utils/index';
-import { UserService } from '../index';
+import { BankService, UserService } from '../index';
 import {
   BankAccountStatementDTO,
   BankListDTO,
@@ -47,6 +50,8 @@ export class WalletService {
 
   constructor(
     private readonly userSrv: UserService,
+    @Inject(forwardRef(() => BankService))
+    private readonly bankSrv: BankService,
     private readonly eventEmitterSrv: EventEmitter2,
   ) {}
 
@@ -62,6 +67,7 @@ export class WalletService {
         ['dob', 'email', 'gender', 'firstName', 'lastName', 'phoneNumber'],
         user,
       );
+      validateEmailField(user.email);
       if (!user.virtualAccountNumber) {
         // initiate wallet creation
         const dob = new Date(user.dob);
@@ -149,19 +155,17 @@ export class WalletService {
   // https://apiplayground.alat.ng/debit-wallet/api/Shared/GetAllBanks
   async getBankLists(): Promise<BankListDTO> {
     try {
-      const url =
-        'https://apiplayground.alat.ng/debit-wallet/api/Shared/GetAllBanks';
-      const data = await httpGet<any>(url, {
-        'x-api-key': String(process.env.WEMA_ATLAT_X_API_KEY),
-        'Ocp-Apim-Subscription-Key': String(
-          process.env.WEMA_ATLAT_WALLET_CREATION_SUB_KEY,
-        ),
+      const bankList = await this.bankSrv.getRepo().find({
+        where: { status: true },
       });
       return {
         success: true,
         code: HttpStatus.OK,
-        message: 'List found',
-        data: data.result as BankListPartialDTO[],
+        message: 'Bank list found',
+        data: bankList.map(({ bankName, bankCode }) => ({
+          bankName,
+          bankCode,
+        })),
       };
     } catch (ex) {
       this.logger.error(ex);
