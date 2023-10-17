@@ -230,7 +230,7 @@ export class UserService extends GenericService(User) {
       }
       const isValid = await verifyPasswordHash(pin, user.transactionPin);
       if (!isValid) {
-        throw new BadRequestException('Invalid pin');
+        throw new BadRequestException('Invalid transaction pin');
       }
       return {
         success: true,

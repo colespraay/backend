@@ -17,6 +17,7 @@ import {
   checkForRequiredFields,
   validateUUIDField,
 } from '@utils/index';
+import { TransactionService } from '@modules/transaction/transaction.service';
 import {
   EventSpraayResponseDTO,
   CreateEventSpraayDTO,
@@ -25,7 +26,6 @@ import {
   FindEventSpraaysDTO,
 } from './dto/event-spraay.dto';
 import { EventService, UserService, WalletService } from '../index';
-import { TransactionService } from '@modules/transaction/transaction.service';
 
 @Injectable()
 export class EventSpraayService extends GenericService(EventSpraay) {
@@ -59,7 +59,7 @@ export class EventSpraayService extends GenericService(EventSpraay) {
         payload.transactionPin,
       );
       if (!isPinValid?.success) {
-        throw new BadRequestException('Invalid pin');
+        throw new BadRequestException('Invalid transaction pin');
       }
       const enoughBalance =
         await this.userSrv.doesUserHaveEnoughBalanceInWallet(
@@ -96,6 +96,7 @@ export class EventSpraayService extends GenericService(EventSpraay) {
           narration,
         },
       );
+      // Also handles the debit of user's wallet
       const newTransaction = await this.transactionSrv.createTransaction({
         reference: debitTransaction.data.transactionReference,
         transactionDate: debitTransaction.data.orinalTxnTransactionDate,
@@ -115,10 +116,10 @@ export class EventSpraayService extends GenericService(EventSpraay) {
         userId: event.data.userId,
         amount: payload.amount,
       });
-      this.eventEmitterSrv.emit('wallet.debit', {
-        userId: user.id,
-        amount: payload.amount,
-      });
+      // this.eventEmitterSrv.emit('wallet.debit', {
+      //   userId: user.id,
+      //   amount: payload.amount,
+      // });
       return {
         success: true,
         data: newSpraay,

@@ -1,5 +1,5 @@
 import { HttpStatus, Injectable, Logger } from '@nestjs/common';
-import { generateUniqueCode, httpGet, httpPost } from '@utils/index';
+import { httpGet, httpPost } from '@utils/index';
 import { CreateAirtimePurchaseDTO } from '@modules/airtime-purchase/dto/airtime-purchase.dto';
 import {
   BillProviderDTO,
@@ -15,6 +15,7 @@ export class BillService {
 
   async makeAirtimePurchase(
     payload: CreateAirtimePurchaseDTO,
+    reference: string,
     env = 'TEST',
   ): Promise<FlutterwaveBillPaymentResponseDTO> {
     try {
@@ -25,7 +26,7 @@ export class BillService {
         amount: payload.amount,
         recurrence: 'ONCE',
         type: 'AIRTIME',
-        reference: `Ref-${generateUniqueCode(8)}`,
+        reference: reference,
         biller_name: payload.provider,
       };
       if (env === 'TEST') {

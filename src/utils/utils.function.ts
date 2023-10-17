@@ -366,7 +366,7 @@ export const saveLogToFile = (error: any) => {
 
 export const formatPhoneNumberWithPrefix = (
   phoneNumber: string,
-  prefix = '234',
+  prefix = '+234',
 ): string => {
   let formattedPhoneNumber = phoneNumber;
   if (!phoneNumber.startsWith(prefix)) {

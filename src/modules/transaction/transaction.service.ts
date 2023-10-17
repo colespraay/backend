@@ -126,27 +126,18 @@ export class TransactionService extends GenericService(TransactionRecord) {
       const createdRecord = await this.create<Partial<TransactionRecord>>(
         payload,
       );
-      const walletBalance = await this.userSrv.getCurrentWalletBalance(
-        payload.userId,
-      );
       switch (createdRecord.type) {
         case TransactionType.CREDIT:
-          const creditedAccountBalance = walletBalance + payload.amount;
-          await this.userSrv
-            .getRepo()
-            .update(
-              { id: payload.userId },
-              { walletBalance: creditedAccountBalance },
-            );
+          await this.userSrv.creditUserWallet({
+            amount: payload.amount,
+            userId: payload.userId,
+          });
           break;
         case TransactionType.DEBIT:
-          const debitedAccountBalance = walletBalance - payload.amount;
-          await this.userSrv
-            .getRepo()
-            .update(
-              { id: payload.userId },
-              { walletBalance: debitedAccountBalance },
-            );
+          await this.userSrv.debitUserWallet({
+            amount: payload.amount,
+            userId: payload.userId,
+          });
           break;
       }
       return {

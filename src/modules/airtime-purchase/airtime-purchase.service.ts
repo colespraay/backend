@@ -1,3 +1,4 @@
+import { EventEmitter2 } from '@nestjs/event-emitter';
 import {
   BadGatewayException,
   BadRequestException,
@@ -5,7 +6,6 @@ import {
   HttpStatus,
   Injectable,
 } from '@nestjs/common';
-import { EventEmitter2 } from '@nestjs/event-emitter';
 import {
   AirtimeProvider,
   TransactionType,
@@ -70,7 +70,7 @@ export class AirtimePurchaseService extends GenericService(AirtimePurchase) {
         payload.transactionPin,
       );
       if (!isPinValid?.success) {
-        throw new BadRequestException('Invalid pin');
+        throw new BadRequestException('Invalid transaction pin');
       }
       const enoughBalance =
         await this.userSrv.doesUserHaveEnoughBalanceInWallet(
@@ -108,6 +108,7 @@ export class AirtimePurchaseService extends GenericService(AirtimePurchase) {
       // Make purchase from flutterwave
       const airtimePurchaseResponse = await this.billSrv.makeAirtimePurchase(
         payload,
+        walletResponse.data.transactionReference,
       );
       this.logger.log({ airtimePurchaseResponse });
       const createdAirtimePurchase = await this.create<
@@ -121,12 +122,9 @@ export class AirtimePurchaseService extends GenericService(AirtimePurchase) {
         userId: user.id,
         amount: payload.amount,
         type: TransactionType.DEBIT,
+        reference: walletResponse.data.transactionReference,
         currentBalanceBeforeTransaction: user.walletBalance,
         transactionDate: walletResponse.data.orinalTxnTransactionDate,
-      });
-      this.eventEmitterSrv.emit('wallet.debit', {
-        userId: user.id,
-        amount: payload.amount,
       });
       return {
         success: true,
