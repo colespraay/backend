@@ -88,12 +88,12 @@ export class EventSpraayService extends GenericService(EventSpraay) {
       const debitTransaction = await this.walletSrv.makeTransferFromWallet(
         user.virtualAccountNumber,
         {
+          narration,
           amount: payload.amount,
+          destinationBankCode: bank.bankCode,
+          destinationBankName: event.data.user.bankName,
           destinationAccountName: event.data.user.virtualAccountName,
           destinationAccountNumber: event.data.user.virtualAccountNumber,
-          destinationBankName: event.data.user.bankName,
-          destinationBankCode: bank.bankCode,
-          narration,
         },
       );
       // Also handles the debit of user's wallet
