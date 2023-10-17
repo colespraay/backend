@@ -239,6 +239,14 @@ export class WalletService {
     env = 'TEST',
   ): Promise<VerifiesAccountDetailDTO> {
     try {
+      if (env === 'TEST') {
+        return {
+          accountName: 'James Osagie',
+          accountNumber: userAccountNumber,
+          bankCode: '035',
+          currency: 'NGN',
+        };
+      }
       // Verify destination Account
       const destinationAccountEnquiryUrl = `https://apiplayground.alat.ng/debit-wallet/api/Shared/AccountNameEnquiry/Wallet/${userAccountNumber}`;
       const destinationAccount = await httpGet<any>(
@@ -265,9 +273,6 @@ export class WalletService {
       };
     } catch (ex) {
       this.logger.error(ex);
-      if (env === 'TEST') {
-        throw new NotFoundException('Could not verify wallet');
-      }
       throw ex;
     }
   }

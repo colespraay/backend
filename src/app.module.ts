@@ -17,6 +17,7 @@ import {
 import {
   UserModule,
   AuthModule,
+  BillModule,
   WalletModule,
   GiftingModule,
   UserAccountModule,
@@ -28,6 +29,7 @@ import {
   TransactionModule,
   NotificationMessageModule,
   WithdrawalModule,
+  AirtimePurchaseModule,
 } from '@modules/index';
 import { AppService } from './app.service';
 import ormConfig from './orm.config';
@@ -45,6 +47,7 @@ import ormConfig from './orm.config';
     GiftingModule,
     WithdrawalModule,
     UserAccountModule,
+    AirtimePurchaseModule,
     BankModule,
     EventModule,
     EventInviteModule,
@@ -53,6 +56,7 @@ import ormConfig from './orm.config';
     WalletModule,
     TransactionModule,
     NotificationMessageModule,
+    BillModule,
   ],
   controllers: [AppController],
   providers: [

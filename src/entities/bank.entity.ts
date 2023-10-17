@@ -15,5 +15,6 @@ export class Bank extends Base {
   @BeforeInsert()
   beforeInsertHandler(): void {
     this.id = uuidV4();
+    this.bankName.toUpperCase();
   }
 }

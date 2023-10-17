@@ -79,3 +79,10 @@ export enum EventStatus {
   ONGOING = 'ONGOING',
   PAST = 'PAST',
 }
+
+export enum AirtimeProvider {
+  MTN = 'MTN',
+  NINE_MOBILE = '9_MOBILE',
+  GLO = 'GLO',
+  AIRTEL = 'AIRTEL',
+}

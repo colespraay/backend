@@ -11,4 +11,5 @@ export * from './user-account.entity';
 export * from './withdrawal.entity';
 export * from './bank.entity';
 export * from './notification-message.entity';
+export * from './airtime-purchase.entity';
 export { v4 as uuidV4 } from 'uuid';

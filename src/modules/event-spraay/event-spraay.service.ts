@@ -79,12 +79,10 @@ export class EventSpraayService extends GenericService(EventSpraay) {
       const currentWalletBalance = await this.userSrv.getCurrentWalletBalance(
         user.id,
       );
-
-      // TODO: Uncomment during controlled test
-      // const walletVerified = await this.walletSrv.verifyWalletAccountNumber(
-      //   event.data.user.virtualAccountNumber,
-      // );
-      // this.logger.log({ walletVerified });
+      const walletVerified = await this.walletSrv.verifyWalletAccountNumber(
+        event.data.user.virtualAccountNumber,
+      );
+      this.logger.log({ walletVerified });
 
       const narration = `Spraayed by ${user?.firstName} ${user?.lastName}`;
       const debitTransaction = await this.walletSrv.makeTransferFromWallet(
@@ -115,6 +113,10 @@ export class EventSpraayService extends GenericService(EventSpraay) {
       // Credit account of event owner
       this.eventEmitterSrv.emit('wallet.credit', {
         userId: event.data.userId,
+        amount: payload.amount,
+      });
+      this.eventEmitterSrv.emit('wallet.debit', {
+        userId: user.id,
         amount: payload.amount,
       });
       return {

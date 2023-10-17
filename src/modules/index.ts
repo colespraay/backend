@@ -49,3 +49,11 @@ export * from './user-account/user-account.service';
 export * from './bank/bank.module';
 export * from './bank/bank.service';
 export * from './bank/bank.controller';
+// [Bill]
+export * from './bill/bill.module';
+export * from './bill/bill.service';
+export * from './bill/bill.controller';
+// [AirtimePurchase]
+export * from './airtime-purchase/airtime-purchase.module';
+export * from './airtime-purchase/airtime-purchase.service';
+export * from './airtime-purchase/airtime-purchase.controller';
