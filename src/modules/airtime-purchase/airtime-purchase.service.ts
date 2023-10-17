@@ -44,9 +44,6 @@ export class AirtimePurchaseService extends GenericService(AirtimePurchase) {
     super();
   }
 
-  // F.E should
-  // 1. verify pin
-  // 2. Verify account balance
   async createAirtimePurchase(
     payload: CreateAirtimePurchaseDTO,
     user: User,
