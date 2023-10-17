@@ -20,6 +20,7 @@ import {
   UserAccount,
   Withdrawal,
   AirtimePurchase,
+  DataPurchase,
 } from './index';
 
 @Entity({ name: 'user' })
@@ -189,6 +190,12 @@ export class User extends Base {
     cascade: true,
   })
   airtimePurchases: AirtimePurchase[];
+
+  @ApiProperty({ type: () => [DataPurchase] })
+  @OneToMany(() => DataPurchase, ({ user }) => user, {
+    cascade: true,
+  })
+  dataPurchases: DataPurchase[];
 
   @BeforeInsert()
   async beforeInsertHandler(): Promise<void> {

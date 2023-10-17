@@ -30,6 +30,7 @@ import {
   NotificationMessageModule,
   WithdrawalModule,
   AirtimePurchaseModule,
+  DataPurchaseModule,
 } from '@modules/index';
 import { AppService } from './app.service';
 import ormConfig from './orm.config';
@@ -47,7 +48,6 @@ import ormConfig from './orm.config';
     GiftingModule,
     WithdrawalModule,
     UserAccountModule,
-    AirtimePurchaseModule,
     BankModule,
     EventModule,
     EventInviteModule,
@@ -57,6 +57,8 @@ import ormConfig from './orm.config';
     TransactionModule,
     NotificationMessageModule,
     BillModule,
+    AirtimePurchaseModule,
+    DataPurchaseModule,
   ],
   controllers: [AppController],
   providers: [

@@ -57,3 +57,7 @@ export * from './bill/bill.controller';
 export * from './airtime-purchase/airtime-purchase.module';
 export * from './airtime-purchase/airtime-purchase.service';
 export * from './airtime-purchase/airtime-purchase.controller';
+// [DataPurchase]
+export * from './data-purchase/data-purchase.module';
+export * from './data-purchase/data-purchase.service';
+export * from './data-purchase/data-purchase.controller';

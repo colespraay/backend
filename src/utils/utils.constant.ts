@@ -82,7 +82,7 @@ export enum EventStatus {
 
 export enum AirtimeProvider {
   MTN = 'MTN',
-  NINE_MOBILE = '9_MOBILE',
+  NINE_MOBILE = '9MOBILE',
   GLO = 'GLO',
   AIRTEL = 'AIRTEL',
 }
