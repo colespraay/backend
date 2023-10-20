@@ -123,3 +123,52 @@ export class FlutterwaveDataPlanDTO extends BaseResponseTypeDTO {
   @ApiProperty({ type: () => [FlutterwaveDataPlanPartial] })
   data: FlutterwaveDataPlanPartial[];
 }
+
+export class FlutterwaveCableBillingOptionPartial {
+  @ApiProperty()
+  id: number;
+
+  @ApiProperty()
+  biller_code: string;
+
+  @ApiProperty()
+  name: string;
+
+  @ApiProperty()
+  default_commission: number;
+
+  @ApiProperty()
+  date_added: Date;
+
+  @ApiProperty()
+  country: string;
+
+  @ApiProperty()
+  is_airtime: boolean;
+
+  @ApiProperty()
+  biller_name: string;
+
+  @ApiProperty()
+  item_code: string;
+
+  @ApiProperty()
+  short_name: string;
+
+  @ApiProperty()
+  fee: number;
+
+  @ApiProperty()
+  commission_on_fee: boolean;
+
+  @ApiProperty()
+  label_name: string;
+
+  @ApiProperty()
+  amount: number;
+}
+
+export class FlutterwaveCableBillingOptionResponseDTO extends BaseResponseTypeDTO {
+  @ApiProperty({ type: () => [FlutterwaveCableBillingOptionPartial] })
+  data: FlutterwaveCableBillingOptionPartial[];
+}

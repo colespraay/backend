@@ -22,6 +22,7 @@ import {
   AirtimePurchase,
   DataPurchase,
   ElectricityPurchase,
+  CablePurchase,
 } from './index';
 
 @Entity({ name: 'user' })
@@ -197,6 +198,12 @@ export class User extends Base {
     cascade: true,
   })
   dataPurchases: DataPurchase[];
+
+  @ApiProperty({ type: () => [CablePurchase] })
+  @OneToMany(() => CablePurchase, ({ user }) => user, {
+    cascade: true,
+  })
+  cablePurchases: CablePurchase[];
 
   @ApiProperty({ type: () => [ElectricityPurchase] })
   @OneToMany(() => ElectricityPurchase, ({ user }) => user, {

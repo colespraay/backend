@@ -7,6 +7,7 @@ import { WalletModule } from '@modules/wallet/wallet.module';
 import { BankModule } from '@modules/bank/bank.module';
 import { DataPurchaseModule } from '@modules/data-purchase/data-purchase.module';
 import { ElectricityPurchaseModule } from '@modules/electricity-purchase/electricity-purchase.module';
+import { CablePurchaseModule } from '@modules/cable-purchase/cable-purchase.module';
 
 @Module({
   imports: [
@@ -16,6 +17,7 @@ import { ElectricityPurchaseModule } from '@modules/electricity-purchase/electri
     WalletModule,
     ElectricityPurchaseModule,
     DataPurchaseModule,
+    CablePurchaseModule,
   ],
   controllers: [BillController],
   providers: [BillService],

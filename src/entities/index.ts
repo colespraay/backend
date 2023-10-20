@@ -13,5 +13,6 @@ export * from './bank.entity';
 export * from './notification-message.entity';
 export * from './airtime-purchase.entity';
 export * from './data-purchase.entity';
+export * from './cable-purchase.entity';
 export * from './electricity-purchase.entity';
 export { v4 as uuidV4 } from 'uuid';

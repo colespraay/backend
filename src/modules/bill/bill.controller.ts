@@ -10,7 +10,7 @@ import {
 } from '@nestjs/swagger';
 import { User } from '@entities/index';
 import { CurrentUser, RolesGuard } from '@schematics/index';
-import { AirtimeProvider, DecodedTokenKey } from '@utils/index';
+import { AirtimeProvider, CableProvider, DecodedTokenKey } from '@utils/index';
 import { AirtimePurchaseService } from '@modules/airtime-purchase/airtime-purchase.service';
 import {
   AirtimePurchaseResponseDTO,
@@ -21,6 +21,7 @@ import {
   CreateDataPurchaseDTO,
   DataPurchaseResponseDTO,
 } from '@modules/data-purchase/dto/data-purchase.dto';
+import { CablePurchaseService } from '@modules/cable-purchase/cable-purchase.service';
 import {
   CreateElectricityPurchaseDTO,
   ElectricityPurchaseResponseDTO,
@@ -28,7 +29,15 @@ import {
   VerifyElectricityPurchaseDTO,
 } from '@modules/electricity-purchase/dto/electricity-purchase.dto';
 import { ElectricityPurchaseService } from '@modules/electricity-purchase/electricity-purchase.service';
-import { BillProviderDTO, FlutterwaveDataPlanDTO } from './dto/bill.dto';
+import {
+  CablePurchaseResponseDTO,
+  CreateCableProviderDTO,
+} from '@modules/cable-purchase/dto/cable-purchase.dto';
+import {
+  BillProviderDTO,
+  FlutterwaveCableBillingOptionResponseDTO,
+  FlutterwaveDataPlanDTO,
+} from './dto/bill.dto';
 import { BillService } from './bill.service';
 
 @ApiBearerAuth('JWT')
@@ -41,7 +50,32 @@ export class BillController {
     private readonly electricityPurchaseSrv: ElectricityPurchaseService,
     private readonly dataPurchaseSrv: DataPurchaseService,
     private readonly airtimePurchaseSrv: AirtimePurchaseService,
+    private readonly cablePurchaseSrv: CablePurchaseService,
   ) {}
+
+  @ApiOperation({ description: 'Pay for cable plans' })
+  @ApiProduces('json')
+  @ApiConsumes('application/json')
+  @ApiResponse({ type: CablePurchaseResponseDTO })
+  @Post('/cable-purchase')
+  async createCablePurchase(
+    @Body() payload: CreateCableProviderDTO,
+    @CurrentUser(DecodedTokenKey.USER) user: User,
+  ): Promise<CablePurchaseResponseDTO> {
+    return await this.cablePurchaseSrv.createCablePurchase(payload, user);
+  }
+
+  @ApiParam({ enum: CableProvider, name: 'provider' })
+  @ApiOperation({ description: 'View plans for cable providers' })
+  @ApiProduces('json')
+  @ApiConsumes('application/json')
+  @ApiResponse({ type: FlutterwaveCableBillingOptionResponseDTO })
+  @Get('/cable-purchase/provider-options/:provider')
+  async findCableProviderOptions(
+    @Param('provider') provider: CableProvider,
+  ): Promise<FlutterwaveCableBillingOptionResponseDTO> {
+    return await this.billSrv.findCableProviderOptions(provider);
+  }
 
   @ApiOperation({ description: 'Buy electricity unit tokens' })
   @ApiProduces('json')

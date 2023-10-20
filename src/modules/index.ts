@@ -65,3 +65,7 @@ export * from './data-purchase/data-purchase.controller';
 export * from './electricity-purchase/electricity-purchase.module';
 export * from './electricity-purchase/electricity-purchase.service';
 export * from './electricity-purchase/electricity-purchase.controller';
+// [CablePurchase]
+export * from './cable-purchase/cable-purchase.module';
+export * from './cable-purchase/cable-purchase.service';
+export * from './cable-purchase/cable-purchase.controller';

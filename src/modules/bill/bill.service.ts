@@ -8,12 +8,16 @@ import {
 } from '@nestjs/common';
 import {
   AirtimeProvider,
+  CableProvider,
   ElectricityProvider,
   compareEnumValueFields,
   httpGet,
   httpPost,
 } from '@utils/index';
-import { CreateFlutterwaveDataPurchaseDTO } from '@modules/data-purchase/dto/data-purchase.dto';
+import {
+  CreateFlutterwaveCablePlanPurchaseDTO,
+  CreateFlutterwaveDataPurchaseDTO,
+} from '@modules/data-purchase/dto/data-purchase.dto';
 import { CreateAirtimePurchaseDTO } from '@modules/airtime-purchase/dto/airtime-purchase.dto';
 import {
   CreateElectricityPurchaseDTO,
@@ -23,6 +27,8 @@ import {
   BillProviderDTO,
   FlutterwaveBillItemVerificationResponseDTO,
   FlutterwaveBillPaymentResponseDTO,
+  FlutterwaveCableBillingOptionPartial,
+  FlutterwaveCableBillingOptionResponseDTO,
   FlutterwaveDataPlanDTO,
   FlutterwaveDataPlanPartial,
 } from './dto/bill.dto';
@@ -41,6 +47,59 @@ export class BillService implements OnModuleInit {
     //   plan: ElectricityPlan.POST_PAID,
     //   provider: ElectricityProvider.KEDCO,
     // });
+  }
+
+  async findCableProviderById(
+    cablePlanId: number,
+  ): Promise<FlutterwaveCableBillingOptionPartial> {
+    try {
+      const plans = await this.findCableProviderOptions();
+      const selectedPlan = plans.data.find((item) => item.id === cablePlanId);
+      if (!selectedPlan) {
+        throw new NotFoundException(
+          `Cable plan with id: '${cablePlanId}' not found`,
+        );
+      }
+      return selectedPlan;
+    } catch (ex) {
+      this.logger.error(ex);
+      throw ex;
+    }
+  }
+
+  async findCableProviderOptions(
+    provider?: CableProvider,
+  ): Promise<FlutterwaveCableBillingOptionResponseDTO> {
+    try {
+      if (provider) {
+        compareEnumValueFields(
+          provider,
+          Object.values(CableProvider),
+          'provider',
+        );
+      }
+      const url =
+        'https://api.flutterwave.com/v3/bill-categories?cable=1&country=NG';
+      const allPlans = await httpGet<any>(url, {
+        Authorization: `Bearer ${this.flutterwaveSecretKey}`,
+      });
+      let plans: FlutterwaveCableBillingOptionPartial[] =
+        allPlans.data as any[];
+      if (provider) {
+        plans = (allPlans.data as any[]).filter((item) =>
+          String(item.short_name).includes(provider),
+        );
+      }
+      return {
+        success: true,
+        code: HttpStatus.OK,
+        message: 'Plans successfully',
+        data: plans,
+      };
+    } catch (ex) {
+      this.logger.error(ex);
+      throw ex;
+    }
   }
 
   async findDataPlansForProvider(
@@ -189,6 +248,55 @@ export class BillService implements OnModuleInit {
     }
   }
 
+  async makeCablePlanPurchase(
+    payload: CreateFlutterwaveCablePlanPurchaseDTO,
+    reference: string,
+    plan: FlutterwaveCableBillingOptionPartial,
+    env = 'TEST',
+  ): Promise<FlutterwaveBillPaymentResponseDTO> {
+    try {
+      const url = 'https://api.flutterwave.com/v3/bills';
+      const reqPayload = {
+        country: 'NG',
+        customer: payload.smartCardNumber,
+        amount: payload.amount,
+        recurrence: 'ONCE',
+        type: plan.biller_name,
+        reference: reference,
+        biller_name: plan.biller_name,
+      };
+      if (env === 'TEST') {
+        return {
+          success: true,
+          code: HttpStatus.OK,
+          message: 'Airtime purchase successful',
+          data: {
+            phone_number: payload.smartCardNumber,
+            amount: payload.amount,
+            network: payload.provider,
+            flw_ref: reqPayload.reference,
+            tx_ref: reqPayload.reference,
+            reference: null,
+          },
+        };
+      }
+      const resp = await httpPost<any, any>(url, reqPayload, {
+        Authorization: `Bearer ${this.flutterwaveSecretKey}`,
+      });
+      if (resp.status === 'success') {
+        return {
+          success: true,
+          code: HttpStatus.OK,
+          message: 'Cable plan purchase successful',
+          data: resp.data,
+        };
+      }
+    } catch (ex) {
+      this.logger.error(ex);
+      throw ex;
+    }
+  }
+
   async makeAirtimePurchase(
     payload: CreateAirtimePurchaseDTO,
     reference: string,
@@ -239,7 +347,8 @@ export class BillService implements OnModuleInit {
 
   async findCableProviders(): Promise<BillProviderDTO> {
     try {
-      const url = 'https://api.flutterwave.com/v3/bill-categories?cables=1';
+      const url =
+        'https://api.flutterwave.com/v3/bill-categories?cable=1&country=NG';
       const data = await httpGet<any>(url, {
         Authorization: `Bearer ${this.flutterwaveSecretKey}`,
       });

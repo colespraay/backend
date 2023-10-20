@@ -104,3 +104,9 @@ export enum ElectricityPlan {
   PRE_PAID = 'PREPAID',
   POST_PAID = 'POSTPAID',
 }
+
+export enum CableProvider {
+  GOTV = 'GOTV',
+  DSTV = 'DSTV',
+  STARTIMES = 'STARTIMES',
+}

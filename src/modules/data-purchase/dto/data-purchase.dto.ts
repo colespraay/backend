@@ -1,6 +1,10 @@
-import { ApiProperty } from '@nestjs/swagger';
+import { ApiProperty, OmitType } from '@nestjs/swagger';
 import { DataPurchase } from '@entities/index';
-import { AirtimeProvider, BaseResponseTypeDTO } from '@utils/index';
+import {
+  AirtimeProvider,
+  BaseResponseTypeDTO,
+  CableProvider,
+} from '@utils/index';
 import { CreateAirtimePurchaseDTO } from '@modules/airtime-purchase/dto/airtime-purchase.dto';
 
 export class CreateDataPurchaseDTO {
@@ -20,6 +24,17 @@ export class CreateDataPurchaseDTO {
 export class CreateFlutterwaveDataPurchaseDTO extends CreateAirtimePurchaseDTO {
   @ApiProperty()
   type: string;
+}
+
+export class CreateFlutterwaveCablePlanPurchaseDTO extends OmitType(
+  CreateAirtimePurchaseDTO,
+  ['phoneNumber', 'provider'] as const,
+) {
+  @ApiProperty()
+  smartCardNumber: string;
+
+  @ApiProperty({ enum: CableProvider })
+  provider: CableProvider;
 }
 
 export class DataPurchaseResponseDTO extends BaseResponseTypeDTO {
