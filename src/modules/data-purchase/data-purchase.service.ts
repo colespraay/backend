@@ -5,6 +5,8 @@ import {
   HttpStatus,
   Injectable,
 } from '@nestjs/common';
+import { EventEmitter2 } from '@nestjs/event-emitter';
+import { BillService } from '@modules/bill/bill.service';
 import { DataPurchase, User } from '@entities/index';
 import {
   AirtimeProvider,
@@ -18,9 +20,8 @@ import {
   CreateDataPurchaseDTO,
   DataPurchaseResponseDTO,
 } from './dto/data-purchase.dto';
-import { EventEmitter2 } from '@nestjs/event-emitter';
-import { BillService } from '@modules/bill/bill.service';
 import { UserService, BankService, WalletService } from '../index';
+import { TransactionService } from '@modules/transaction/transaction.service';
 
 @Injectable()
 export class DataPurchaseService extends GenericService(DataPurchase) {
@@ -37,6 +38,7 @@ export class DataPurchaseService extends GenericService(DataPurchase) {
     private readonly bankSrv: BankService,
     private readonly walletSrv: WalletService,
     private readonly billSrv: BillService,
+    private readonly transactionSrv: TransactionService,
     private readonly eventEmitterSrv: EventEmitter2,
   ) {
     super();
@@ -113,12 +115,7 @@ export class DataPurchaseService extends GenericService(DataPurchase) {
         walletResponse.data.transactionReference,
       );
       this.logger.log({ dataPurchaseResponse });
-      const createdDataPurchase = await this.create<Partial<DataPurchase>>({
-        ...payload,
-        amount: plan.amount,
-        userId: user.id,
-      });
-      this.eventEmitterSrv.emit('transaction.log', {
+      const newTransaction = await this.transactionSrv.createTransaction({
         narration,
         userId: user.id,
         amount: plan.amount,
@@ -126,6 +123,12 @@ export class DataPurchaseService extends GenericService(DataPurchase) {
         reference: walletResponse.data.transactionReference,
         currentBalanceBeforeTransaction: user.walletBalance,
         transactionDate: walletResponse.data.orinalTxnTransactionDate,
+      });
+      const createdDataPurchase = await this.create<Partial<DataPurchase>>({
+        ...payload,
+        transactionId: newTransaction.data.id,
+        amount: plan.amount,
+        userId: user.id,
       });
       return {
         success: true,

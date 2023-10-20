@@ -23,6 +23,7 @@ import {
   CreateAirtimePurchaseDTO,
   AirtimePurchaseResponseDTO,
 } from './dto/airtime-purchase.dto';
+import { TransactionService } from '@modules/transaction/transaction.service';
 
 @Injectable()
 export class AirtimePurchaseService extends GenericService(AirtimePurchase) {
@@ -39,6 +40,7 @@ export class AirtimePurchaseService extends GenericService(AirtimePurchase) {
     private readonly bankSrv: BankService,
     private readonly walletSrv: WalletService,
     private readonly billSrv: BillService,
+    private readonly transactionSrv: TransactionService,
     private readonly eventEmitterSrv: EventEmitter2,
   ) {
     super();
@@ -108,13 +110,7 @@ export class AirtimePurchaseService extends GenericService(AirtimePurchase) {
         walletResponse.data.transactionReference,
       );
       this.logger.log({ airtimePurchaseResponse });
-      const createdAirtimePurchase = await this.create<
-        Partial<AirtimePurchase>
-      >({
-        ...payload,
-        userId: user.id,
-      });
-      this.eventEmitterSrv.emit('transaction.log', {
+      const newTransaction = await this.transactionSrv.createTransaction({
         narration,
         userId: user.id,
         amount: payload.amount,
@@ -122,6 +118,13 @@ export class AirtimePurchaseService extends GenericService(AirtimePurchase) {
         reference: walletResponse.data.transactionReference,
         currentBalanceBeforeTransaction: user.walletBalance,
         transactionDate: walletResponse.data.orinalTxnTransactionDate,
+      });
+      const createdAirtimePurchase = await this.create<
+        Partial<AirtimePurchase>
+      >({
+        ...payload,
+        transactionId: newTransaction.data.id,
+        userId: user.id,
       });
       return {
         success: true,

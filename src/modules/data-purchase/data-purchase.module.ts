@@ -5,6 +5,7 @@ import { BillModule } from '@modules/bill/bill.module';
 import { UserModule } from '@modules/user/user.module';
 import { BankModule } from '@modules/bank/bank.module';
 import { WalletModule } from '@modules/wallet/wallet.module';
+import { TransactionModule } from '@modules/transaction/transaction.module';
 import { DataPurchaseController } from './data-purchase.controller';
 import { DataPurchaseService } from './data-purchase.service';
 
@@ -15,6 +16,7 @@ import { DataPurchaseService } from './data-purchase.service';
     UserModule,
     BankModule,
     WalletModule,
+    TransactionModule,
   ],
   controllers: [DataPurchaseController],
   providers: [DataPurchaseService],

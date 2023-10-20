@@ -8,7 +8,17 @@ import {
   BeforeInsert,
 } from 'typeorm';
 import { TransactionType, generateUniqueCode } from '@utils/index';
-import { Base, User, Gifting, uuidV4, EventSpraay, Withdrawal } from './index';
+import {
+  Base,
+  User,
+  Gifting,
+  uuidV4,
+  EventSpraay,
+  Withdrawal,
+  ElectricityPurchase,
+  AirtimePurchase,
+  DataPurchase,
+} from './index';
 
 @Entity({ name: 'transaction_record' })
 export class TransactionRecord extends Base {
@@ -87,6 +97,24 @@ export class TransactionRecord extends Base {
     cascade: true,
   })
   withdrawals: Withdrawal[];
+
+  @ApiProperty({ type: () => [ElectricityPurchase] })
+  @OneToMany(() => ElectricityPurchase, ({ transaction }) => transaction, {
+    cascade: true,
+  })
+  electricityPurchases: ElectricityPurchase[];
+
+  @ApiProperty({ type: () => [AirtimePurchase] })
+  @OneToMany(() => AirtimePurchase, ({ transaction }) => transaction, {
+    cascade: true,
+  })
+  airtimePurchases: AirtimePurchase[];
+
+  @ApiProperty({ type: () => [DataPurchase] })
+  @OneToMany(() => DataPurchase, ({ transaction }) => transaction, {
+    cascade: true,
+  })
+  dataPurchases: DataPurchase[];
 
   @BeforeInsert()
   beforeInsertHandler(): void {

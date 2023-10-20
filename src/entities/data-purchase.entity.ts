@@ -1,7 +1,7 @@
 import { BeforeInsert, Column, Entity, JoinColumn, ManyToOne } from 'typeorm';
 import { ApiProperty } from '@nestjs/swagger';
 import { AirtimeProvider, formatPhoneNumberWithPrefix } from '@utils/index';
-import { Base, User, uuidV4 } from './index';
+import { Base, TransactionRecord, User, uuidV4 } from './index';
 
 @Entity({ name: 'data_purchase' })
 export class DataPurchase extends Base {
@@ -30,6 +30,17 @@ export class DataPurchase extends Base {
 
   @Column({ enum: AirtimeProvider })
   provider: AirtimeProvider;
+
+  @Column({ type: 'uuid', nullable: true })
+  transactionId: string;
+
+  @ApiProperty({ type: () => TransactionRecord })
+  @JoinColumn({ name: 'transactionId' })
+  @ManyToOne(() => TransactionRecord, ({ dataPurchases }) => dataPurchases, {
+    onDelete: 'CASCADE',
+    onUpdate: 'CASCADE',
+  })
+  transaction: TransactionRecord;
 
   @BeforeInsert()
   beforeInsertHandler(): void {

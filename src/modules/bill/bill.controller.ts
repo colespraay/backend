@@ -21,8 +21,15 @@ import {
   CreateDataPurchaseDTO,
   DataPurchaseResponseDTO,
 } from '@modules/data-purchase/dto/data-purchase.dto';
-import { BillService } from './bill.service';
+import {
+  CreateElectricityPurchaseDTO,
+  ElectricityPurchaseResponseDTO,
+  ElectricityPurchaseVerificationDTO,
+  VerifyElectricityPurchaseDTO,
+} from '@modules/electricity-purchase/dto/electricity-purchase.dto';
+import { ElectricityPurchaseService } from '@modules/electricity-purchase/electricity-purchase.service';
 import { BillProviderDTO, FlutterwaveDataPlanDTO } from './dto/bill.dto';
+import { BillService } from './bill.service';
 
 @ApiBearerAuth('JWT')
 @UseGuards(RolesGuard)
@@ -31,9 +38,42 @@ import { BillProviderDTO, FlutterwaveDataPlanDTO } from './dto/bill.dto';
 export class BillController {
   constructor(
     private readonly billSrv: BillService,
+    private readonly electricityPurchaseSrv: ElectricityPurchaseService,
     private readonly dataPurchaseSrv: DataPurchaseService,
     private readonly airtimePurchaseSrv: AirtimePurchaseService,
   ) {}
+
+  @ApiOperation({ description: 'Buy electricity unit tokens' })
+  @ApiProduces('json')
+  @ApiConsumes('application/json')
+  @ApiResponse({ type: ElectricityPurchaseResponseDTO })
+  @Post('/electricity-unit-purchase')
+  async createElectricityPurchase(
+    @Body() payload: CreateElectricityPurchaseDTO,
+    @CurrentUser(DecodedTokenKey.USER) user: User,
+  ): Promise<ElectricityPurchaseResponseDTO> {
+    return await this.electricityPurchaseSrv.createElectricityPurchase(
+      payload,
+      user,
+    );
+  }
+
+  @ApiOperation({
+    description: 'Verify meter-number and details before purchase',
+  })
+  @ApiProduces('json')
+  @ApiConsumes('application/json')
+  @ApiResponse({ type: ElectricityPurchaseVerificationDTO })
+  @Post('/electricity-unit-purchase/verify')
+  async verifyElectricityPurchase(
+    @Body() payload: VerifyElectricityPurchaseDTO,
+    @CurrentUser(DecodedTokenKey.USER) user: User,
+  ): Promise<ElectricityPurchaseVerificationDTO> {
+    return await this.electricityPurchaseSrv.verifyElectricityPurchase(
+      payload,
+      user,
+    );
+  }
 
   @ApiOperation({ description: 'Buy airtime' })
   @ApiProduces('json')

@@ -6,6 +6,7 @@ import { UserModule } from '@modules/user/user.module';
 import { WalletModule } from '@modules/wallet/wallet.module';
 import { BankModule } from '@modules/bank/bank.module';
 import { DataPurchaseModule } from '@modules/data-purchase/data-purchase.module';
+import { ElectricityPurchaseModule } from '@modules/electricity-purchase/electricity-purchase.module';
 
 @Module({
   imports: [
@@ -13,6 +14,7 @@ import { DataPurchaseModule } from '@modules/data-purchase/data-purchase.module'
     UserModule,
     BankModule,
     WalletModule,
+    ElectricityPurchaseModule,
     DataPurchaseModule,
   ],
   controllers: [BillController],

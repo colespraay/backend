@@ -61,3 +61,7 @@ export * from './airtime-purchase/airtime-purchase.controller';
 export * from './data-purchase/data-purchase.module';
 export * from './data-purchase/data-purchase.service';
 export * from './data-purchase/data-purchase.controller';
+// [ElectricityPurchase]
+export * from './electricity-purchase/electricity-purchase.module';
+export * from './electricity-purchase/electricity-purchase.service';
+export * from './electricity-purchase/electricity-purchase.controller';

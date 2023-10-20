@@ -20,6 +20,7 @@ import {
   BillModule,
   WalletModule,
   GiftingModule,
+  ElectricityPurchaseModule,
   UserAccountModule,
   BankModule,
   EventModule,
@@ -59,6 +60,7 @@ import ormConfig from './orm.config';
     BillModule,
     AirtimePurchaseModule,
     DataPurchaseModule,
+    ElectricityPurchaseModule,
   ],
   controllers: [AppController],
   providers: [

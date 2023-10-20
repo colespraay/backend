@@ -86,3 +86,21 @@ export enum AirtimeProvider {
   GLO = 'GLO',
   AIRTEL = 'AIRTEL',
 }
+
+export enum ElectricityProvider {
+  AEDC = 'AEDC', // Abuja long
+  BEDC = 'BEDC', // Benin long
+  EKEDC = 'EKEDC',
+  EEDC = 'EEDC', // Enugu long
+  IBEDC = 'IBEDC', // ibadan long
+  IKEDC = 'IKEDC',
+  JEDC = 'JEDC', // Jos long
+  KAEDCO = 'KAEDCO', // kaduna long
+  KEDCO = 'KEDCO', // Kano long
+  PHED = 'PHED', // Long
+}
+
+export enum ElectricityPlan {
+  PRE_PAID = 'PREPAID',
+  POST_PAID = 'POSTPAID',
+}

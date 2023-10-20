@@ -11,6 +11,48 @@ export class BillProviderDTO extends BaseResponseTypeDTO {
   data: string[];
 }
 
+export class FlutterwaveBillItemVerificationPartial {
+  @ApiProperty()
+  response_code: string;
+
+  @ApiProperty()
+  address: string;
+
+  @ApiProperty()
+  response_message: string;
+
+  @ApiProperty()
+  name: string;
+
+  @ApiProperty()
+  biller_code: string;
+
+  @ApiProperty()
+  customer: string;
+
+  @ApiProperty()
+  product_code: string;
+
+  @ApiProperty()
+  email: string;
+
+  @ApiProperty()
+  fee: number;
+
+  @ApiProperty()
+  maximum: number;
+
+  @ApiProperty()
+  minimum: number;
+}
+
+export class FlutterwaveBillItemVerificationResponseDTO extends BaseResponseTypeDTO {
+  @ApiProperty({ type: () => FlutterwaveBillItemVerificationPartial })
+  data: FlutterwaveBillItemVerificationPartial;
+
+  selectedOne?: any;
+}
+
 export class FlutterwaveBillPaymentResponsePartial {
   @ApiProperty()
   phone_number: string;
