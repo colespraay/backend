@@ -177,7 +177,7 @@ export class BillService implements OnModuleInit {
         return {
           success: true,
           code: HttpStatus.OK,
-          message: 'Airtime purchase successful',
+          message: 'Electricity unit purchase successful',
           data: {
             phone_number: payload.meterNumber,
             amount: payload.amount,
@@ -195,7 +195,7 @@ export class BillService implements OnModuleInit {
         return {
           success: true,
           code: HttpStatus.OK,
-          message: 'Electric unit purchase successful',
+          message: 'Electricity unit purchase successful',
           data: resp.data,
         };
       }
@@ -225,7 +225,7 @@ export class BillService implements OnModuleInit {
         return {
           success: true,
           code: HttpStatus.OK,
-          message: 'Airtime purchase successful',
+          message: 'Data purchase successful',
           data: {
             phone_number: payload.phoneNumber,
             amount: payload.amount,
@@ -243,7 +243,7 @@ export class BillService implements OnModuleInit {
         return {
           success: true,
           code: HttpStatus.OK,
-          message: 'Dta purchase successful',
+          message: 'Data purchase successful',
           data: resp.data,
         };
       }
