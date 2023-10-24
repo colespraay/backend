@@ -48,7 +48,6 @@ export class BillService implements OnModuleInit {
       this.electricityProviders = await httpGet<any>(url, {
         Authorization: `Bearer ${String(process.env.FLUTTERWAVE_SECRET_KEY)}`,
       });
-      console.log({ tifo: this.electricityProviders });
     } catch (ex) {
       this.logger.error(ex);
       throw ex;
