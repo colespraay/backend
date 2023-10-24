@@ -41,12 +41,14 @@ export class BillService implements OnModuleInit {
   );
   private electricityProviders: any;
 
-  async onModuleInit() {
-    const url =
-      'https://api.flutterwave.com/v3/bill-categories?power=1&country=NG';
-    this.electricityProviders = await httpGet<any>(url, {
-      Authorization: `Bearer ${String(process.env.FLUTTERWAVE_SECRET_KEY)}`,
-    });
+  onModuleInit() {
+    setTimeout(async () => {
+      const url =
+        'https://api.flutterwave.com/v3/bill-categories?power=1&country=NG';
+      this.electricityProviders = await httpGet<any>(url, {
+        Authorization: `Bearer ${String(process.env.FLUTTERWAVE_SECRET_KEY)}`,
+      });
+    }, 5000);
   }
 
   async findCableProviderById(
