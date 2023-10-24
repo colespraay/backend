@@ -6,6 +6,7 @@ import {
   NotFoundException,
   OnModuleInit,
 } from '@nestjs/common';
+import * as dotenv from 'dotenv';
 import {
   AirtimeProvider,
   CableProvider,
@@ -32,6 +33,7 @@ import {
   FlutterwaveDataPlanDTO,
   FlutterwaveDataPlanPartial,
 } from './dto/bill.dto';
+dotenv.config();
 
 @Injectable()
 export class BillService implements OnModuleInit {
@@ -58,19 +60,19 @@ export class BillService implements OnModuleInit {
   }
 
   onModuleInit() {
-    // setTimeout(async () => {
-    //   try {
-    //     const url =
-    //       'https://api.flutterwave.com/v3/bill-categories?power=1&country=NG';
-    //     this.electricityProviders = await httpGet<any>(url, {
-    //       Authorization: `Bearer ${String(process.env.FLUTTERWAVE_SECRET_KEY)}`,
-    //     });
-    //     console.log({ tlp: this.electricityProviders });
-    //   } catch (ex) {
-    //     this.logger.error(ex);
-    //     throw ex;
-    //   }
-    // }, 5000);
+    setTimeout(async () => {
+      try {
+        const url =
+          'https://api.flutterwave.com/v3/bill-categories?power=1&country=NG';
+        this.electricityProviders = await httpGet<any>(url, {
+          Authorization: `Bearer ${String(process.env.FLUTTERWAVE_SECRET_KEY)}`,
+        });
+        console.log({ tlp: this.electricityProviders });
+      } catch (ex) {
+        this.logger.error(ex);
+        throw ex;
+      }
+    }, 5000);
   }
 
   async findCableProviderById(
