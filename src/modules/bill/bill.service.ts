@@ -61,6 +61,7 @@ export class BillService implements OnModuleInit {
 
   onModuleInit() {
     setTimeout(async () => {
+      console.log({ flutter_tifo: String(process.env.FLUTTERWAVE_SECRET_KEY) });
       try {
         const url =
           'https://api.flutterwave.com/v3/bill-categories?power=1&country=NG';
@@ -69,7 +70,7 @@ export class BillService implements OnModuleInit {
         });
         console.log({ tlp: this.electricityProviders });
       } catch (ex) {
-        this.logger.error(ex);
+        this.logger.error(ex?.message ?? ex);
         throw ex;
       }
     }, 5000);
