@@ -42,19 +42,19 @@ export class BillService implements OnModuleInit {
   private electricityProviders: any;
 
   constructor() {
-    setTimeout(async () => {
-      try {
-        const url =
-          'https://api.flutterwave.com/v3/bill-categories?power=1&country=NG';
-        this.electricityProviders = await httpGet<any>(url, {
-          Authorization: `Bearer ${String(process.env.FLUTTERWAVE_SECRET_KEY)}`,
-        });
-        console.log({ tlp: this.electricityProviders });
-      } catch (ex) {
-        this.logger.error(ex);
-        throw ex;
-      }
-    }, 5000);
+    // setTimeout(async () => {
+    //   try {
+    //     const url =
+    //       'https://api.flutterwave.com/v3/bill-categories?power=1&country=NG';
+    //     this.electricityProviders = await httpGet<any>(url, {
+    //       Authorization: `Bearer ${String(process.env.FLUTTERWAVE_SECRET_KEY)}`,
+    //     });
+    //     console.log({ tlp: this.electricityProviders });
+    //   } catch (ex) {
+    //     this.logger.error(ex);
+    //     throw ex;
+    //   }
+    // }, 5000);
   }
 
   onModuleInit() {
