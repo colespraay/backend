@@ -39,14 +39,14 @@ export class BillService implements OnModuleInit {
   private readonly flutterwaveSecretKey = String(
     process.env.FLUTTERWAVE_SECRET_KEY,
   );
+  private electricityProviders: any;
 
   async onModuleInit() {
-    // await this.verifyElectricityPlan({
-    //   amount: 500,
-    //   meterNumber: '9300049',
-    //   plan: ElectricityPlan.POST_PAID,
-    //   provider: ElectricityProvider.KEDCO,
-    // });
+    const url =
+      'https://api.flutterwave.com/v3/bill-categories?power=1&country=NG';
+    this.electricityProviders = await httpGet<any>(url, {
+      Authorization: `Bearer ${this.flutterwaveSecretKey}`,
+    });
   }
 
   async findCableProviderById(
@@ -462,10 +462,12 @@ export class BillService implements OnModuleInit {
       const headers = { Authorization: `Bearer ${this.flutterwaveSecretKey}` };
       const url =
         'https://api.flutterwave.com/v3/bill-categories?power=1&country=NG';
-      const electricityProviders = await httpGet<any>(url, headers);
+      const electricityProviders =
+        this.electricityProviders ?? (await httpGet<any>(url, headers));
       if (electricityProviders.data?.length <= 0) {
         throw new NotFoundException('Could not verify provider');
       }
+      console.log({ tiko: 'Tiko Tiko' });
       let tag: string;
       if (payload.provider === ElectricityProvider.PHED) {
         tag = 'PORT HARCOURT';
