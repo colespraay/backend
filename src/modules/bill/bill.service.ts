@@ -43,11 +43,17 @@ export class BillService implements OnModuleInit {
 
   onModuleInit() {
     setTimeout(async () => {
-      const url =
-        'https://api.flutterwave.com/v3/bill-categories?power=1&country=NG';
-      this.electricityProviders = await httpGet<any>(url, {
-        Authorization: `Bearer ${String(process.env.FLUTTERWAVE_SECRET_KEY)}`,
-      });
+      try {
+        const url =
+          'https://api.flutterwave.com/v3/bill-categories?power=1&country=NG';
+        this.electricityProviders = await httpGet<any>(url, {
+          Authorization: `Bearer ${String(process.env.FLUTTERWAVE_SECRET_KEY)}`,
+        });
+        console.log({ tlp: this.electricityProviders });
+      } catch (ex) {
+        this.logger.error(ex);
+        throw ex;
+      }
     }, 5000);
   }
 
@@ -469,7 +475,6 @@ export class BillService implements OnModuleInit {
       if (electricityProviders.data?.length <= 0) {
         throw new NotFoundException('Could not verify provider');
       }
-      console.log({ tiko: 'Tiko Tiko' });
       let tag: string;
       if (payload.provider === ElectricityProvider.PHED) {
         tag = 'PORT HARCOURT';
