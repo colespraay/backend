@@ -6,7 +6,6 @@ import {
   NotFoundException,
   OnModuleInit,
 } from '@nestjs/common';
-import * as dotenv from 'dotenv';
 import {
   AirtimeProvider,
   CableProvider,
@@ -33,7 +32,6 @@ import {
   FlutterwaveDataPlanDTO,
   FlutterwaveDataPlanPartial,
 } from './dto/bill.dto';
-dotenv.config();
 
 @Injectable()
 export class BillService implements OnModuleInit {
@@ -43,37 +41,18 @@ export class BillService implements OnModuleInit {
   );
   private electricityProviders: any;
 
-  constructor() {
-    // setTimeout(async () => {
-    //   try {
-    //     const url =
-    //       'https://api.flutterwave.com/v3/bill-categories?power=1&country=NG';
-    //     this.electricityProviders = await httpGet<any>(url, {
-    //       Authorization: `Bearer ${String(process.env.FLUTTERWAVE_SECRET_KEY)}`,
-    //     });
-    //     console.log({ tlp: this.electricityProviders });
-    //   } catch (ex) {
-    //     this.logger.error(ex);
-    //     throw ex;
-    //   }
-    // }, 5000);
-  }
-
-  onModuleInit() {
-    setTimeout(async () => {
-      console.log({ flutter_tifo: String(process.env.FLUTTERWAVE_SECRET_KEY) });
-      try {
-        const url =
-          'https://api.flutterwave.com/v3/bill-categories?power=1&country=NG';
-        this.electricityProviders = await httpGet<any>(url, {
-          Authorization: `Bearer ${String(process.env.FLUTTERWAVE_SECRET_KEY)}`,
-        });
-        console.log({ tlp: this.electricityProviders });
-      } catch (ex) {
-        this.logger.error(ex?.message ?? ex);
-        throw ex;
-      }
-    }, 5000);
+  async onModuleInit() {
+    try {
+      const url =
+        'https://api.flutterwave.com/v3/bill-categories?power=1&country=NG';
+      this.electricityProviders = await httpGet<any>(url, {
+        Authorization: `Bearer ${String(process.env.FLUTTERWAVE_SECRET_KEY)}`,
+      });
+      console.log({ tifo: this.electricityProviders });
+    } catch (ex) {
+      this.logger.error(ex);
+      throw ex;
+    }
   }
 
   async findCableProviderById(
