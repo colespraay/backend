@@ -45,7 +45,7 @@ export class BillService implements OnModuleInit {
     const url =
       'https://api.flutterwave.com/v3/bill-categories?power=1&country=NG';
     this.electricityProviders = await httpGet<any>(url, {
-      Authorization: `Bearer ${this.flutterwaveSecretKey}`,
+      Authorization: `Bearer ${String(process.env.FLUTTERWAVE_SECRET_KEY)}`,
     });
   }
 
