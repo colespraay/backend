@@ -49,8 +49,8 @@ export class NotificationService extends GenericService(Notification) {
       );
       return {
         success: true,
-        code: HttpStatus.CREATED,
         message: 'Created',
+        code: HttpStatus.CREATED,
         data: createdNotification,
       };
     } catch (ex) {
