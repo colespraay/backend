@@ -156,7 +156,9 @@ export class TransactionService extends GenericService(TransactionRecord) {
     payload: FindTransactionDTO,
   ): Promise<TransactionsResponseDTO> {
     try {
-      const filter: FindManyOptions<TransactionRecord> = {};
+      const filter: FindManyOptions<TransactionRecord> = {
+        order: { dateCreated: 'DESC' },
+      };
       if (payload.date) {
         filter.where = { ...filter.where, createdDate: payload.date };
       }
