@@ -13,6 +13,7 @@ import { EventSpraay, User } from '@entities/index';
 import { GenericService } from '@schematics/index';
 import {
   TransactionType,
+  UserNotificationType,
   calculatePaginationControls,
   checkForRequiredFields,
   validateUUIDField,
@@ -116,17 +117,19 @@ export class EventSpraayService extends GenericService(EventSpraay) {
         userId: event.data.userId,
         amount: payload.amount,
       });
-      // this.eventEmitterSrv.emit('wallet.debit', {
-      //   userId: user.id,
-      //   amount: payload.amount,
-      // });
+      this.eventEmitterSrv.emit('user-notification.create', {
+        userId: event.data.userId,
+        subject: 'Cash sprayed',
+        type: UserNotificationType.USER_SPECIFIC,
+        message: `You were sprayed with ₦${payload.amount} by ${user.firstName} ${user.lastName}`,
+      });
       return {
         success: true,
         data: newSpraay,
         code: HttpStatus.CREATED,
         eventCode: event.data.eventCode,
         transactionReference: newTransaction.data.reference,
-        message: `#${payload.amount.toLocaleString()} Cash spraayed`,
+        message: `₦${payload.amount.toLocaleString()} cash sprayed`,
       };
     } catch (ex) {
       this.logger.error(ex);

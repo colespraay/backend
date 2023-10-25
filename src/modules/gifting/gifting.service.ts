@@ -11,6 +11,7 @@ import { Gifting, TransactionRecord } from '@entities/index';
 import { GenericService } from '@schematics/index';
 import {
   TransactionType,
+  UserNotificationType,
   checkForRequiredFields,
   validateUUIDField,
   verifyPasswordHash,
@@ -115,6 +116,18 @@ export class GiftingService extends GenericService(Gifting) {
         this.eventEmitterSrv.emit('wallet.credit', {
           userId: receiver.id,
           amount: payload.amount,
+        });
+        this.eventEmitterSrv.emit('user-notification.create', {
+          userId: receiver.id,
+          subject: 'Cash gift received',
+          type: UserNotificationType.USER_SPECIFIC,
+          message: `You were gifted with ₦${payload.amount} by ${user.data.firstName} ${user.data.lastName}`,
+        });
+        this.eventEmitterSrv.emit('user-notification.create', {
+          userId: user.data.id,
+          subject: 'Cash gifting',
+          type: UserNotificationType.USER_SPECIFIC,
+          message: `You gifted ${receiver?.firstName} ${receiver?.lastName} with ₦${payload.amount}`,
         });
         return {
           success: true,

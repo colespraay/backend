@@ -10,6 +10,7 @@ import { GenericService } from '@schematics/index';
 import {
   BaseResponseTypeDTO,
   NotificationPurpose,
+  UserNotificationType,
   checkForRequiredFields,
   validateArrayField,
   validateArrayUUIDField,
@@ -78,6 +79,14 @@ export class EventInviteService extends GenericService(EventInvite) {
           userId: invite.userId,
         })),
       );
+      createdInvites.forEach((invite) => {
+        this.eventEmitter.emit('user-notification.create', {
+          userId: invite.userId,
+          subject: 'Event invite',
+          type: UserNotificationType.USER_SPECIFIC,
+          message: `You are invited to ${event.eventName}`,
+        });
+      });
       return {
         success: true,
         code: HttpStatus.CREATED,
