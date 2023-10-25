@@ -22,10 +22,14 @@ export * from './event-spraay/event-spraay.service';
 export * from './event-rsvp/event-rsvp.controller';
 export * from './event-rsvp/event-rsvp.module';
 export * from './event-rsvp/event-rsvp.service';
-// [Notification]
+// [NotificationMessage]
 export * from './notification-message/notification-message.controller';
 export * from './notification-message/notification-message.module';
 export * from './notification-message/notification-message.service';
+// [Notification]
+export * from './notification/notification.controller';
+export * from './notification/notification.module';
+export * from './notification/notification.service';
 // [Wallet]
 export * from './wallet/wallet.controller';
 export * from './wallet/wallet.module';

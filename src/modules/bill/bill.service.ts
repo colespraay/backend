@@ -274,7 +274,7 @@ export class BillService implements OnModuleInit {
         return {
           success: true,
           code: HttpStatus.OK,
-          message: 'Airtime purchase successful',
+          message: 'Cable plan purchase successful',
           data: {
             phone_number: payload.smartCardNumber,
             amount: payload.amount,

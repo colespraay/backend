@@ -30,6 +30,7 @@ import {
   EventRSVPModule,
   TransactionModule,
   NotificationMessageModule,
+  NotificationModule,
   WithdrawalModule,
   AirtimePurchaseModule,
   DataPurchaseModule,
@@ -63,6 +64,7 @@ import ormConfig from './orm.config';
     DataPurchaseModule,
     ElectricityPurchaseModule,
     CablePurchaseModule,
+    NotificationModule,
   ],
   controllers: [AppController],
   providers: [

@@ -10,6 +10,7 @@ export * from './gifting.entity';
 export * from './user-account.entity';
 export * from './withdrawal.entity';
 export * from './bank.entity';
+export * from './notification.entity';
 export * from './notification-message.entity';
 export * from './airtime-purchase.entity';
 export * from './data-purchase.entity';

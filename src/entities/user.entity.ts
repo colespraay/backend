@@ -14,6 +14,7 @@ import {
   EventSpraay,
   uuidV4,
   NotificationMessage,
+  Notification,
   EventRSVP,
   TransactionRecord,
   Gifting,
@@ -210,6 +211,9 @@ export class User extends Base {
     cascade: true,
   })
   electricityPurchases: ElectricityPurchase[];
+
+  @OneToMany(() => Notification, ({ user }) => user, { cascade: true })
+  userNotifications: Notification[];
 
   @BeforeInsert()
   async beforeInsertHandler(): Promise<void> {

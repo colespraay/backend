@@ -110,3 +110,8 @@ export enum CableProvider {
   DSTV = 'DSTV',
   STARTIMES = 'STARTIMES',
 }
+
+export enum UserNotificationType {
+  SYSTEM = 'SYSTEM',
+  USER_SPECIFIC = ' USER_SPECIFIC',
+}

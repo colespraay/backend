@@ -36,7 +36,9 @@ import {
   validateUUIDField,
   sendSMS,
   groupBy,
+  addLeadingZeroes,
 } from '@utils/index';
+import { AuthResponseDTO } from '@modules/auth/dto/auth.dto';
 import {
   ChangePasswordDTO,
   CreateUserDTO,
@@ -53,7 +55,6 @@ import {
   AccountBalanceDTO,
 } from './dto/user.dto';
 import { AuthService } from '../index';
-import { AuthResponseDTO } from '@modules/auth/dto/auth.dto';
 
 @Injectable()
 export class UserService extends GenericService(User) {
@@ -785,7 +786,10 @@ export class UserService extends GenericService(User) {
       }
       if (payload.bvn && record.bvn !== payload.bvn) {
         validateBvn(payload.bvn, 'bvn');
-        const bvnValidationResponse = await this.resolveUserBvn(payload.bvn);
+        const bvnValidationResponse = await this.resolveUserBvn(
+          payload.bvn,
+          record.id,
+        );
         if (bvnValidationResponse?.success && bvnValidationResponse.data) {
           if (record.profileImageUrl === DefaultPassportLink.male) {
             record.profileImageUrl = bvnValidationResponse.data.pixBase64;
@@ -945,22 +949,51 @@ export class UserService extends GenericService(User) {
 
   private async resolveUserBvn(
     bvn: string,
+    userId: string,
   ): Promise<FincraBVNValidationResponseDTO> {
     try {
-      const businessId = String(process.env.FINCRA_BUSINESS_ID);
-      const url = 'https://api.fincra.com/core/bvn-verification';
-      return await httpPost<FincraBVNValidationResponseDTO, any>(
-        url,
-        {
-          business: businessId,
-          bvn,
-        },
-        {
-          'api-key': String(process.env.FINCRA_SECRET_KEY),
-        },
-      );
+      const user = await this.getRepo().findOne({
+        where: { id: userId },
+        select: ['id', 'firstName', 'lastName', 'dob'],
+      });
+      if (user?.id) {
+        const dobDate = user.dob ? new Date(user.dob) : new Date();
+        const dob = `${addLeadingZeroes(dobDate.getDate())}-${addLeadingZeroes(
+          dobDate.getMonth() + 1,
+        )}-${dobDate.getFullYear()}`;
+        const url = `https://vapi.verifyme.ng/v1/verifications/identities/bvn/${bvn}`;
+        const verifyMeResponse = await httpPost<any, any>(
+          url,
+          {
+            firstname: user.firstName ?? 'String',
+            lastname: user.lastName ?? 'String',
+            dob,
+          },
+          {
+            Authorization: `Bearer ${String(process.env.VERIFY_ME_SECRET_KEY)}`,
+          },
+        );
+        if (verifyMeResponse?.status === 'success') {
+          return {
+            success: true,
+            message: verifyMeResponse.status,
+            data: {
+              gender: verifyMeResponse.data.gender,
+              phoneNo: verifyMeResponse.data.phone,
+              dateOfBirth: verifyMeResponse.data.birthdate,
+              middleName: verifyMeResponse.data.middlename,
+              firstName: verifyMeResponse.data.firstname,
+              lastName: verifyMeResponse.data.lastname,
+              pixBase64: `data:image/png;base64,${verifyMeResponse.data.photo}`,
+            },
+          };
+        }
+      }
     } catch (ex) {
       this.logger.error(ex);
+      if (String(ex).includes('status code 404')) {
+        throw new NotFoundException('BVN not found');
+      }
       throw ex;
     }
   }
