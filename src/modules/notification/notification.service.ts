@@ -42,7 +42,9 @@ export class NotificationService extends GenericService(Notification) {
         select: ['id'],
       });
       if (record?.id) {
-        throw new ConflictException('Similar notification already exists');
+        throw new ConflictException(
+          'Similar notification already exists for user',
+        );
       }
       const createdNotification = await this.create<Partial<Notification>>(
         payload,
