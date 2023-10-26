@@ -22,6 +22,8 @@ import {
   sendEmail,
   BaseResponseTypeDTO,
 } from '@utils/index';
+import { FindStatementOfAccountDTO } from '@modules/wallet/dto/wallet.dto';
+import { UsersResponseDTO } from '@modules/user/dto/user.dto';
 import {
   TransactionResponseDTO,
   CreateTransactionDTO,
@@ -33,8 +35,6 @@ import {
   TransactionListHistoryFilter,
 } from './dto/transaction.dto';
 import { UserService } from '../index';
-import { FindStatementOfAccountDTO } from '@modules/wallet/dto/wallet.dto';
-import { UsersResponseDTO } from '@modules/user/dto/user.dto';
 
 @Injectable()
 export class TransactionService extends GenericService(TransactionRecord) {
@@ -56,82 +56,35 @@ export class TransactionService extends GenericService(TransactionRecord) {
         Object.values(TransactionListHistoryFilter),
         'filter',
       );
-      let transactions: TransactionRecord[] = [];
+      const date = new Date();
       switch (filter) {
         default:
         case TransactionListHistoryFilter.LAST_7_DAYS:
-          // Calculate the date 7 days ago
-          const sevenDaysAgo = new Date();
-          sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
-          transactions = await this.getRepo()
-            .createQueryBuilder('transaction')
-            .where('transaction.dateCreated >= :sevenDaysAgo', {
-              sevenDaysAgo,
-            })
-            .andWhere('transaction.userId = :userId', { userId })
-            .select([
-              'transaction.amount',
-              'transaction.dateCreated',
-              'transaction.userId',
-              'transaction.type',
-            ])
-            .getMany();
+          date.setDate(date.getDate() - 7);
           break;
         case TransactionListHistoryFilter.LAST_30_DAYS:
-          // Calculate the date 30 days ago
-          const thirtyDaysAgo = new Date();
-          thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
-          transactions = await this.getRepo()
-            .createQueryBuilder('transaction')
-            .where('transaction.dateCreated >= :thirtyDaysAgo', {
-              thirtyDaysAgo,
-            })
-            .andWhere('transaction.userId = :userId', { userId })
-            .select([
-              'transaction.amount',
-              'transaction.dateCreated',
-              'transaction.userId',
-              'transaction.type',
-            ])
-            .getMany();
+          date.setDate(date.getDate() - 30);
           break;
         case TransactionListHistoryFilter.LAST_3_MONTHS:
-          // Calculate the date 3 months ago
-          const threeMonthsAgo = new Date();
-          threeMonthsAgo.setDate(threeMonthsAgo.getMonth() - 3);
-          transactions = await this.getRepo()
-            .createQueryBuilder('transaction')
-            .where('transaction.dateCreated >= :threeMonthsAgo', {
-              threeMonthsAgo,
-            })
-            .andWhere('transaction.userId = :userId', { userId })
-            .select([
-              'transaction.amount',
-              'transaction.dateCreated',
-              'transaction.userId',
-              'transaction.type',
-            ])
-            .getMany();
+          date.setDate(date.getMonth() - 3);
           break;
         case TransactionListHistoryFilter.LAST_6_MONTHS:
-          // Calculate the date 6 months ago
-          const sixMonthsAgo = new Date();
-          sixMonthsAgo.setDate(sixMonthsAgo.getMonth() - 6);
-          transactions = await this.getRepo()
-            .createQueryBuilder('transaction')
-            .where('transaction.dateCreated >= :sixMonthsAgo', {
-              sixMonthsAgo,
-            })
-            .andWhere('transaction.userId = :userId', { userId })
-            .select([
-              'transaction.amount',
-              'transaction.dateCreated',
-              'transaction.userId',
-              'transaction.type',
-            ])
-            .getMany();
+          date.setDate(date.getMonth() - 6);
           break;
       }
+      const transactions = await this.getRepo()
+        .createQueryBuilder('transaction')
+        .where('transaction.dateCreated >= :date', {
+          date,
+        })
+        .andWhere('transaction.userId = :userId', { userId })
+        .select([
+          'transaction.amount',
+          'transaction.dateCreated',
+          'transaction.userId',
+          'transaction.type',
+        ])
+        .getMany();
       const incomingTransactions = transactions.filter(
         (transaction) => transaction.type === TransactionType.CREDIT,
       );
