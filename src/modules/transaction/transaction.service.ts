@@ -33,6 +33,9 @@ import {
   ExportReceiptDTO,
   TransactionListHistoryDTO,
   TransactionListHistoryFilter,
+  TransactionListHistoryGraphDTO,
+  TransactionListHistoryGraphPartial,
+  Month,
 } from './dto/transaction.dto';
 import { UserService } from '../index';
 
@@ -43,6 +46,63 @@ export class TransactionService extends GenericService(TransactionRecord) {
     private readonly eventEmitterSrv: EventEmitter2,
   ) {
     super();
+  }
+
+  async transactionGraphSummary(
+    userId: string,
+  ): Promise<TransactionListHistoryGraphDTO> {
+    try {
+      checkForRequiredFields(['userId'], { userId });
+      validateUUIDField(userId, 'userId');
+      // Get the current year
+      const currentYear = new Date().getFullYear();
+
+      // Calculate the start and end dates for the current year
+      const startDate = new Date(`${currentYear}-01-01`);
+      const endDate = new Date(`${currentYear + 1}-01-01`);
+
+      // Query for the total amount of incoming and outgoing transactions grouped by month and year
+      const result = await this.getRepo()
+        .createQueryBuilder('transaction')
+        .select([
+          'EXTRACT(MONTH FROM transaction.dateCreated) as month',
+          'EXTRACT(YEAR FROM transaction.dateCreated) as year',
+          'SUM(CASE WHEN transaction.type = :incoming THEN transaction.amount ELSE 0 END) as incomingTotal',
+          'SUM(CASE WHEN transaction.type = :outgoing THEN transaction.amount ELSE 0 END) as outgoingTotal',
+        ])
+        .where('transaction.dateCreated >= :startDate', { startDate })
+        .andWhere('transaction.dateCreated < :endDate', { endDate })
+        .andWhere('transaction.userId = :userId', { userId })
+        .groupBy('month, year')
+        .setParameters({
+          incoming: TransactionType.CREDIT,
+          outgoing: TransactionType.DEBIT,
+        })
+        .getRawMany();
+
+      const list: TransactionListHistoryGraphPartial[] = [];
+      const months = Object.values(Month);
+      for (let i = 1; i <= 12; i++) {
+        const item = new TransactionListHistoryGraphPartial();
+        item.month = months[i - 1];
+        item.monthCode = i;
+        item.totalAmount = 0;
+        const findItem = result.find(({ month }) => month === i);
+        if (findItem) {
+          item.totalAmount = findItem.incomingtotal + findItem.outgoingtotal;
+        }
+        list.push(item);
+      }
+      return {
+        success: true,
+        message: 'Records found',
+        code: HttpStatus.OK,
+        data: list,
+      };
+    } catch (ex) {
+      this.logger.error(ex);
+      throw ex;
+    }
   }
 
   async findTransactionSummary(

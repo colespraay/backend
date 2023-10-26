@@ -97,3 +97,34 @@ export enum TransactionListHistoryFilter {
   LAST_30_DAYS = 'LAST_30_DAYS',
   LAST_7_DAYS = 'LAST_7_DAYS',
 }
+
+export enum Month {
+  JANUARY = 'JANUARY',
+  FEBRUARY = 'FEBRUARY',
+  MARCH = 'MARCH',
+  APRIL = 'APRIL',
+  MAY = 'MAY',
+  JUNE = 'JUNE',
+  JULY = 'JULY',
+  AUGUST = 'AUGUST',
+  SEPTEMBER = 'SEPTEMBER',
+  OCTOBER = 'OCTOBER',
+  NOVEMBER = 'NOVEMBER',
+  DECEMBER = 'DECEMBER',
+}
+
+export class TransactionListHistoryGraphPartial {
+  @ApiProperty({ enum: Month })
+  month: Month;
+
+  @ApiProperty()
+  monthCode: number;
+
+  @ApiProperty()
+  totalAmount: number;
+}
+
+export class TransactionListHistoryGraphDTO extends BaseResponseTypeDTO {
+  @ApiProperty({ type: () => [TransactionListHistoryGraphPartial] })
+  data: TransactionListHistoryGraphPartial[];
+}

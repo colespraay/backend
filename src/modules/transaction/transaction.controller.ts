@@ -25,16 +25,17 @@ import {
   TransactionType,
 } from '@utils/index';
 import { CurrentUser, RolesGuard } from '@schematics/index';
+import { UsersResponseDTO } from '@modules/user/dto/user.dto';
+import { FindStatementOfAccountDTO } from '@modules/wallet/dto/wallet.dto';
 import { TransactionService } from './transaction.service';
 import {
   FindTransactionDTO,
   TransactionListHistoryDTO,
   TransactionListHistoryFilter,
+  TransactionListHistoryGraphDTO,
   TransactionResponseDTO,
   TransactionsResponseDTO,
 } from './dto/transaction.dto';
-import { UsersResponseDTO } from '@modules/user/dto/user.dto';
-import { FindStatementOfAccountDTO } from '@modules/wallet/dto/wallet.dto';
 
 @ApiTags('transaction')
 @Controller('transaction')
@@ -59,6 +60,20 @@ export class TransactionController {
     @CurrentUser(DecodedTokenKey.USER_ID) userId: string,
   ): Promise<TransactionListHistoryDTO> {
     return await this.transactionSrv.findTransactionSummary(filter, userId);
+  }
+
+  @ApiBearerAuth('JWT')
+  @UseGuards(RolesGuard)
+  @ApiProduces('json')
+  @ApiOperation({
+    description: 'Find breakdown of transactions viewed via graph',
+  })
+  @ApiResponse({ type: () => TransactionListHistoryGraphDTO })
+  @Get('/graph/history-summary')
+  async transactionGraphSummary(
+    @CurrentUser(DecodedTokenKey.USER_ID) userId: string,
+  ): Promise<TransactionListHistoryGraphDTO> {
+    return await this.transactionSrv.transactionGraphSummary(userId);
   }
 
   @ApiBearerAuth('JWT')
