@@ -11,6 +11,7 @@ import {
   ApiBearerAuth,
   ApiOkResponse,
   ApiOperation,
+  ApiParam,
   ApiProduces,
   ApiQuery,
   ApiResponse,
@@ -27,6 +28,8 @@ import { CurrentUser, RolesGuard } from '@schematics/index';
 import { TransactionService } from './transaction.service';
 import {
   FindTransactionDTO,
+  TransactionListHistoryDTO,
+  TransactionListHistoryFilter,
   TransactionResponseDTO,
   TransactionsResponseDTO,
 } from './dto/transaction.dto';
@@ -37,6 +40,26 @@ import { FindStatementOfAccountDTO } from '@modules/wallet/dto/wallet.dto';
 @Controller('transaction')
 export class TransactionController {
   constructor(private readonly transactionSrv: TransactionService) {}
+
+  @ApiBearerAuth('JWT')
+  @UseGuards(RolesGuard)
+  @ApiProduces('json')
+  @ApiParam({
+    enum: TransactionListHistoryFilter,
+    name: 'filter',
+    required: true,
+  })
+  @ApiOperation({
+    description: 'Find breakdown of transactions, total, expense, income',
+  })
+  @ApiResponse({ type: () => TransactionListHistoryDTO })
+  @Get('/history-summary/:filter')
+  async findTransactionSummary(
+    @Param('filter') filter: TransactionListHistoryFilter,
+    @CurrentUser(DecodedTokenKey.USER_ID) userId: string,
+  ): Promise<TransactionListHistoryDTO> {
+    return await this.transactionSrv.findTransactionSummary(filter, userId);
+  }
 
   @ApiBearerAuth('JWT')
   @UseGuards(RolesGuard)

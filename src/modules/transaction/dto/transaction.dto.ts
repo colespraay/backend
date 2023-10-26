@@ -79,3 +79,21 @@ export class ExportReceiptDTO extends FileExportDataResponseDTO {
   @ApiProperty({ type: () => TransactionRecord })
   transaction: TransactionRecord;
 }
+
+export class TransactionListHistoryDTO {
+  @ApiProperty()
+  income: number;
+
+  @ApiProperty()
+  expense: number;
+
+  @ApiProperty()
+  total: number;
+}
+
+export enum TransactionListHistoryFilter {
+  LAST_6_MONTHS = 'LAST_6_MONTHS',
+  LAST_3_MONTHS = 'LAST_3_MONTHS',
+  LAST_30_DAYS = 'LAST_30_DAYS',
+  LAST_7_DAYS = 'LAST_7_DAYS',
+}

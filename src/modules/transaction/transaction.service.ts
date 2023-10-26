@@ -29,6 +29,8 @@ import {
   FindTransactionDTO,
   ExportSOADTO,
   ExportReceiptDTO,
+  TransactionListHistoryDTO,
+  TransactionListHistoryFilter,
 } from './dto/transaction.dto';
 import { UserService } from '../index';
 import { FindStatementOfAccountDTO } from '@modules/wallet/dto/wallet.dto';
@@ -41,6 +43,99 @@ export class TransactionService extends GenericService(TransactionRecord) {
     private readonly eventEmitterSrv: EventEmitter2,
   ) {
     super();
+  }
+
+  async findTransactionSummary(
+    filter: TransactionListHistoryFilter = TransactionListHistoryFilter.LAST_7_DAYS,
+    userId: string,
+  ): Promise<TransactionListHistoryDTO> {
+    try {
+      checkForRequiredFields(['userId', 'filter'], { userId, filter });
+      compareEnumValueFields(
+        filter,
+        Object.values(TransactionListHistoryFilter),
+        'filter',
+      );
+      let transactions: TransactionRecord[] = [];
+      switch (filter) {
+        default:
+        case TransactionListHistoryFilter.LAST_7_DAYS:
+          // Calculate the date 7 days ago
+          const sevenDaysAgo = new Date();
+          sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+          transactions = await this.getRepo()
+            .createQueryBuilder('transaction')
+            .where('transaction.dateCreated >= :sevenDaysAgo', {
+              sevenDaysAgo,
+            })
+            .andWhere('transaction.userId = :userId', { userId })
+            .select(['transaction.amount', 'transaction.createdDate'])
+            .getMany();
+          break;
+        case TransactionListHistoryFilter.LAST_30_DAYS:
+          // Calculate the date 30 days ago
+          const thirtyDaysAgo = new Date();
+          thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+          transactions = await this.getRepo()
+            .createQueryBuilder('transaction')
+            .where('transaction.dateCreated >= :thirtyDaysAgo', {
+              thirtyDaysAgo,
+            })
+            .andWhere('transaction.userId = :userId', { userId })
+            .select(['transaction.amount', 'transaction.createdDate'])
+            .getMany();
+          break;
+        case TransactionListHistoryFilter.LAST_3_MONTHS:
+          // Calculate the date 3 months ago
+          const threeMonthsAgo = new Date();
+          threeMonthsAgo.setDate(threeMonthsAgo.getMonth() - 3);
+          transactions = await this.getRepo()
+            .createQueryBuilder('transaction')
+            .where('transaction.dateCreated >= :threeMonthsAgo', {
+              threeMonthsAgo,
+            })
+            .andWhere('transaction.userId = :userId', { userId })
+            .select(['transaction.amount', 'transaction.createdDate'])
+            .getMany();
+          break;
+        case TransactionListHistoryFilter.LAST_6_MONTHS:
+          // Calculate the date 6 months ago
+          const sixMonthsAgo = new Date();
+          sixMonthsAgo.setDate(sixMonthsAgo.getMonth() - 6);
+          transactions = await this.getRepo()
+            .createQueryBuilder('transaction')
+            .where('transaction.dateCreated >= :sixMonthsAgo', {
+              sixMonthsAgo,
+            })
+            .andWhere('transaction.userId = :userId', { userId })
+            .select(['transaction.amount', 'transaction.createdDate'])
+            .getMany();
+          break;
+      }
+      const incomingTransactions = transactions.filter(
+        (transaction) => transaction.type === TransactionType.CREDIT,
+      );
+      const outgoingTransactions = transactions.filter(
+        (transaction) => transaction.type === TransactionType.DEBIT,
+      );
+      const response = new TransactionListHistoryDTO();
+      response.total = transactions.reduce(
+        (previousValue, currentValue) => previousValue + currentValue.amount,
+        0,
+      );
+      response.income = incomingTransactions.reduce(
+        (previousValue, currentValue) => previousValue + currentValue.amount,
+        0,
+      );
+      response.expense = outgoingTransactions.reduce(
+        (previousValue, currentValue) => previousValue + currentValue.amount,
+        0,
+      );
+      return response;
+    } catch (ex) {
+      this.logger.error(ex);
+      throw ex;
+    }
   }
 
   // Recent recipients

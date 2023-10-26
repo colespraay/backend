@@ -1,3 +1,4 @@
+import { EventEmitter2, OnEvent } from '@nestjs/event-emitter';
 import {
   BadRequestException,
   ConflictException,
@@ -9,7 +10,6 @@ import {
   InternalServerErrorException,
   NotFoundException,
 } from '@nestjs/common';
-import { EventEmitter2, OnEvent } from '@nestjs/event-emitter';
 import { FindManyOptions, ILike, Not } from 'typeorm';
 import { User } from '@entities/index';
 import { GenericService } from '@schematics/index';
@@ -79,13 +79,7 @@ export class UserService extends GenericService(User) {
       if (user.phoneNumber) {
         const code = user.uniqueVerificationCode;
         const message = `Use this OTP to validate your Spraay account: ${code}`;
-        await sendSMS(
-          // `Please use this code: '008' to verify your account`,
-          // `102023092918100200000011222' + 'CO: 102023092918100200000011222'`,
-          message,
-          [user.phoneNumber],
-          'Verify Account',
-        );
+        await sendSMS(message, [user.phoneNumber], 'Verify Account');
       }
     } catch (ex) {
       this.logger.error(ex);
@@ -952,6 +946,9 @@ export class UserService extends GenericService(User) {
     userId: string,
   ): Promise<FincraBVNValidationResponseDTO> {
     try {
+      checkForRequiredFields(['bvn', 'userId'], { bvn, userId });
+      validateBvn(bvn, 'bvn');
+      validateUUIDField(userId, 'userId');
       const user = await this.getRepo().findOne({
         where: { id: userId },
         select: ['id', 'firstName', 'lastName', 'dob'],
