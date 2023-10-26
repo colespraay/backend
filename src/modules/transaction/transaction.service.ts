@@ -69,7 +69,12 @@ export class TransactionService extends GenericService(TransactionRecord) {
               sevenDaysAgo,
             })
             .andWhere('transaction.userId = :userId', { userId })
-            .select(['transaction.amount', 'transaction.createdDate'])
+            .select([
+              'transaction.amount',
+              'transaction.dateCreated',
+              'transaction.userId',
+              'transaction.type',
+            ])
             .getMany();
           break;
         case TransactionListHistoryFilter.LAST_30_DAYS:
@@ -82,7 +87,12 @@ export class TransactionService extends GenericService(TransactionRecord) {
               thirtyDaysAgo,
             })
             .andWhere('transaction.userId = :userId', { userId })
-            .select(['transaction.amount', 'transaction.createdDate'])
+            .select([
+              'transaction.amount',
+              'transaction.dateCreated',
+              'transaction.userId',
+              'transaction.type',
+            ])
             .getMany();
           break;
         case TransactionListHistoryFilter.LAST_3_MONTHS:
@@ -95,7 +105,12 @@ export class TransactionService extends GenericService(TransactionRecord) {
               threeMonthsAgo,
             })
             .andWhere('transaction.userId = :userId', { userId })
-            .select(['transaction.amount', 'transaction.createdDate'])
+            .select([
+              'transaction.amount',
+              'transaction.dateCreated',
+              'transaction.userId',
+              'transaction.type',
+            ])
             .getMany();
           break;
         case TransactionListHistoryFilter.LAST_6_MONTHS:
@@ -108,7 +123,12 @@ export class TransactionService extends GenericService(TransactionRecord) {
               sixMonthsAgo,
             })
             .andWhere('transaction.userId = :userId', { userId })
-            .select(['transaction.amount', 'transaction.createdDate'])
+            .select([
+              'transaction.amount',
+              'transaction.dateCreated',
+              'transaction.userId',
+              'transaction.type',
+            ])
             .getMany();
           break;
       }
