@@ -1030,20 +1030,20 @@ export class UserService extends GenericService(User) {
           },
         );
         if (youVerifyResponse?.success) {
-          const photo = `${youVerifyResponse.data.image}`;
+          const photo = String(youVerifyResponse.data.image);
           const localUrl = base64ToJPEG(photo);
           const url = await uploadFileToImageKit(localUrl);
           return {
             success: true,
             message: youVerifyResponse.message,
             data: {
+              pixBase64: url,
               gender: youVerifyResponse.data?.gender,
               phoneNo: youVerifyResponse.data.mobile,
               dateOfBirth: youVerifyResponse.data.dateOfBirth,
               middleName: youVerifyResponse.data?.middleName,
               firstName: youVerifyResponse.data.firstName,
               lastName: youVerifyResponse.data.lastName,
-              pixBase64: url,
             },
           };
         }
