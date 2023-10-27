@@ -9,6 +9,7 @@ import {
   forwardRef,
   InternalServerErrorException,
   NotFoundException,
+  OnModuleInit,
 } from '@nestjs/common';
 import { FindManyOptions, ILike, Not } from 'typeorm';
 import { User } from '@entities/index';
@@ -37,6 +38,9 @@ import {
   sendSMS,
   groupBy,
   addLeadingZeroes,
+  base64ToPNG,
+  uploadFileToImageKit,
+  base64ToJPEG,
 } from '@utils/index';
 import { AuthResponseDTO } from '@modules/auth/dto/auth.dto';
 import {
@@ -57,7 +61,7 @@ import {
 import { AuthService } from '../index';
 
 @Injectable()
-export class UserService extends GenericService(User) {
+export class UserService extends GenericService(User) implements OnModuleInit {
   constructor(
     @Inject(forwardRef(() => AuthService))
     private readonly authSrv: AuthService,
@@ -65,6 +69,15 @@ export class UserService extends GenericService(User) {
   ) {
     super();
   }
+
+  // async onModuleInit() {
+  //   // const bvn = '22373523502';
+  //   const bvn = '11111111111';
+  //   const userId = '140be5ce-21ef-4680-b25c-2060d32d4735';
+  //   const tl = await this.resolveUserBvn2(bvn, userId);
+
+  //   console.log({ tl });
+  // }
 
   @OnEvent('after.sign-up', { async: true })
   async onSignup(user: User): Promise<void> {
@@ -941,7 +954,7 @@ export class UserService extends GenericService(User) {
     }
   }
 
-  private async resolveUserBvn(
+  private async resolveUserBvn2(
     bvn: string,
     userId: string,
   ): Promise<FincraBVNValidationResponseDTO> {
@@ -971,6 +984,9 @@ export class UserService extends GenericService(User) {
           },
         );
         if (verifyMeResponse?.status === 'success') {
+          const photo = `data:image/png;base64,${verifyMeResponse.data.photo}`;
+          const localUrl = base64ToPNG(photo);
+          const url = await uploadFileToImageKit(localUrl);
           return {
             success: true,
             message: verifyMeResponse.status,
@@ -981,7 +997,63 @@ export class UserService extends GenericService(User) {
               middleName: verifyMeResponse.data.middlename,
               firstName: verifyMeResponse.data.firstname,
               lastName: verifyMeResponse.data.lastname,
-              pixBase64: `data:image/png;base64,${verifyMeResponse.data.photo}`,
+              pixBase64: url,
+            },
+          };
+        }
+      }
+    } catch (ex) {
+      this.logger.error(ex);
+      if (String(ex).includes('status code 404')) {
+        throw new NotFoundException('BVN not found');
+      }
+      throw ex;
+    }
+  }
+
+  private async resolveUserBvn(
+    bvn: string,
+    userId: string,
+    env = 'TEST',
+  ): Promise<FincraBVNValidationResponseDTO> {
+    try {
+      checkForRequiredFields(['bvn', 'userId'], { bvn, userId });
+      validateBvn(bvn, 'bvn');
+      validateUUIDField(userId, 'userId');
+      const user = await this.getRepo().findOne({
+        where: { id: userId },
+        select: ['id'],
+      });
+      if (user?.id) {
+        const url =
+          env === 'TEST'
+            ? 'http://api.sandbox.youverify.co/v2/api/identity/ng/bvn'
+            : 'http://api.youverify.co/v2/api/identity/ng/bvn';
+        const youVerifyResponse = await httpPost<any, any>(
+          url,
+          {
+            id: bvn,
+            isSubjectConsent: true,
+          },
+          {
+            token: String(process.env.YOU_VERIFY_SECRET_KEY),
+          },
+        );
+        if (youVerifyResponse?.success) {
+          const photo = `${youVerifyResponse.data.image}`;
+          const localUrl = base64ToJPEG(photo);
+          const url = await uploadFileToImageKit(localUrl);
+          return {
+            success: true,
+            message: youVerifyResponse.message,
+            data: {
+              gender: youVerifyResponse.data?.gender,
+              phoneNo: youVerifyResponse.data.mobile,
+              dateOfBirth: youVerifyResponse.data.dateOfBirth,
+              middleName: youVerifyResponse.data?.middleName,
+              firstName: youVerifyResponse.data.firstName,
+              lastName: youVerifyResponse.data.lastName,
+              pixBase64: url,
             },
           };
         }

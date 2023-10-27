@@ -18,11 +18,41 @@ import {
 // eslint-disable-next-line @typescript-eslint/no-var-requires
 const ImageKit = require('imagekit');
 import { UploadResponse } from 'imagekit/dist/libs/interfaces';
-import { ReadStream, createReadStream } from 'fs';
+import { uuidV4 } from '@entities/index';
 
 dotenv.config();
 
 const logger = new Logger('UtilFunctions');
+
+export const base64ToPNG = (base64String: string): string => {
+  // Remove the data URI prefix if it exists
+  const data = base64String.replace(/^data:image\/png;base64,/, '');
+
+  // Decode the Base64 string to binary data
+  const binaryData = Buffer.from(data, 'base64');
+
+  const outputPath = `uploads/${uuidV4()}.png`;
+
+  // Write the binary data to a file with a .png extension
+  fs.writeFileSync(outputPath, binaryData);
+
+  return outputPath;
+};
+
+export const base64ToJPEG = (base64String: string): string => {
+  // Remove the data URI prefix if it exists
+  const data = base64String.replace(/^data:image\/jpeg;base64,/, '');
+
+  // Decode the Base64 string to binary data
+  const binaryData = Buffer.from(data, 'base64');
+
+  const outputPath = `uploads/${uuidV4()}.jpeg`;
+
+  // Write the binary data to a file with a .jpeg extension
+  fs.writeFileSync(outputPath, binaryData);
+
+  return outputPath;
+};
 
 export const convertHtmlToPDF = async (
   html: string,
