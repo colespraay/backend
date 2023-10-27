@@ -1050,7 +1050,10 @@ export class UserService extends GenericService(User) {
       }
     } catch (ex) {
       this.logger.error(ex);
-      if (String(ex).includes('status code 403')) {
+      if (
+        String(ex).includes('status code 403') ||
+        String(ex).includes('status code 404')
+      ) {
         throw new NotFoundException('BVN not found');
       }
       throw ex;
