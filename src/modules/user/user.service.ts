@@ -9,7 +9,6 @@ import {
   forwardRef,
   InternalServerErrorException,
   NotFoundException,
-  OnModuleInit,
 } from '@nestjs/common';
 import { FindManyOptions, ILike, Not } from 'typeorm';
 import { User } from '@entities/index';
@@ -61,7 +60,7 @@ import {
 import { AuthService } from '../index';
 
 @Injectable()
-export class UserService extends GenericService(User) implements OnModuleInit {
+export class UserService extends GenericService(User) {
   constructor(
     @Inject(forwardRef(() => AuthService))
     private readonly authSrv: AuthService,
