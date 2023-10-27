@@ -4,7 +4,7 @@ import { Upload } from '@aws-sdk/lib-storage';
 import { FindManyOptions, Repository } from 'typeorm';
 import axios, { AxiosError, type AxiosResponse } from 'axios';
 import { AES, enc } from 'crypto-js';
-import { v4 as uuidv4 } from 'uuid';
+import { uuidV4 } from '@entities/index';
 import { Readable } from 'stream';
 import * as dotenv from 'dotenv';
 import * as bcrypt from 'bcrypt';
@@ -18,11 +18,10 @@ import {
 // eslint-disable-next-line @typescript-eslint/no-var-requires
 const ImageKit = require('imagekit');
 import { UploadResponse } from 'imagekit/dist/libs/interfaces';
-import { uuidV4 } from '@entities/index';
 
 dotenv.config();
 
-const logger = new Logger('UtilFunctions');
+const logger = new Logger('Util_Functions');
 
 export const base64ToPNG = (base64String: string): string => {
   // Remove the data URI prefix if it exists
@@ -63,7 +62,7 @@ export const convertHtmlToPDF = async (
   try {
     // eslint-disable-next-line @typescript-eslint/no-var-requires
     const pdf = require('pdf-creator-node');
-    const fileName = `./uploads/${pdfName ?? uuidv4()}.pdf`;
+    const fileName = `./uploads/${pdfName ?? uuidV4()}.pdf`;
     const document = {
       html,
       data,
@@ -102,13 +101,13 @@ export const decryptData = (
 ): string => AES.decrypt(encryptedData, encryptionKey).toString(enc.Utf8);
 
 export const generateUniqueKey = (length = 5) =>
-  (uuidv4() as string).slice(0, length);
+  (uuidV4() as string).slice(0, length);
 
 export const arrayIncludesAny = <T>(arr: T[], values: T[]) =>
   values.some((v) => arr.includes(v));
 
 export const generateUniqueCode = (length = 4): string =>
-  (uuidv4() as string).substring(0, length);
+  (uuidV4() as string).substring(0, length);
 
 export const compareEnumValues = (value: string, checkAgainst: string[]) => {
   return checkAgainst.includes(value);
@@ -197,7 +196,7 @@ export const uploadFileToImageKit = async (
         imagekit.upload(
           {
             file: data,
-            fileName: `${uuidv4()}.${fileExtension}`,
+            fileName: `${uuidV4()}.${fileExtension}`,
             folderName,
           },
           (error: Error, result: UploadResponse) => {

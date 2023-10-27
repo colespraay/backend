@@ -69,47 +69,6 @@ export class UserService extends GenericService(User) {
     super();
   }
 
-  async onModuleInit() {
-    // const bvn = '22373523502';
-    // const bvn = '11111111111';
-    // const userId = '140be5ce-21ef-4680-b25c-2060d32d4735';
-    // const tl = await this.resolveUserBvn2(bvn, userId);
-
-    // console.log({ tl });
-
-    const profiles = await this.getRepo()
-      .createQueryBuilder('user')
-      .where('CHAR_LENGTH(user.profileImageUrl) > :length', { length: 300 })
-      .getMany();
-
-    this.logger.log({ profiles });
-    if (profiles?.length > 0) {
-      const pngs = profiles.filter((item) =>
-        item.profileImageUrl.startsWith('data:image/png'),
-      );
-      pngs.forEach(async (png) => {
-        const url = base64ToPNG(png.profileImageUrl);
-        const uploadedUrl = await uploadFileToImageKit(url);
-        await this.getRepo().update(
-          { id: png.id },
-          { profileImageUrl: uploadedUrl },
-        );
-      });
-
-      const jpegs = profiles.filter((item) =>
-        item.profileImageUrl.startsWith('data:image/jpeg'),
-      );
-      jpegs.forEach(async (jpeg) => {
-        const url = base64ToJPEG(jpeg.profileImageUrl);
-        const uploadedUrl = await uploadFileToImageKit(url);
-        await this.getRepo().update(
-          { id: jpeg.id },
-          { profileImageUrl: uploadedUrl },
-        );
-      });
-    }
-  }
-
   @OnEvent('after.sign-up', { async: true })
   async onSignup(user: User): Promise<void> {
     try {
