@@ -90,7 +90,6 @@ export class NotificationService extends GenericService(Notification) {
     filterOptions: FindNotificationDTO,
   ): Promise<NotificationsResponseDTO> {
     try {
-      console.log({ filterOptions });
       const filter: FindManyOptions<Notification> = {
         relations: ['user'],
       };
