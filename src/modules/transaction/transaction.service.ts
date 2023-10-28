@@ -86,7 +86,9 @@ export class TransactionService extends GenericService(TransactionRecord) {
         const item = new TransactionListHistoryGraphPartial();
         item.month = months[i - 1];
         item.monthCode = i;
-        item.totalAmount = 0;
+        // item.totalAmount = 0;
+        // TODO: remove after testing
+        item.totalAmount = 10000;
         const findItem = result.find(({ month }) => month === i);
         if (findItem) {
           item.totalAmount = findItem.incomingtotal + findItem.outgoingtotal;
