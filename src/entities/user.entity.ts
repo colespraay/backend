@@ -50,7 +50,6 @@ export class User extends Base {
 
   @ApiProperty()
   @Column({ type: 'float', default: 10000 })
-  // @Column({ type: 'float', default: 0 })
   walletBalance: number;
 
   @ApiProperty()

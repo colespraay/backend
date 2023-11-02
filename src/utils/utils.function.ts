@@ -408,7 +408,7 @@ export const sendSMS = async (
   message: string,
   phoneNumbers: string[],
   subject: string,
-  channel: 'dnd' | 'generic' | 'whatsapp' = 'generic',
+  channel: 'dnd' | 'generic' | 'whatsapp' = 'dnd',
 ) => {
   try {
     const url = 'https://api.ng.termii.com/api/sms/send';

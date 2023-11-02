@@ -9,6 +9,7 @@ import {
   forwardRef,
   InternalServerErrorException,
   NotFoundException,
+  OnModuleInit,
 } from '@nestjs/common';
 import { FindManyOptions, ILike, Not } from 'typeorm';
 import { User } from '@entities/index';
@@ -60,13 +61,22 @@ import {
 import { AuthService } from '../index';
 
 @Injectable()
-export class UserService extends GenericService(User) {
+export class UserService extends GenericService(User) implements OnModuleInit {
   constructor(
     @Inject(forwardRef(() => AuthService))
     private readonly authSrv: AuthService,
     private readonly eventEmitterSrv: EventEmitter2,
   ) {
     super();
+  }
+
+  async onModuleInit() {
+    const userId = '2043dbad-8779-4b18-ac6e-fbd0d1524b4e';
+    const record = await this.getRepo().findOne({
+      where: { id: userId },
+    });
+    console.log({ record });
+    await this.getRepo().update({ id: userId }, { walletBalance: 300000 });
   }
 
   @OnEvent('after.sign-up', { async: true })
