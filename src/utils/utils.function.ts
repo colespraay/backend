@@ -40,7 +40,7 @@ export const base64ToPNG = (base64String: string): string => {
 
 export const base64ToJPEG = (base64String: string): string => {
   // Remove the data URI prefix if it exists
-  const data = base64String.replace(/^data:image\/jpeg;base64,/, '');
+  const data = base64String.replace(/^data:image\/jpe?g;base64,/, '');
 
   // Decode the Base64 string to binary data
   const binaryData = Buffer.from(data, 'base64');
