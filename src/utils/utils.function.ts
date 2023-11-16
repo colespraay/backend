@@ -407,49 +407,92 @@ export const formatPhoneNumberWithPrefix = (
 export const sendSMS = async (
   message: string,
   phoneNumbers: string[],
-  subject: string,
-  channel: 'dnd' | 'generic' | 'whatsapp' = 'dnd',
-) => {
+  subject?: string,
+): Promise<BaseResponseTypeDTO> => {
   try {
-    const url = 'https://api.ng.termii.com/api/sms/send';
-    const headers = { 'Content-Type': 'application/json' };
-    const senderId = String(process.env.TERMII_SENDER_ID);
-    const apiKey = String(process.env.TERMII_API_KEY);
-    const smsApiResponse = await httpPost<any, any>(
-      url,
-      {
-        to: [
-          ...phoneNumbers.map((phoneNumber) =>
-            formatPhoneNumberWithPrefix(phoneNumber),
-          ),
-        ],
-        from: senderId,
-        api_key: apiKey,
-        type: 'plain',
-        sms: message,
-        channel,
-      },
-      headers,
+    const key = String(process.env.TEXT_NG_API_KEY);
+    const url = 'https://api.textng.xyz/otp-sms/';
+
+    const gatewayResponses = [];
+    for (const phoneNumber of phoneNumbers) {
+      const formData = new FormData();
+      formData.append('key', key);
+      formData.append('sender', 'Spraay');
+      formData.append('route', '3');
+      formData.append('phone', formatPhoneNumberWithPrefix(phoneNumber));
+      formData.append('message', message);
+
+      const gatewayResponse = await axios({
+        method: 'post',
+        url,
+        data: formData,
+        headers: { 'Content-Type': 'multipart/form-data' },
+      });
+      gatewayResponses.push(gatewayResponse);
+    }
+    const allSmsSent = gatewayResponses.every(
+      (response) => response.status === 200 && response.data,
     );
-    if (smsApiResponse?.code === 'ok') {
-      return {
-        success: true,
-        message: 'SMS sent',
-        code: HttpStatus.OK,
-      };
+    const result = new BaseResponseTypeDTO();
+    result.success = true;
+    result.code = HttpStatus.OK;
+    result.message = `SMS messages sent to (${phoneNumbers.length}) number(s)`;
+    if (!allSmsSent) {
+      result.message = `SMS messages sent to (${phoneNumbers.length}) number(s)`;
     }
+    return result;
   } catch (ex) {
-    if (ex instanceof AxiosError) {
-      logger.error(ex.response.data);
-    }
     logger.error(ex);
-    return {
-      success: true,
-      message: `SMS not sent: ${ex}`,
-      code: HttpStatus.BAD_GATEWAY,
-    };
+    throw ex;
   }
 };
+
+// export const sendSMS = async (
+//   message: string,
+//   phoneNumbers: string[],
+//   subject: string,
+//   channel: 'dnd' | 'generic' | 'whatsapp' = 'dnd',
+// ) => {
+//   try {
+//     const url = 'https://api.ng.termii.com/api/sms/send';
+//     const headers = { 'Content-Type': 'application/json' };
+//     const senderId = String(process.env.TERMII_SENDER_ID);
+//     const apiKey = String(process.env.TERMII_API_KEY);
+//     const smsApiResponse = await httpPost<any, any>(
+//       url,
+//       {
+//         to: [
+//           ...phoneNumbers.map((phoneNumber) =>
+//             formatPhoneNumberWithPrefix(phoneNumber),
+//           ),
+//         ],
+//         from: senderId,
+//         api_key: apiKey,
+//         type: 'plain',
+//         sms: message,
+//         channel,
+//       },
+//       headers,
+//     );
+//     if (smsApiResponse?.code === 'ok') {
+//       return {
+//         success: true,
+//         message: 'SMS sent',
+//         code: HttpStatus.OK,
+//       };
+//     }
+//   } catch (ex) {
+//     if (ex instanceof AxiosError) {
+//       logger.error(ex.response.data);
+//     }
+//     logger.error(ex);
+//     return {
+//       success: true,
+//       message: `SMS not sent: ${ex}`,
+//       code: HttpStatus.BAD_GATEWAY,
+//     };
+//   }
+// };
 
 // Video-guide: https://www.youtube.com/watch?v=rQzexLu0eLU
 export const sendPushNotification = async (
