@@ -74,14 +74,14 @@ export class UserService extends GenericService(User) {
     try {
       if (user.email) {
         const htmlEmailTemplate = `
-        <h2>Please copy the code below to verify your account</h2>
+        <h2>Please copy the code below to verify your spraay account</h2>
         <h3>${user.uniqueVerificationCode}</h3>
       `;
         await sendEmail(htmlEmailTemplate, 'Verify Account', [user.email]);
       }
       if (user.phoneNumber) {
         const code = user.uniqueVerificationCode;
-        const message = `Use this OTP to validate your Spraay account: ${code}`;
+        const message = `Please use this OTP to validate your Spraay account: ${code}`;
         await sendSMS(message, [user.phoneNumber], 'Verify Account');
       }
     } catch (ex) {
@@ -309,7 +309,6 @@ export class UserService extends GenericService(User) {
           break;
         default:
         case OTPMedium.PHONE_NUMBER:
-          console.log({ msg: 'Yes oo', medium });
           const message = `Please copy the code below to verify your account\n ${token}`;
           await sendSMS(message, [record.phoneNumber], 'Verify Account');
           responseMessage = 'Token has been sent to your phone-number via sms';

@@ -2,7 +2,7 @@ import { BadRequestException, HttpStatus, Logger } from '@nestjs/common';
 import { S3Client } from '@aws-sdk/client-s3';
 import { Upload } from '@aws-sdk/lib-storage';
 import { FindManyOptions, Repository } from 'typeorm';
-import axios, { AxiosError, type AxiosResponse } from 'axios';
+import axios, { type AxiosResponse } from 'axios';
 import { AES, enc } from 'crypto-js';
 import { uuidV4 } from '@entities/index';
 import { Readable } from 'stream';
@@ -421,6 +421,7 @@ export const sendSMS = async (
       formData.append('route', '3');
       formData.append('phone', formatPhoneNumberWithPrefix(phoneNumber));
       formData.append('message', message);
+      formData.append('siscb', '1');
 
       const gatewayResponse = await axios({
         method: 'post',
