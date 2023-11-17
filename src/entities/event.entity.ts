@@ -49,8 +49,8 @@ export class EventRecord extends Base {
   @Column({ type: 'text' })
   venue: string;
 
-  @ApiProperty()
-  @Column({ type: 'varchar', length: 255 })
+  @ApiProperty({ nullable: true })
+  @Column({ type: 'varchar', length: 255, nullable: true })
   eventTag: string;
 
   @Column({ type: 'uuid', nullable: true })
