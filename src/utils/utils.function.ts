@@ -424,8 +424,8 @@ export const sendSMS = async (
       formData.append('siscb', '1');
 
       const gatewayResponse = await axios({
-        method: 'post',
         url,
+        method: 'post',
         data: formData,
         headers: { 'Content-Type': 'multipart/form-data' },
       });

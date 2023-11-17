@@ -97,3 +97,16 @@ export class FilterForCurrentUserDTO extends PaginationRequestType {
   @ApiProperty({ enum: EventStatus })
   eventStatus: EventStatus;
 }
+
+export class EventAttendanceSummaryPartial {
+  @ApiProperty()
+  totalPeopleInvited: number;
+
+  @ApiProperty()
+  totalRsvp: number;
+}
+
+export class EventAttendanceSummaryDTO extends BaseResponseTypeDTO {
+  @ApiProperty({ type: () => EventAttendanceSummaryPartial })
+  data: EventAttendanceSummaryPartial;
+}

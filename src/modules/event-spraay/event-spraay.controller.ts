@@ -26,6 +26,7 @@ import {
   EventSpraayResponseDTO,
   EventSpraayCreatedResponseDTO,
   CreateEventSpraayDTO,
+  NumberResponseDTO,
 } from './dto/event-spraay.dto';
 
 @ApiBearerAuth('JWT')
@@ -51,6 +52,8 @@ export class EventSpraayController {
   @ApiQuery({ name: 'userId', required: false })
   @ApiQuery({ name: 'eventId', required: false })
   @ApiQuery({ name: 'transactionId', required: false })
+  @ApiQuery({ name: 'pageSize', required: false })
+  @ApiQuery({ name: 'pageNumber', required: false })
   @ApiResponse({ type: () => EventSpraaysResponseDTO })
   @Get()
   async findSpraays(
@@ -67,5 +70,15 @@ export class EventSpraayController {
     @Param('spraayId', ParseUUIDPipe) spraayId: string,
   ): Promise<EventSpraayResponseDTO> {
     return await this.eventSpraaySrv.findEventSpraayById(spraayId);
+  }
+
+  @ApiProduces('json')
+  @ApiConsumes('application/json')
+  @ApiResponse({ type: () => NumberResponseDTO })
+  @Get('/total-amount-sprayed-at-event/:eventId')
+  async findTotalSpraaysPerEvent(
+    @Param('eventId', ParseUUIDPipe) eventId: string,
+  ): Promise<NumberResponseDTO> {
+    return await this.eventSpraaySrv.findTotalSpraaysPerEvent(eventId);
   }
 }

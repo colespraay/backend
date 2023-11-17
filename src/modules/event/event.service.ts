@@ -7,9 +7,9 @@ import {
   forwardRef,
   ForbiddenException,
 } from '@nestjs/common';
-import { FindManyOptions, In, ILike, Not } from 'typeorm';
+import { FindManyOptions, In, ILike } from 'typeorm';
 import { GenericService } from '@schematics/index';
-import { EventRecord } from '@entities/index';
+import { EventRSVP, EventRecord } from '@entities/index';
 import {
   BaseResponseTypeDTO,
   EventCategory,
@@ -24,6 +24,7 @@ import {
   validateURLField,
   validateUUIDField,
 } from '@utils/index';
+import { EventRSVPService } from '@modules/event-rsvp/event-rsvp.service';
 import {
   EventResponseDTO,
   CreateEventDTO,
@@ -31,6 +32,7 @@ import {
   FilterEventDTO,
   UpdateEventDTO,
   EventCategoryResponseDTO,
+  EventAttendanceSummaryDTO,
 } from './dto/event.dto';
 import { EventInviteService } from '../index';
 
@@ -39,6 +41,7 @@ export class EventService extends GenericService(EventRecord) {
   constructor(
     @Inject(forwardRef(() => EventInviteService))
     private readonly eventInviteSrv: EventInviteService,
+    private readonly eventRsvpSrv: EventRSVPService,
   ) {
     super();
   }
@@ -112,6 +115,82 @@ export class EventService extends GenericService(EventRecord) {
     }
   }
 
+  async eventSummary(eventId: string): Promise<EventAttendanceSummaryDTO> {
+    try {
+      checkForRequiredFields(['eventId'], { eventId });
+      const invites = await this.eventInviteSrv.getRepo().count({
+        where: { eventId },
+      });
+      const rsvps = await this.eventRsvpSrv.getRepo().count({
+        where: { eventId },
+      });
+      return {
+        success: true,
+        code: HttpStatus.OK,
+        message: 'Event summary count found',
+        data: {
+          totalPeopleInvited: invites,
+          totalRsvp: rsvps,
+        },
+      };
+    } catch (ex) {
+      this.logger.error(ex);
+      throw ex;
+    }
+  }
+
+  async findAvailableEventsForUser(
+    userId: string,
+    pagination?: PaginationRequestType,
+  ): Promise<EventsResponseDTO> {
+    try {
+      checkForRequiredFields(['userId'], { userId });
+      validateUUIDField(userId, 'userId');
+      const upcomingEvents = await this.getRepo().find({
+        where: { eventStatus: In([EventStatus.ONGOING, EventStatus.UPCOMING]) },
+        select: ['id'],
+      });
+      // Remove duplicates
+      const eventIds = [...new Set(upcomingEvents.map(({ id }) => id))];
+      const filter: FindManyOptions<EventRSVP> = {
+        where: { userId, eventId: In(eventIds) },
+        relations: [
+          'event',
+          'event.user',
+          'event.eventInvites',
+          'event.eventInvites.user',
+        ],
+      };
+      if (pagination?.pageNumber && pagination?.pageSize) {
+        filter.skip = (pagination.pageNumber - 1) * pagination.pageSize;
+        filter.take = pagination.pageSize;
+        const { response, paginationControl } =
+          await calculatePaginationControls<EventRSVP>(
+            this.eventRsvpSrv.getRepo(),
+            filter,
+            pagination,
+          );
+        return {
+          success: true,
+          message: 'Available events found',
+          code: HttpStatus.OK,
+          data: response.map(({ event }) => event),
+          paginationControl,
+        };
+      }
+      const rsvps = await this.eventRsvpSrv.getRepo().find(filter);
+      return {
+        success: true,
+        code: HttpStatus.OK,
+        message: 'Available events found',
+        data: rsvps.map(({ event }) => event),
+      };
+    } catch (ex) {
+      this.logger.error(ex);
+      throw ex;
+    }
+  }
+
   async findEventById(eventId: string): Promise<EventResponseDTO> {
     try {
       checkForRequiredFields(['eventId'], { eventId });
@@ -139,6 +218,28 @@ export class EventService extends GenericService(EventRecord) {
       checkForRequiredFields(['eventCode'], { eventCode });
       const record = await this.getRepo().findOne({
         where: { eventCode },
+        relations: ['user', 'eventInvites', 'eventInvites.user'],
+      });
+      if (!record?.id) {
+        throw new NotFoundException('Event not found');
+      }
+      return {
+        success: true,
+        code: HttpStatus.OK,
+        message: 'Record found',
+        data: record,
+      };
+    } catch (ex) {
+      this.logger.error(ex);
+      throw ex;
+    }
+  }
+
+  async findEventByTag(eventTag: string): Promise<EventResponseDTO> {
+    try {
+      checkForRequiredFields(['eventTag'], { eventTag });
+      const record = await this.getRepo().findOne({
+        where: { eventTag },
         relations: ['user', 'eventInvites', 'eventInvites.user'],
       });
       if (!record?.id) {

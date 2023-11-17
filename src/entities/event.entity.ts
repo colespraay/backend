@@ -53,6 +53,10 @@ export class EventRecord extends Base {
   @Column({ type: 'text' })
   venue: string;
 
+  @ApiProperty()
+  @Column({ type: 'varchar', length: 255 })
+  eventTag: string;
+
   @ApiProperty({ enum: EventCategory })
   @Column({ enum: EventCategory })
   category: EventCategory;
@@ -100,5 +104,7 @@ export class EventRecord extends Base {
     const eventCode = generateUniqueKey(7);
     this.eventCode = eventCode;
     this.qrCodeForEvent = await generateQRCode(eventCode);
+    const tagText = this.eventName?.toLowerCase()?.slice(0, 6);
+    this.eventTag = `#${tagText}`;
   }
 }

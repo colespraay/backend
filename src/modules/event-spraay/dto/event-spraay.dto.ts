@@ -51,3 +51,8 @@ export class FindEventSpraaysDTO extends PaginationRequestType {
   @ApiProperty({ nullable: true })
   transactionId: string;
 }
+
+export class NumberResponseDTO extends BaseResponseTypeDTO {
+  @ApiProperty()
+  total: number;
+}

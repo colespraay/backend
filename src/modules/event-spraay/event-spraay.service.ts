@@ -25,6 +25,7 @@ import {
   EventSpraayCreatedResponseDTO,
   EventSpraaysResponseDTO,
   FindEventSpraaysDTO,
+  NumberResponseDTO,
 } from './dto/event-spraay.dto';
 import { EventService, UserService, WalletService } from '../index';
 
@@ -204,6 +205,27 @@ export class EventSpraayService extends GenericService(EventSpraay) {
         message: 'Records found',
         code: HttpStatus.OK,
         data: users,
+      };
+    } catch (ex) {
+      this.logger.error(ex);
+      throw ex;
+    }
+  }
+
+  async findTotalSpraaysPerEvent(eventId: string): Promise<NumberResponseDTO> {
+    try {
+      checkForRequiredFields(['eventId'], { eventId });
+      const records = await this.getRepo().find({
+        where: { eventId },
+        relations: ['transaction'],
+      });
+      const numbers = records.map(({ transaction }) => transaction.amount);
+      const total = numbers.reduce((curr, next) => curr + next);
+      return {
+        success: true,
+        code: HttpStatus.OK,
+        message: 'Total found',
+        total,
       };
     } catch (ex) {
       this.logger.error(ex);

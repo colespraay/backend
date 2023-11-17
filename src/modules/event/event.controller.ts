@@ -19,6 +19,7 @@ import {
   ApiResponse,
   ApiTags,
 } from '@nestjs/swagger';
+import { Cron, CronExpression } from '@nestjs/schedule';
 import {
   BaseResponseTypeDTO,
   DecodedTokenKey,
@@ -34,8 +35,8 @@ import {
   EventsResponseDTO,
   FilterEventDTO,
   EventCategoryResponseDTO,
+  EventAttendanceSummaryDTO,
 } from './dto/event.dto';
-import { Cron, CronExpression } from '@nestjs/schedule';
 
 @ApiBearerAuth('JWT')
 @UseGuards(RolesGuard)
@@ -135,6 +136,31 @@ export class EventController {
     return await this.eventSrv.findEventById(eventId);
   }
 
+  @ApiQuery({ name: 'pageNumber', required: false })
+  @ApiQuery({ name: 'pageSize', required: false })
+  @ApiOperation({ description: 'Find available events for logged-in user' })
+  @ApiProduces('json')
+  @ApiConsumes('application/json')
+  @ApiResponse({ type: EventsResponseDTO })
+  @Get('/find/available-events')
+  async findAvailableEventsForUser(
+    @CurrentUser(DecodedTokenKey.USER_ID) userId: string,
+    @Query() pagination?: PaginationRequestType,
+  ): Promise<EventsResponseDTO> {
+    return await this.eventSrv.findAvailableEventsForUser(userId, pagination);
+  }
+
+  @ApiOperation({ description: 'Get number of invites and rsvps per event' })
+  @ApiProduces('json')
+  @ApiConsumes('application/json')
+  @ApiResponse({ type: EventAttendanceSummaryDTO })
+  @Get('/event-summary/:eventId')
+  async eventSummary(
+    @Param('eventId', ParseUUIDPipe) eventId: string,
+  ): Promise<EventAttendanceSummaryDTO> {
+    return await this.eventSrv.eventSummary(eventId);
+  }
+
   @ApiOperation({ description: 'Find event by event-code' })
   @ApiProduces('json')
   @ApiConsumes('application/json')
@@ -144,6 +170,17 @@ export class EventController {
     @Param('eventCode') eventCode: string,
   ): Promise<EventResponseDTO> {
     return await this.eventSrv.findEventByCode(eventCode);
+  }
+
+  @ApiOperation({ description: 'Find event by event-Tag' })
+  @ApiProduces('json')
+  @ApiConsumes('application/json')
+  @ApiResponse({ type: EventResponseDTO })
+  @Get('find/by-tag/:eventTag')
+  async findEventByTag(
+    @Param('eventTag') eventTag: string,
+  ): Promise<EventResponseDTO> {
+    return await this.eventSrv.findEventByTag(eventTag);
   }
 
   @ApiOperation({ description: 'Find event categories' })
