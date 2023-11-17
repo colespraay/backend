@@ -2,17 +2,16 @@ import { ApiProperty, PartialType } from '@nestjs/swagger';
 import { EventRecord } from '@entities/index';
 import {
   BaseResponseTypeDTO,
-  EventCategory,
   EventStatus,
   PaginationRequestType,
   PaginationResponseType,
 } from '@utils/index';
 
 export class GeoCoordinateDTO {
-  @ApiProperty()
+  @ApiProperty({ type: () => Number })
   longitude: number;
 
-  @ApiProperty()
+  @ApiProperty({ type: () => Number })
   latitude: number;
 }
 
@@ -32,8 +31,8 @@ export class CreateEventDTO {
   @ApiProperty()
   time: string;
 
-  @ApiProperty({ enum: EventCategory })
-  category: EventCategory;
+  @ApiProperty()
+  eventCategoryId: string;
 
   @ApiProperty()
   eventCoverImage: string;
@@ -57,8 +56,8 @@ export class FilterEventDTO {
   @ApiProperty({ nullable: true })
   userId: string;
 
-  @ApiProperty({ enum: EventCategory, nullable: true })
-  category: EventCategory;
+  @ApiProperty({ nullable: true })
+  eventCategoryId: string;
 
   @ApiProperty({ enum: EventStatus, nullable: true })
   eventStatus: EventStatus;

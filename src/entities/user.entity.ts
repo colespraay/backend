@@ -24,6 +24,7 @@ import {
   DataPurchase,
   ElectricityPurchase,
   CablePurchase,
+  EventCategory,
 } from './index';
 
 @Entity({ name: 'user' })
@@ -211,8 +212,13 @@ export class User extends Base {
   })
   electricityPurchases: ElectricityPurchase[];
 
+  @ApiProperty({ type: () => [Notification] })
   @OneToMany(() => Notification, ({ user }) => user, { cascade: true })
   userNotifications: Notification[];
+
+  @ApiProperty({ type: () => [EventCategory] })
+  @OneToMany(() => EventCategory, ({ user }) => user, { cascade: true })
+  eventCategoriesCreated: EventCategory[];
 
   @BeforeInsert()
   async beforeInsertHandler(): Promise<void> {

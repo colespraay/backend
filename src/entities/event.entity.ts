@@ -7,18 +7,14 @@ import {
   JoinColumn,
   ManyToOne,
 } from 'typeorm';
-import {
-  generateUniqueKey,
-  generateQRCode,
-  EventCategory,
-  EventStatus,
-} from '@utils/index';
+import { generateUniqueKey, generateQRCode, EventStatus } from '@utils/index';
 import {
   Base,
   EventSpraay,
   EventInvite,
   User,
   uuidV4,
+  EventCategory,
   EventRSVP,
 } from './index';
 import { GeoCoordinateDTO } from '@modules/event/dto/event.dto';
@@ -57,9 +53,16 @@ export class EventRecord extends Base {
   @Column({ type: 'varchar', length: 255 })
   eventTag: string;
 
-  @ApiProperty({ enum: EventCategory })
-  @Column({ enum: EventCategory })
-  category: EventCategory;
+  @Column({ type: 'uuid', nullable: true })
+  eventCategoryId: string;
+
+  @ApiProperty({ type: () => EventCategory })
+  @JoinColumn({ name: 'eventCategoryId' })
+  @ManyToOne(() => EventCategory, ({ events }) => events, {
+    onDelete: 'CASCADE',
+    onUpdate: 'CASCADE',
+  })
+  eventCategory: EventCategory;
 
   @ApiProperty({ enum: EventStatus })
   @Column({ enum: EventStatus, default: EventStatus.UPCOMING })

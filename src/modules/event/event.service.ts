@@ -7,6 +7,7 @@ import {
   forwardRef,
   ForbiddenException,
 } from '@nestjs/common';
+import { EventEmitter2, OnEvent } from '@nestjs/event-emitter';
 import { FindManyOptions, In, ILike } from 'typeorm';
 import { GenericService } from '@schematics/index';
 import { EventRSVP, EventRecord } from '@entities/index';
@@ -19,6 +20,7 @@ import {
   checkForRequiredFields,
   compareEnumValueFields,
   convert12HourTo24HourFormat,
+  sendEmail,
   validateFutureDate,
   validateTimeField,
   validateURLField,
@@ -42,6 +44,7 @@ export class EventService extends GenericService(EventRecord) {
     @Inject(forwardRef(() => EventInviteService))
     private readonly eventInviteSrv: EventInviteService,
     private readonly eventRsvpSrv: EventRSVPService,
+    private readonly eventEmitterSrv: EventEmitter2,
   ) {
     super();
   }
@@ -55,7 +58,7 @@ export class EventService extends GenericService(EventRecord) {
         [
           'time',
           'venue',
-          'category',
+          'eventCategoryId',
           'eventName',
           'eventDescription',
           'eventDate',
@@ -72,11 +75,7 @@ export class EventService extends GenericService(EventRecord) {
       validateFutureDate(payload.eventDate, 'eventDate');
       validateTimeField(payload.time, 'time');
       validateURLField(payload.eventCoverImage, 'eventCoverImage');
-      compareEnumValueFields(
-        payload.category,
-        Object.values(EventCategory),
-        'category',
-      );
+      validateUUIDField(payload.eventCategoryId, 'eventCategoryId');
       const record = await this.getRepo().findOne({
         where: [
           { eventName: payload.eventName.toUpperCase(), userId },
@@ -271,9 +270,12 @@ export class EventService extends GenericService(EventRecord) {
       ) {
         filter.where = { ...filter.where, status: filterOptions.status };
       }
-
-      if (filterOptions?.category) {
-        filter.where = { ...filter.where, category: filterOptions.category };
+      if (filterOptions?.eventCategoryId) {
+        validateUUIDField(filterOptions.eventCategoryId, 'eventCategoryId');
+        filter.where = {
+          ...filter.where,
+          eventCategoryId: filterOptions.eventCategoryId,
+        };
       }
       if (filterOptions?.eventStatus) {
         filter.where = {
@@ -519,13 +521,12 @@ export class EventService extends GenericService(EventRecord) {
       if ('status' in payload) {
         record.status = payload.status;
       }
-      if (payload.category && record.category !== payload.category) {
-        compareEnumValueFields(
-          'category',
-          Object.values(EventCategory),
-          'category',
-        );
-        record.category = payload.category;
+      if (
+        payload.eventCategoryId &&
+        record.eventCategoryId !== payload.eventCategoryId
+      ) {
+        validateUUIDField(payload.eventCategoryId, 'eventCategoryId');
+        record.eventCategoryId = payload.eventCategoryId;
       }
       if (payload.eventStatus && record.eventStatus !== payload.eventStatus) {
         compareEnumValueFields(
@@ -577,11 +578,12 @@ export class EventService extends GenericService(EventRecord) {
         );
         record.eventGeoCoordinates = payload.eventGeoCoordinates;
       }
+      this.eventEmitterSrv.emit('notification.event-update', record.id);
       const updatedRecord: Partial<EventRecord> = {
         status: record.status,
         venue: record.venue,
         time: record.time,
-        category: record.category,
+        eventCategoryId: record.eventCategoryId,
         eventName: record.eventName,
         eventDate: record.eventDate,
         eventStatus: record.eventStatus,
@@ -664,6 +666,35 @@ export class EventService extends GenericService(EventRecord) {
           { id: In(eventIds) },
           { status: false, eventStatus: EventStatus.PAST },
         );
+      }
+    } catch (ex) {
+      this.logger.error(ex);
+      throw ex;
+    }
+  }
+
+  @OnEvent('notification.event-update', { async: true })
+  private async sendNotificationToEventRsvps(eventId: string): Promise<void> {
+    try {
+      checkForRequiredFields(['eventId'], { eventId });
+      const event = await this.getRepo().findOne({
+        where: { id: eventId },
+        relations: ['eventRsvps', 'eventRsvps.user'],
+      });
+      if (event?.id) {
+        const emails = event.eventRsvps.map(({ user }) => user.email);
+        if (emails?.length > 0) {
+          const html = `
+            <h1>Event Updated</h1>
+            <p>Name: ${event.eventName}</p>
+            <p>Venue: ${event.venue}</p>
+            <p>Date: ${new Date(event.dateCreated).toLocaleDateString()}, ${
+            event.time
+          }
+            </p>
+          `;
+          await sendEmail(html, `Event ${event.eventName} Updated`, emails);
+        }
       }
     } catch (ex) {
       this.logger.error(ex);
