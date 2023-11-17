@@ -46,7 +46,7 @@ import ormConfig from './orm.config';
     EventEmitterModule.forRoot(),
     ScheduleModule.forRoot(),
     MulterModule.register({ dest: './uploads' }),
-    ThrottlerModule.forRoot({ ttl: 60, limit: 40 }),
+    ThrottlerModule.forRoot({ ttl: 60, limit: 20 }),
     AuthModule,
     UserModule,
     GiftingModule,
