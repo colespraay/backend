@@ -15,7 +15,7 @@ export class EventCategory extends Base {
   @Column({ type: 'varchar', length: 255 })
   name: string;
 
-  @Column({ type: 'uuid' })
+  @Column({ type: 'uuid', nullable: true })
   userId: string;
 
   @ApiProperty({ type: () => User })
