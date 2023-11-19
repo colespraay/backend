@@ -220,7 +220,7 @@ export class EventSpraayService extends GenericService(EventSpraay) {
         relations: ['transaction'],
       });
       const numbers = records.map(({ transaction }) => transaction.amount);
-      const total = numbers.reduce((curr, next) => curr + next);
+      const total = numbers.reduce((curr, next) => curr + next, 0);
       return {
         success: true,
         code: HttpStatus.OK,
