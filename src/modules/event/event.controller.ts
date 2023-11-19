@@ -183,7 +183,7 @@ export class EventController {
     return await this.eventSrv.findEventByTag(eventTag);
   }
 
-  @ApiOperation({ description: 'Find event categories' })
+  @ApiOperation({ description: 'Find event categories', deprecated: true })
   @ApiProduces('json')
   @ApiConsumes('application/json')
   @ApiResponse({ type: EventCategoryResponseDTO })
