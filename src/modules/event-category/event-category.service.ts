@@ -32,6 +32,7 @@ export class EventCategoryService
       'BIRTHDAY',
       'ANNIVERSARY',
       'CHURCH PROGRAM',
+      'OTHER',
     ];
     const categoriesFromDB = await this.getRepo().find({
       where: { status: true },

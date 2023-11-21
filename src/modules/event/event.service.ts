@@ -156,6 +156,7 @@ export class EventService extends GenericService(EventRecord) {
         relations: [
           'event',
           'event.user',
+          'event.eventCategory',
           'event.eventInvites',
           'event.eventInvites.user',
         ],
@@ -239,7 +240,12 @@ export class EventService extends GenericService(EventRecord) {
       checkForRequiredFields(['eventTag'], { eventTag });
       const record = await this.getRepo().findOne({
         where: { eventTag },
-        relations: ['user', 'eventInvites', 'eventInvites.user'],
+        relations: [
+          'user',
+          'eventCategory',
+          'eventInvites',
+          'eventInvites.user',
+        ],
       });
       if (!record?.id) {
         throw new NotFoundException('Event not found');
@@ -262,7 +268,12 @@ export class EventService extends GenericService(EventRecord) {
   ): Promise<EventsResponseDTO> {
     try {
       const filter: FindManyOptions<EventRecord> = {
-        relations: ['user', 'eventInvites', 'eventInvites.user'],
+        relations: [
+          'user',
+          'eventCategory',
+          'eventInvites',
+          'eventInvites.user',
+        ],
       };
       if (
         typeof filterOptions.status !== 'undefined' &&
@@ -360,7 +371,12 @@ export class EventService extends GenericService(EventRecord) {
 
       const filter: FindManyOptions<EventRecord> = {
         where: { id: In(eventIds) },
-        relations: ['user', 'eventInvites', 'eventInvites.user'],
+        relations: [
+          'user',
+          'eventCategory',
+          'eventInvites',
+          'eventInvites.user',
+        ],
       };
       if (pagination?.pageNumber && pagination?.pageSize) {
         filter.skip = (pagination.pageNumber - 1) * pagination.pageSize;
@@ -414,7 +430,12 @@ export class EventService extends GenericService(EventRecord) {
       const eventsForUserIds = [...new Set(eventsForUser.map(({ id }) => id))];
       const filter: FindManyOptions<EventRecord> = {
         where: { id: In(eventsForUserIds) },
-        relations: ['user', 'eventInvites', 'eventInvites.user'],
+        relations: [
+          'user',
+          'eventCategory',
+          'eventInvites',
+          'eventInvites.user',
+        ],
       };
       if (pagination?.pageNumber && pagination?.pageSize) {
         filter.skip = (pagination.pageNumber - 1) * pagination.pageSize;
@@ -467,7 +488,12 @@ export class EventService extends GenericService(EventRecord) {
       const eventsForUserIds = [...new Set(eventsForUser.map(({ id }) => id))];
       const filter: FindManyOptions<EventRecord> = {
         where: { id: In(eventsForUserIds) },
-        relations: ['user', 'eventInvites', 'eventInvites.user'],
+        relations: [
+          'user',
+          'eventCategory',
+          'eventInvites',
+          'eventInvites.user',
+        ],
       };
       if (pagination?.pageNumber && pagination?.pageSize) {
         filter.skip = (pagination.pageNumber - 1) * pagination.pageSize;
