@@ -5,7 +5,7 @@ import {
   NotFoundException,
   OnModuleInit,
 } from '@nestjs/common';
-import { FindManyOptions, ILike, IsNull } from 'typeorm';
+import { FindManyOptions, ILike, In, IsNull } from 'typeorm';
 import { EventCategory } from '@entities/index';
 import { GenericService } from '@schematics/index';
 import {
@@ -78,6 +78,44 @@ export class EventCategoryService
         code: HttpStatus.CREATED,
         message: 'Created',
         data: createdRecord,
+      };
+    } catch (ex) {
+      this.logger.error(ex);
+      throw ex;
+    }
+  }
+
+  async findUserCategories(
+    userId: string,
+  ): Promise<EventCategoriesResponseDTO> {
+    try {
+      checkForRequiredFields(['userId'], { userId });
+      const categories = await this.getRepo().find({
+        where: {},
+        select: ['id', 'userId'],
+      });
+      // Get categories user created themselves
+      const categoryFilteredList = categories.filter(
+        (item) => item.userId === userId,
+      );
+
+      // Get categories generically created on the system
+      categoryFilteredList.push(...categories.filter((item) => !item.userId));
+
+      // Remove duplicates categoryIds
+      const mappedCategoryIds = [
+        ...new Set(categoryFilteredList.map(({ id }) => id)),
+      ];
+
+      const list = await this.getRepo().find({
+        where: { id: In(mappedCategoryIds) },
+        relations: ['user'],
+      });
+      return {
+        success: true,
+        code: HttpStatus.OK,
+        message: 'Records found',
+        data: list,
       };
     } catch (ex) {
       this.logger.error(ex);

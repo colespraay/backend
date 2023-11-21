@@ -72,4 +72,15 @@ export class EventCategoryController {
   ): Promise<EventCategoriesResponseDTO> {
     return await this.eventCategorySrv.findEventCategories(payload);
   }
+
+  @ApiOperation({ description: 'Find user event categories' })
+  @ApiProduces('json')
+  @ApiConsumes('application/json')
+  @ApiResponse({ type: EventCategoriesResponseDTO })
+  @Get('/find/user-categories')
+  async findUserCategories(
+    @CurrentUser(DecodedTokenKey.USER_ID) userId: string,
+  ): Promise<EventCategoriesResponseDTO> {
+    return await this.eventCategorySrv.findUserCategories(userId);
+  }
 }
