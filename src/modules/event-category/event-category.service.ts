@@ -5,7 +5,7 @@ import {
   NotFoundException,
   OnModuleInit,
 } from '@nestjs/common';
-import { FindManyOptions, ILike } from 'typeorm';
+import { FindManyOptions, ILike, IsNull } from 'typeorm';
 import { EventCategory } from '@entities/index';
 import { GenericService } from '@schematics/index';
 import {
@@ -54,6 +54,7 @@ export class EventCategoryService
     }
     this.logger.debug('Category-data synchronization completed.');
   }
+
   async createEventCategory(
     payload: CreateEventCategoryDTO,
     userId: string,
@@ -114,6 +115,7 @@ export class EventCategoryService
     try {
       const filter: FindManyOptions<EventCategory> = {
         relations: ['user'],
+        where: { userId: IsNull() },
       };
       if (
         typeof filterOptions.status !== 'undefined' &&
