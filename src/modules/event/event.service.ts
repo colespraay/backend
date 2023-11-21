@@ -102,11 +102,15 @@ export class EventService extends GenericService(EventRecord) {
         ...payload,
         userId,
       });
+      const newRecord = await this.getRepo().findOne({
+        where: { id: createdEvent.id },
+        relations: ['user', 'eventCategory', 'eventInvites'],
+      });
       return {
         success: true,
         message: 'Created',
         code: HttpStatus.CREATED,
-        data: createdEvent,
+        data: newRecord,
       };
     } catch (ex) {
       this.logger.error(ex);
