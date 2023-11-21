@@ -63,7 +63,7 @@ export class EventCategoryService
       checkForRequiredFields(['name', 'userId'], { ...payload, userId });
       validateUUIDField(userId, 'userId');
       const record = await this.getRepo().findOne({
-        where: { name: payload.name.toUpperCase() },
+        where: { name: payload.name.toUpperCase(), userId },
         select: ['id'],
       });
       if (record?.id) {
