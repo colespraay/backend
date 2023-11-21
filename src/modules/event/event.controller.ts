@@ -57,6 +57,7 @@ export class EventController {
     return await this.eventSrv.createEvent(payload, userId);
   }
 
+  @ApiQuery({ name: 'eventCategoryId', required: false })
   @ApiQuery({ name: 'searchTerm', required: false })
   @ApiQuery({ name: 'status', required: false })
   @ApiQuery({ name: 'eventStatus', required: false })
