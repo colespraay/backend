@@ -1,5 +1,6 @@
 import {
   BadGatewayException,
+  ConflictException,
   HttpStatus,
   Inject,
   Injectable,
@@ -9,21 +10,22 @@ import {
 } from '@nestjs/common';
 import { EventEmitter2, OnEvent } from '@nestjs/event-emitter';
 import {
+  BaseResponseTypeDTO,
   TransactionType,
-  addLeadingZeroes,
   checkForRequiredFields,
-  generateRandomName,
-  generateRandomNumber,
+  formatTransactionKey,
   generateUniqueCode,
   httpGet,
   httpPost,
-  validateEmailField,
+  validateUUIDField,
 } from '@utils/index';
+import { User } from '@entities/index';
 import { BankService, UserService } from '../index';
 import {
   BankAccountStatementDTO,
   BankListDTO,
   BankListPartialDTO,
+  CreateFlutterwaveResponseDTO,
   FindStatementOfAccountDTO,
   FindTransferChargeDTO,
   InterbankTransferChargeDTO,
@@ -34,7 +36,6 @@ import {
   VerifyAccountExistenceDTO,
   VerifyAccountExistenceResponseDTO,
   VerifyAccountExistenceResponsePartial,
-  WebhookResponseDTO,
 } from './dto/wallet.dto';
 
 @Injectable()
@@ -55,66 +56,49 @@ export class WalletService {
     private readonly eventEmitterSrv: EventEmitter2,
   ) {}
 
-  // URL: https://playground.alat.ng/api-details#api=wallet-creation-api&operation=generate-account-for-partnership
   @OnEvent('create-wallet', { async: true })
   async createWallet(userId: string): Promise<void> {
     try {
-      const user = await this.userSrv.findOne({ id: userId });
-      if (!user?.id) {
-        throw new NotFoundException();
-      }
+      checkForRequiredFields(['userId'], { userId });
+      validateUUIDField(userId, 'userId');
+      const url = 'https://api.flutterwave.com/v3/virtual-account-numbers';
+      const user = await this.userSrv.findUserById(userId);
       checkForRequiredFields(
-        ['dob', 'email', 'gender', 'firstName', 'lastName', 'phoneNumber'],
-        user,
+        ['firstName', 'lastName', 'email', 'bvn', 'phoneNumber'],
+        user.data,
       );
-      validateEmailField(user.email);
-      if (!user.virtualAccountNumber) {
-        // initiate wallet creation
-        const dob = new Date(user.dob);
-        const formatDOB = `${dob.getFullYear()}-${addLeadingZeroes(
-          dob.getMonth() + 1,
-        )}-${addLeadingZeroes(dob.getDate())}`;
-        const url =
-          'https://apiplayground.alat.ng/wallet-creation/api/CustomerAccount/GenerateAccountForPatnerships';
-        await httpPost(
-          url,
-          {
-            gender: user.gender.toLowerCase(),
-            email: user.email,
-            firstName: user.firstName,
-            lastName: user.lastName,
-            dob: formatDOB, // dob: '1994-10-17',
-            phoneNumber: user.phoneNumber,
-          },
-          {
-            'Ocp-Apim-Subscription-Key': this.walletCreationSubKey,
-            'x-api-key': this.xApiKey,
-          },
+      if (user?.data && !user.data.virtualAccountNumber) {
+        const fullNameNarration = `${user.data.firstName} ${user.data.lastName}`;
+        const userRef = formatTransactionKey(
+          `Spraay-${fullNameNarration}-${generateUniqueCode(10)}`,
         );
-
-        // Get the records for the accounts every 5 mins
-        setTimeout(async () => {
-          const url = `https://apiplayground.alat.ng/wallet-creation/api/CustomerAccount/GetPartnershipAccountDetails?phoneNumber=${user.phoneNumber}`;
-          const walletData = await httpGet<any>(url, {
-            'Ocp-Apim-Subscription-Key': this.walletCreationSubKey,
-            'x-api-key': this.xApiKey,
-          });
-          this.logger.log({ walletData });
-          const accountCreationPayload = {
-            bankName: 'WEMA BANK',
-            virtualAccountNumber:
-              walletData?.data?.accountNumber ?? generateRandomNumber(),
-            virtualAccountName:
-              user.firstName && user.lastName
-                ? `${user.firstName} ${user.lastName}`
-                : generateRandomName(),
+        const payload = {
+          bvn: user.data.bvn,
+          email: user.data.email,
+          is_permanent: true,
+          tx_ref: userRef,
+          phonenumber: user.data.phoneNumber,
+          firstname: user.data.firstName,
+          lastname: user.data.lastName,
+          narration: fullNameNarration,
+        };
+        const flutterwaveResponse = await httpPost<
+          CreateFlutterwaveResponseDTO,
+          any
+        >(url, payload, {
+          Authorization: `Bearer ${String(process.env.FLUTTERWAVE_SECRET_KEY)}`,
+        });
+        this.logger.debug({ virtualAccount: flutterwaveResponse });
+        if (flutterwaveResponse?.status) {
+          const updatedUser: Partial<User> = {
+            bankName: flutterwaveResponse.data.bank_name,
+            virtualAccountName: fullNameNarration,
+            virtualAccountNumber: flutterwaveResponse.data.account_number,
+            flutterwaveNarration: fullNameNarration,
+            flutterwaveUserKey: userRef,
           };
-          this.logger.log({ accountCreationPayload });
-          // Save account details for user
-          await this.userSrv
-            .getRepo()
-            .update({ id: user.id }, accountCreationPayload);
-        }, 5000);
+          await this.userSrv.getRepo().update({ id: userId }, updatedUser);
+        }
       }
     } catch (ex) {
       this.logger.error(ex);
@@ -126,9 +110,9 @@ export class WalletService {
     try {
       const banks = await this.getBankLists();
       const bank = banks.data.find(
-        (bank) => bank.bankName?.toUpperCase() === bankName?.toUpperCase(),
+        (bank) => bank.name?.toUpperCase() === bankName?.toUpperCase(),
       );
-      if (!bank?.bankCode) {
+      if (!bank?.code) {
         throw new NotFoundException(`Bank with name: ${bankName} not found`);
       }
       return bank;
@@ -141,8 +125,8 @@ export class WalletService {
   async findBankByCode(bankCode: string): Promise<BankListPartialDTO> {
     try {
       const banks = await this.getBankLists();
-      const bank = banks.data.find((bank) => bank.bankCode === bankCode);
-      if (!bank?.bankCode) {
+      const bank = banks.data.find((bank) => bank.code === bankCode);
+      if (!bank?.code) {
         throw new NotFoundException(`Bank with code: ${bankCode} not found`);
       }
       return bank;
@@ -152,7 +136,6 @@ export class WalletService {
     }
   }
 
-  // https://apiplayground.alat.ng/debit-wallet/api/Shared/GetAllBanks
   async getBankLists(): Promise<BankListDTO> {
     try {
       const bankList = await this.bankSrv.getRepo().find({
@@ -163,8 +146,8 @@ export class WalletService {
         code: HttpStatus.OK,
         message: 'Bank list found',
         data: bankList.map(({ bankName, bankCode }) => ({
-          bankName,
-          bankCode,
+          name: bankName,
+          code: bankCode,
         })),
       };
     } catch (ex) {
@@ -202,32 +185,27 @@ export class WalletService {
     userAccountNumber: string,
   ): Promise<VerifiesAccountDetailDTO> {
     try {
-      // Verify destination Account
-      const destinationAccountEnquiryUrl = `https://apiplayground.alat.ng/debit-wallet/api/Shared/AccountNameEnquiry/${userBankCode}/${userAccountNumber}?channelId=${String(
-        process.env.WEMA_ATLAT_X_API_KEY,
-      )}`;
-      const destinationAccount = await httpGet<any>(
-        destinationAccountEnquiryUrl,
-        {
-          'Cache-Control': 'no-cache',
-          access: String(process.env.WEMA_ATLAT_X_API_KEY),
-          'Ocp-Apim-Subscription-Key': String(
-            process.env.WEMA_ATLAT_WALLET_CREATION_SUB_KEY,
-          ),
-        },
-      );
-      if (!destinationAccount?.result) {
-        throw new BadGatewayException('Could not verify account');
-      }
-      const {
-        result: { accountName, accountNumber, bankCode, currency },
-      } = destinationAccount;
-      return {
-        accountName,
-        accountNumber,
-        bankCode,
-        currency,
+      checkForRequiredFields(['userBankCode', 'userAccountNumber'], {
+        userBankCode,
+        userAccountNumber,
+      });
+      const url = 'https://api.flutterwave.com/v3/accounts/resolve';
+      const payload = {
+        account_number: userAccountNumber,
+        account_bank: userBankCode,
       };
+      const headers = {
+        Authorization: `Bearer ${String(process.env.FLUTTERWAVE_SECRET_KEY)}`,
+      };
+      const resp = await httpPost<any, any>(url, payload, headers);
+      if (resp?.status === 'success') {
+        return {
+          accountName: resp.data.account_name,
+          accountNumber: resp.data.account_number,
+          bankCode: userBankCode,
+          currency: 'NGN',
+        };
+      }
     } catch (ex) {
       this.logger.error(ex);
       throw ex;
@@ -333,13 +311,13 @@ export class WalletService {
       const extractedData =
         destinationAccount.result as VerifyAccountExistenceResponsePartial;
       const bank = (await this.getBankLists()).data.find(
-        (bank) => bank.bankCode === extractedData.bankCode,
+        (bank) => bank.code === extractedData.bankCode,
       );
       return {
         success: true,
         code: HttpStatus.OK,
         message: 'Accounts verified',
-        data: { ...extractedData, bankName: bank?.bankName },
+        data: { ...extractedData, bankName: bank?.name },
       };
     } catch (ex) {
       this.logger.error(ex);
@@ -495,31 +473,34 @@ export class WalletService {
     }
   }
 
-  // URL: https://playground.alat.ng/api-wallet-creation
-  async webhookHandler(payload: WebhookResponseDTO): Promise<void> {
+  async webhookHandler(payload: any): Promise<void> {
     try {
-      console.log({ body: payload });
-      const user = await this.userSrv.getRepo().findOne({
-        where: { email: payload.Data.Email?.toUpperCase() },
-      });
-      if (user?.id) {
-        if (
-          !user.virtualAccountNumber &&
-          user.virtualAccountNumber !== payload.Data.Nuban
-        ) {
-          user.virtualAccountNumber = payload.Data.Nuban;
-          user.virtualAccountName = payload.Data.NubanName;
-          user.bankCustomerId = payload.Data.CustomerID;
+      if (payload.event === 'charge.completed') {
+        // User funds their wallet
+        const data = payload.data;
+        if (data?.tx_ref) {
+          const userRecord = await this.userSrv.getRepo().findOne({
+            where: { flutterwaveUserKey: data.tx_ref },
+            select: ['id', 'walletBalance'],
+          });
+          if (userRecord?.id) {
+            const amount = parseFloat(data.amount);
+            this.eventEmitterSrv.emit('transaction.log', {
+              type: TransactionType.CREDIT,
+              userId: userRecord.id,
+              narration: data.narration,
+              transactionDate: data.created_at,
+              currentBalanceBeforeTransaction: userRecord.walletBalance,
+              amount,
+            });
+            this.eventEmitterSrv.emit('wallet.credit', {
+              userId: userRecord.id,
+              amount,
+            });
+          }
         }
-        await this.userSrv.getRepo().update(
-          { id: user.id },
-          {
-            virtualAccountNumber: user.virtualAccountNumber,
-            virtualAccountName: user.virtualAccountName,
-            bankCustomerId: user.bankCustomerId,
-          },
-        );
       }
+      // Handle transfers
     } catch (ex) {
       this.logger.error(ex);
       throw ex;

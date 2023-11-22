@@ -31,7 +31,6 @@ import {
   httpPost,
   validateBvn,
   DefaultPassportLink,
-  generateRandomNumber,
   validatePastDate,
   validateUUIDField,
   sendSMS,
@@ -800,15 +799,7 @@ export class UserService extends GenericService(User) {
             record.lastName = bvnValidationResponse.data.lastName;
           }
           if (!record.virtualAccountNumber) {
-            // Generate a WEMA bank account for the user
-            const { accountName, accountNumber } = await this.createBankAccount(
-              record,
-            );
-            if (accountName && accountNumber) {
-              record.virtualAccountName = accountName;
-              record.virtualAccountNumber = accountNumber;
-              record.bankName = 'WEMA BANK';
-            }
+            this.eventEmitterSrv.emit('create-wallet', record.id);
           }
         }
         record.bvn = payload.bvn;
@@ -829,48 +820,18 @@ export class UserService extends GenericService(User) {
         transactionPin: record.transactionPin,
         profileImageUrl: record.profileImageUrl,
         uniqueVerificationCode: record.uniqueVerificationCode,
-        virtualAccountName: record.virtualAccountName,
-        virtualAccountNumber: record.virtualAccountNumber,
         allowEmailNotifications: record.allowEmailNotifications,
         allowPushNotifications: record.allowPushNotifications,
         allowSmsNotifications: record.allowSmsNotifications,
         displayWalletBalance: record.displayWalletBalance,
       };
       await this.getRepo().update({ id: record.id }, updatedRecord);
-      this.eventEmitterSrv.emit('test:wallet.create', record.id);
       this.eventEmitterSrv.emit('create-wallet', record.id);
       return {
         success: true,
         code: HttpStatus.OK,
         message: 'Updated',
       };
-    } catch (ex) {
-      this.logger.error(ex);
-      throw ex;
-    }
-  }
-
-  // TODO: Remove after testing phase
-  @OnEvent('test:wallet.create', { async: true })
-  async createRemoteAccount(userId: string): Promise<void> {
-    try {
-      checkForRequiredFields(['userId'], { userId });
-      const record = await this.findUserById(userId);
-      if (record?.data.firstName && record.data.lastName) {
-        const { accountName, accountNumber } = await this.createBankAccount(
-          record.data,
-        );
-        if (accountName && accountNumber) {
-          await this.getRepo().update(
-            { id: userId },
-            {
-              virtualAccountName: accountName,
-              virtualAccountNumber: accountNumber,
-              bankName: 'WEMA BANK',
-            },
-          );
-        }
-      }
     } catch (ex) {
       this.logger.error(ex);
       throw ex;
@@ -924,22 +885,6 @@ export class UserService extends GenericService(User) {
     } catch (ex) {
       this.logger.error(ex);
       throw ex;
-    }
-  }
-
-  private async createBankAccount(
-    { firstName, lastName }: User,
-    env = 'TEST',
-  ): Promise<{ accountName: string; accountNumber: string }> {
-    if (!firstName || !lastName) {
-      throw new BadRequestException(
-        'User cannot have a virtual account without first/last names',
-      );
-    }
-    if (env === 'TEST') {
-      const accountNumber = generateRandomNumber();
-      const accountName = `${firstName} ${lastName}`;
-      return { accountName, accountNumber };
     }
   }
 

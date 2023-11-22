@@ -41,6 +41,9 @@ export class CreateTransactionDTO {
   transactionDate: string;
 
   @ApiProperty({ nullable: true })
+  receiverUserId?: string;
+
+  @ApiProperty({ nullable: true })
   reference?: string;
 }
 

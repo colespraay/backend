@@ -90,6 +90,7 @@ export class EventCategoryService
   ): Promise<EventCategoriesResponseDTO> {
     try {
       checkForRequiredFields(['userId'], { userId });
+      validateUUIDField(userId, 'userId');
       const categories = await this.getRepo().find({
         where: {},
         select: ['id', 'userId'],

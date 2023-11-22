@@ -18,7 +18,6 @@ import {
   VerifyAccountExistenceDTO,
   VerifyAccountExistenceResponseDTO,
   MakeWalletDebitTypeDTO,
-  WebhookResponseDTO,
   TransactionNotificationResponseDTO,
 } from './dto/wallet.dto';
 
@@ -105,9 +104,14 @@ export class WalletController {
   }
 
   @Post('/webhook')
-  async wemaBankWebhook(@Body() body: WebhookResponseDTO): Promise<void> {
+  async wemaBankWebhook(@Body() body: any): Promise<void> {
     await this.walletSrv.webhookHandler(body);
   }
+
+  // @Post('/webhook')
+  // async wemaBankWebhook(@Body() body: WebhookResponseDTO): Promise<void> {
+  //   await this.walletSrv.webhookHandler(body);
+  // }
 
   // URL: https://playground.alat.ng/api-transaction-notification
   @Post('/wallet-notifications')
