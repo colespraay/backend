@@ -69,10 +69,10 @@ export class BankAccountStatementDTO {
 
 export class BankListPartialDTO {
   @ApiProperty()
-  bankName: string;
+  name: string;
 
   @ApiProperty()
-  bankCode: string;
+  code: string;
 }
 
 export class BankListDTO extends BaseResponseTypeDTO {
@@ -263,4 +263,22 @@ export class VerifiesAccountDetailDTO {
 
   @ApiProperty()
   currency: string;
+}
+
+export class CreateFlutterwaveResponseDTO {
+  status: string;
+  message: string;
+  data: {
+    response_code: string;
+    response_message: string;
+    flw_ref: string;
+    order_ref: string;
+    account_number: '7824822527';
+    frequency: string;
+    bank_name: string;
+    created_at: string;
+    expiry_date: string;
+    note: string;
+    amount?: number;
+  };
 }

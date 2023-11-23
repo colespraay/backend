@@ -880,3 +880,5 @@ export const addLeadingZeroes = (num: number): string => {
   }
   return `0${numberToString}`;
 };
+
+export const formatTransactionKey = (key: string) => key.split(' ').join('-');

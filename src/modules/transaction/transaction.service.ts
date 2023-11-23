@@ -243,7 +243,7 @@ export class TransactionService extends GenericService(TransactionRecord) {
         'type',
       );
       const recordFound = await this.getRepo().findOne({
-        where: { reference: payload.reference },
+        where: { reference: payload.reference, type: payload.type },
         select: ['id'],
       });
       if (recordFound?.id) {

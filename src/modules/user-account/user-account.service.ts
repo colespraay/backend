@@ -1,4 +1,10 @@
-import { HttpStatus, Injectable, NotFoundException } from '@nestjs/common';
+import {
+  HttpStatus,
+  Inject,
+  Injectable,
+  NotFoundException,
+  forwardRef,
+} from '@nestjs/common';
 import { FindManyOptions, ILike } from 'typeorm';
 import { UserAccount } from '@entities/index';
 import { GenericService } from '@schematics/index';
@@ -7,17 +13,20 @@ import {
   checkForRequiredFields,
   validateUUIDField,
 } from '@utils/index';
+import { WalletService } from '@modules/wallet/wallet.service';
 import {
   CreateUserBankAccountDTO,
   FilterUserAccountsDTO,
   UserAccountResponseDTO,
   UserAccountsResponseDTO,
 } from './dto/user-account.dto';
-import { WalletService } from '../index';
 
 @Injectable()
 export class UserAccountService extends GenericService(UserAccount) {
-  constructor(private readonly walletSrv: WalletService) {
+  constructor(
+    @Inject(forwardRef(() => WalletService))
+    private readonly walletSrv: WalletService,
+  ) {
     super();
   }
 
@@ -43,7 +52,7 @@ export class UserAccountService extends GenericService(UserAccount) {
         accountName: bankDetails.accountName,
         accountNumber: payload.accountNumber,
         bankCode: payload.bankCode,
-        bankName: bank.bankName,
+        bankName: bank.name,
       });
       return {
         success: true,
