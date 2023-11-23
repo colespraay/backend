@@ -267,7 +267,7 @@ export class BillService implements OnModuleInit {
         amount: payload.amount,
         recurrence: 'ONCE',
         type: plan.biller_name,
-        reference: reference,
+        reference,
         biller_name: plan.biller_name,
       };
       if (env === 'TEST') {
