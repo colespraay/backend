@@ -1,16 +1,12 @@
 import {
   BadGatewayException,
-  ConflictException,
   HttpStatus,
-  Inject,
   Injectable,
   Logger,
   NotFoundException,
-  forwardRef,
 } from '@nestjs/common';
 import { EventEmitter2, OnEvent } from '@nestjs/event-emitter';
 import {
-  BaseResponseTypeDTO,
   TransactionType,
   checkForRequiredFields,
   formatTransactionKey,
@@ -20,7 +16,9 @@ import {
   validateUUIDField,
 } from '@utils/index';
 import { User } from '@entities/index';
-import { BankService, UserService } from '../index';
+import { UserService } from '@modules/user/user.service';
+import { BankService } from '@modules/bank/bank.service';
+import { UserAccountService } from '@modules/user-account/user-account.service';
 import {
   BankAccountStatementDTO,
   BankListDTO,
@@ -51,8 +49,8 @@ export class WalletService {
 
   constructor(
     private readonly userSrv: UserService,
-    @Inject(forwardRef(() => BankService))
     private readonly bankSrv: BankService,
+    private readonly userAccountSrv: UserAccountService,
     private readonly eventEmitterSrv: EventEmitter2,
   ) {}
 
@@ -500,7 +498,27 @@ export class WalletService {
           }
         }
       }
-      // Handle transfers
+      if (payload.event === 'transfer.completed') {
+        const data = payload.data;
+        if (data.status === 'SUCCESSFUL') {
+          const userAccount = await this.userAccountSrv.getRepo().findOne({
+            where: { accountNumber: String(data.account_number) },
+            relations: ['user'],
+          });
+          if (userAccount?.userId) {
+            const userId = userAccount.userId;
+            this.eventEmitterSrv.emit('transaction.log', {
+              type: TransactionType.DEBIT,
+              userId,
+              narration: data.narration,
+              transactionDate: data.created_at,
+              currentBalanceBeforeTransaction: userAccount.user?.walletBalance,
+              amount: parseFloat(data.amount),
+            });
+          }
+        }
+      }
+      // TODO: Handle transfers
     } catch (ex) {
       this.logger.error(ex);
       throw ex;
