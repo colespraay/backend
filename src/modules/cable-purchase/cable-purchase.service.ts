@@ -1,5 +1,4 @@
 import {
-  BadGatewayException,
   BadRequestException,
   ConflictException,
   HttpStatus,
@@ -12,11 +11,10 @@ import {
   compareEnumValueFields,
   CableProvider,
   TransactionType,
+  generateUniqueCode,
 } from '@utils/index';
 import { TransactionService } from '@modules/transaction/transaction.service';
 import { BillService } from '@modules/bill/bill.service';
-import { WalletService } from '@modules/wallet/wallet.service';
-import { BankService } from '@modules/bank/bank.service';
 import { UserService } from '@modules/user/user.service';
 import {
   CablePurchaseResponseDTO,
@@ -25,18 +23,8 @@ import {
 
 @Injectable()
 export class CablePurchaseService extends GenericService(CablePurchase) {
-  private flutterwaveBaseBank = String(process.env.FLUTTERWAVE_BASE_BANK);
-  private flutterwaveBaseAccountName = String(
-    process.env.FLUTTERWAVE_BASE_ACCOUNT_NAME,
-  );
-  private flutterwaveBaseAccountNumber = String(
-    process.env.FLUTTERWAVE_BASE_ACCOUNT_NUMBER,
-  );
-
   constructor(
     private readonly userSrv: UserService,
-    private readonly bankSrv: BankService,
-    private readonly walletSrv: WalletService,
     private readonly billSrv: BillService,
     private readonly transactionSrv: TransactionService,
   ) {
@@ -81,32 +69,10 @@ export class CablePurchaseService extends GenericService(CablePurchase) {
       if (!enoughBalance) {
         throw new ConflictException('Insufficient balance');
       }
-      const walletVerified = await this.walletSrv.verifyWalletAccountNumber(
-        user.virtualAccountNumber,
-      );
-      this.logger.log({ walletVerified });
-      const bank = await this.bankSrv.findOne({
-        bankName: this.flutterwaveBaseBank?.toUpperCase(),
-      });
-      if (!bank?.id) {
-        throw new ConflictException('Could not validate base account');
-      }
-      const narration = `Cable plan purchase (₦${plan.amount}) for ${payload.smartCardNumber}`;
-      const walletResponse = await this.walletSrv.makeTransferFromWallet(
-        user.virtualAccountNumber,
-        {
-          narration,
-          amount: plan.amount,
-          destinationBankCode: bank.bankCode,
-          destinationBankName: this.flutterwaveBaseBank,
-          destinationAccountName: this.flutterwaveBaseAccountName,
-          destinationAccountNumber: this.flutterwaveBaseAccountNumber,
-        },
-      );
-      if (!walletResponse.success) {
-        throw new BadGatewayException('Wallet withdrawal failed');
-      }
       // Make purchase from flutterwave
+      const narration = `Cable plan purchase (₦${plan.amount}) for ${payload.smartCardNumber}`;
+      const transactionDate = new Date().toLocaleString();
+      const reference = `Spraay-cable-${generateUniqueCode(10)}`;
       const cablePurchaseResponse = await this.billSrv.makeCablePlanPurchase(
         {
           amount: plan.amount,
@@ -114,7 +80,7 @@ export class CablePurchaseService extends GenericService(CablePurchase) {
           provider: payload.provider,
           transactionPin: payload.transactionPin,
         },
-        walletResponse.data.transactionReference,
+        reference,
         plan,
       );
       this.logger.log({ cablePurchaseResponse });
@@ -123,9 +89,9 @@ export class CablePurchaseService extends GenericService(CablePurchase) {
         userId: user.id,
         amount: plan.amount,
         type: TransactionType.DEBIT,
-        reference: walletResponse.data.transactionReference,
+        reference,
+        transactionDate,
         currentBalanceBeforeTransaction: user.walletBalance,
-        transactionDate: walletResponse.data.orinalTxnTransactionDate,
       });
       const createdCablePlanPurchase = await this.create<
         Partial<CablePurchase>

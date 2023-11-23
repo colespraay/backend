@@ -1,5 +1,4 @@
 import {
-  BadGatewayException,
   BadRequestException,
   ConflictException,
   HttpStatus,
@@ -12,13 +11,12 @@ import {
   compareEnumValueFields,
   ElectricityPlan,
   ElectricityProvider,
+  generateUniqueCode,
   TransactionType,
 } from '@utils/index';
 import { TransactionService } from '@modules/transaction/transaction.service';
 import { BillService } from '@modules/bill/bill.service';
 import { UserService } from '@modules/user/user.service';
-import { BankService } from '@modules/bank/bank.service';
-import { WalletService } from '@modules/wallet/wallet.service';
 import {
   CreateElectricityPurchaseDTO,
   ElectricityPurchaseResponseDTO,
@@ -30,19 +28,9 @@ import {
 export class ElectricityPurchaseService extends GenericService(
   ElectricityPurchase,
 ) {
-  private flutterwaveBaseBank = String(process.env.FLUTTERWAVE_BASE_BANK);
-  private flutterwaveBaseAccountName = String(
-    process.env.FLUTTERWAVE_BASE_ACCOUNT_NAME,
-  );
-  private flutterwaveBaseAccountNumber = String(
-    process.env.FLUTTERWAVE_BASE_ACCOUNT_NUMBER,
-  );
-
   constructor(
     private readonly userSrv: UserService,
     private readonly billSrv: BillService,
-    private readonly bankSrv: BankService,
-    private readonly walletSrv: WalletService,
     private readonly transactionSrv: TransactionService,
   ) {
     super();
@@ -86,31 +74,9 @@ export class ElectricityPurchaseService extends GenericService(
       if (!enoughBalance) {
         throw new ConflictException('Insufficient balance');
       }
-      const walletVerified = await this.walletSrv.verifyWalletAccountNumber(
-        user.virtualAccountNumber,
-      );
-      this.logger.log({ walletVerified });
-      const bank = await this.bankSrv.findOne({
-        bankName: this.flutterwaveBaseBank?.toUpperCase(),
-      });
-      if (!bank?.id) {
-        throw new ConflictException('Could not validate base account');
-      }
       const narration = `Electricity unit purchase (₦${payload.amount}) for ${payload.meterNumber}`;
-      const walletResponse = await this.walletSrv.makeTransferFromWallet(
-        user.virtualAccountNumber,
-        {
-          narration,
-          amount: payload.amount,
-          destinationBankCode: bank.bankCode,
-          destinationBankName: this.flutterwaveBaseBank,
-          destinationAccountName: this.flutterwaveBaseAccountName,
-          destinationAccountNumber: this.flutterwaveBaseAccountNumber,
-        },
-      );
-      if (!walletResponse.success) {
-        throw new BadGatewayException('Wallet withdrawal failed');
-      }
+      const transactionDate = new Date().toLocaleString();
+      const reference = `Spraay-power-${generateUniqueCode(10)}`;
       // Make purchase from flutterwave
       const electricUnitPurchaseResponse =
         await this.billSrv.makeElectricUnitPurchase(
@@ -122,7 +88,7 @@ export class ElectricityPurchaseService extends GenericService(
             plan: payload.plan,
             billerName: payload.billerName,
           },
-          walletResponse.data.transactionReference,
+          reference,
         );
       this.logger.log({ electricUnitPurchaseResponse });
       const newTransaction = await this.transactionSrv.createTransaction({
@@ -130,9 +96,9 @@ export class ElectricityPurchaseService extends GenericService(
         userId: user.id,
         amount: payload.amount,
         type: TransactionType.DEBIT,
-        reference: walletResponse.data.transactionReference,
+        reference,
+        transactionDate,
         currentBalanceBeforeTransaction: user.walletBalance,
-        transactionDate: walletResponse.data.orinalTxnTransactionDate,
       });
       const createdElectricityUnitPurchase = await this.create<
         Partial<ElectricityPurchase>

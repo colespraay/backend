@@ -1,5 +1,4 @@
 import {
-  BadGatewayException,
   BadRequestException,
   ConflictException,
   HttpStatus,
@@ -8,35 +7,26 @@ import {
 import { EventEmitter2 } from '@nestjs/event-emitter';
 import { BillService } from '@modules/bill/bill.service';
 import { DataPurchase, User } from '@entities/index';
+import { TransactionService } from '@modules/transaction/transaction.service';
 import {
   AirtimeProvider,
   TransactionType,
   checkForRequiredFields,
   compareEnumValueFields,
   formatPhoneNumberWithPrefix,
+  generateUniqueCode,
 } from '@utils/index';
 import { GenericService } from '@schematics/index';
 import {
   CreateDataPurchaseDTO,
   DataPurchaseResponseDTO,
 } from './dto/data-purchase.dto';
-import { UserService, BankService, WalletService } from '../index';
-import { TransactionService } from '@modules/transaction/transaction.service';
+import { UserService } from '../index';
 
 @Injectable()
 export class DataPurchaseService extends GenericService(DataPurchase) {
-  private flutterwaveBaseBank = String(process.env.FLUTTERWAVE_BASE_BANK);
-  private flutterwaveBaseAccountName = String(
-    process.env.FLUTTERWAVE_BASE_ACCOUNT_NAME,
-  );
-  private flutterwaveBaseAccountNumber = String(
-    process.env.FLUTTERWAVE_BASE_ACCOUNT_NUMBER,
-  );
-
   constructor(
     private readonly userSrv: UserService,
-    private readonly bankSrv: BankService,
-    private readonly walletSrv: WalletService,
     private readonly billSrv: BillService,
     private readonly transactionSrv: TransactionService,
     private readonly eventEmitterSrv: EventEmitter2,
@@ -78,32 +68,10 @@ export class DataPurchaseService extends GenericService(DataPurchase) {
       if (!enoughBalance) {
         throw new ConflictException('Insufficient balance');
       }
-      const walletVerified = await this.walletSrv.verifyWalletAccountNumber(
-        user.virtualAccountNumber,
-      );
-      this.logger.log({ walletVerified });
-      const bank = await this.bankSrv.findOne({
-        bankName: this.flutterwaveBaseBank?.toUpperCase(),
-      });
-      if (!bank?.id) {
-        throw new ConflictException('Could not validate base account');
-      }
-      const narration = `Data purchase (₦${plan.amount}) for ${payload.phoneNumber}`;
-      const walletResponse = await this.walletSrv.makeTransferFromWallet(
-        user.virtualAccountNumber,
-        {
-          narration,
-          amount: plan.amount,
-          destinationBankCode: bank.bankCode,
-          destinationBankName: this.flutterwaveBaseBank,
-          destinationAccountName: this.flutterwaveBaseAccountName,
-          destinationAccountNumber: this.flutterwaveBaseAccountNumber,
-        },
-      );
-      if (!walletResponse.success) {
-        throw new BadGatewayException('Wallet withdrawal failed');
-      }
       // Make purchase from flutterwave
+      const narration = `Data purchase (₦${plan.amount}) for ${payload.phoneNumber}`;
+      const transactionDate = new Date().toLocaleString();
+      const reference = `Spraay-data-${generateUniqueCode(10)}`;
       const dataPurchaseResponse = await this.billSrv.makeDataPurchase(
         {
           amount: plan.amount,
@@ -112,7 +80,7 @@ export class DataPurchaseService extends GenericService(DataPurchase) {
           transactionPin: payload.transactionPin,
           type: plan.biller_name,
         },
-        walletResponse.data.transactionReference,
+        reference,
       );
       this.logger.log({ dataPurchaseResponse });
       const newTransaction = await this.transactionSrv.createTransaction({
@@ -120,9 +88,9 @@ export class DataPurchaseService extends GenericService(DataPurchase) {
         userId: user.id,
         amount: plan.amount,
         type: TransactionType.DEBIT,
-        reference: walletResponse.data.transactionReference,
+        reference,
+        transactionDate,
         currentBalanceBeforeTransaction: user.walletBalance,
-        transactionDate: walletResponse.data.orinalTxnTransactionDate,
       });
       const createdDataPurchase = await this.create<Partial<DataPurchase>>({
         ...payload,
