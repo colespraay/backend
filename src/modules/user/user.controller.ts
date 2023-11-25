@@ -189,9 +189,9 @@ export class UserController {
     return await this.userSrv.findUsers(payload, pagination);
   }
 
-  // @Roles(AppRole.CUSTOMER)
-  // @UseGuards(RolesGuard)
-  // @ApiBearerAuth('JWT')
+  @Roles(AppRole.CUSTOMER)
+  @UseGuards(RolesGuard)
+  @ApiBearerAuth('JWT')
   @ApiQuery({ name: 'pageSize', required: false })
   @ApiQuery({ name: 'pageNumber', required: false })
   @ApiQuery({ name: 'searchTerm', required: false })
