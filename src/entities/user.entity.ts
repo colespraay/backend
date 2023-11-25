@@ -49,7 +49,7 @@ export class User extends Base {
   @Column({ type: 'varchar', length: 255 })
   password: string;
 
-  @ApiProperty()
+  @ApiProperty({ type: Number })
   @Column({ type: 'bigint', default: 10000 })
   walletBalance: number;
 

@@ -158,7 +158,7 @@ export class UserService extends GenericService(User) {
       if (!user?.id) {
         throw new NotFoundException('User not found');
       }
-      return withdrawalSum > user.walletBalance ? false : true;
+      return Number(withdrawalSum) > Number(user.walletBalance) ? false : true;
     } catch (ex) {
       this.logger.error(ex);
       throw ex;
@@ -846,7 +846,8 @@ export class UserService extends GenericService(User) {
       checkForRequiredFields(['amount', 'userId'], payload);
       validateUUIDField(payload.userId, 'userId');
       const user = await this.findUserById(payload.userId);
-      const newBalance = user.data.walletBalance + payload.amount;
+      const newBalance =
+        Number(user.data.walletBalance) + Number(payload.amount);
       await this.getRepo().update(
         { id: payload.userId },
         { walletBalance: newBalance },
@@ -871,7 +872,8 @@ export class UserService extends GenericService(User) {
       validateUUIDField(payload.userId, 'userId');
       const user = await this.findUserById(payload.userId);
       if (payload.amount <= user.data.walletBalance) {
-        const newBalance = user.data.walletBalance - payload.amount;
+        const newBalance =
+          Number(user.data.walletBalance) - Number(payload.amount);
         await this.getRepo().update(
           { id: payload.userId },
           { walletBalance: newBalance },
