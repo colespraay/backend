@@ -882,3 +882,16 @@ export const addLeadingZeroes = (num: number): string => {
 };
 
 export const formatTransactionKey = (key: string) => key.split(' ').join('-');
+
+export const sortArray = <T>(
+  data: T[],
+  sortedColumn: string,
+  filter: 'asc' | 'desc' = 'desc',
+): T[] => {
+  if (filter === 'desc') {
+    return data.sort((a, b) => b[sortedColumn] - a[sortedColumn]);
+  }
+  if (filter === 'asc') {
+    return data.sort((a, b) => a[sortedColumn] - b[sortedColumn]);
+  }
+};

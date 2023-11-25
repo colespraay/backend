@@ -21,6 +21,7 @@ import {
   compareEnumValueFields,
   convert12HourTo24HourFormat,
   sendEmail,
+  sortArray,
   validateFutureDate,
   validateTimeField,
   validateURLField,
@@ -184,11 +185,15 @@ export class EventService extends GenericService(EventRecord) {
             filter,
             pagination,
           );
+        const returnedData = sortArray(
+          response.map(({ event }) => event),
+          'dateCreated',
+        );
         return {
           success: true,
           message: 'Available events found',
           code: HttpStatus.OK,
-          data: response.map(({ event }) => event),
+          data: returnedData,
           paginationControl,
         };
       }
@@ -197,7 +202,10 @@ export class EventService extends GenericService(EventRecord) {
         success: true,
         code: HttpStatus.OK,
         message: 'Available events found',
-        data: rsvps.map(({ event }) => event),
+        data: sortArray(
+          rsvps.map(({ event }) => event),
+          'dateCreated',
+        ),
       };
     } catch (ex) {
       this.logger.error(ex);
@@ -288,6 +296,7 @@ export class EventService extends GenericService(EventRecord) {
           'eventInvites',
           'eventInvites.user',
         ],
+        order: { dateCreated: 'DESC' },
       };
       if (
         typeof filterOptions.status !== 'undefined' &&
@@ -391,6 +400,7 @@ export class EventService extends GenericService(EventRecord) {
           'eventInvites',
           'eventInvites.user',
         ],
+        order: { dateCreated: 'DESC' },
       };
       if (pagination?.pageNumber && pagination?.pageSize) {
         filter.skip = (pagination.pageNumber - 1) * pagination.pageSize;
@@ -450,6 +460,7 @@ export class EventService extends GenericService(EventRecord) {
           'eventInvites',
           'eventInvites.user',
         ],
+        order: { dateCreated: 'DESC' },
       };
       if (pagination?.pageNumber && pagination?.pageSize) {
         filter.skip = (pagination.pageNumber - 1) * pagination.pageSize;
@@ -508,6 +519,7 @@ export class EventService extends GenericService(EventRecord) {
           'eventInvites',
           'eventInvites.user',
         ],
+        order: { dateCreated: 'DESC' },
       };
       if (pagination?.pageNumber && pagination?.pageSize) {
         filter.skip = (pagination.pageNumber - 1) * pagination.pageSize;
