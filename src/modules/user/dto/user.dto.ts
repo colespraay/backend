@@ -5,6 +5,7 @@ import {
   AuthProvider,
   BaseResponseTypeDTO,
   Gender,
+  PaginationRequestType,
   PaginationResponseType,
 } from '@utils/index';
 
@@ -226,4 +227,22 @@ export class AccountBalanceDTO extends OmitType(BaseResponseTypeDTO, [
   'data',
 ] as const) {
   currentBalance: number;
+}
+
+export class UserContactPartial {
+  @ApiProperty()
+  name: string;
+
+  @ApiProperty()
+  phoneNumber: string;
+}
+
+export class UserContactsDTO {
+  @ApiProperty({ type: () => [UserContactPartial] })
+  contacts: UserContactPartial[];
+}
+
+export class UserContactsQueryDTO extends PaginationRequestType {
+  @ApiProperty({ nullable: true })
+  searchTerm: string;
 }

@@ -6,6 +6,7 @@ import {
   AuthProvider,
   hashPassword,
   Gender,
+  formatPhoneNumberWithPrefix,
 } from '@utils/index';
 import {
   Base,
@@ -36,6 +37,10 @@ export class User extends Base {
   @ApiProperty()
   @Column({ type: 'varchar', length: 255, nullable: true })
   phoneNumber: string;
+
+  @ApiProperty()
+  @Column({ type: 'varchar', length: 255, nullable: true })
+  formattedPhoneNumber: string;
 
   @ApiProperty()
   @Column({ type: 'varchar', length: 255, nullable: true })
@@ -233,5 +238,11 @@ export class User extends Base {
     this.id = uuidV4();
     this.email = this.email?.toUpperCase();
     this.password = await hashPassword(this.password ?? '12345');
+    if (this.phoneNumber) {
+      this.formattedPhoneNumber = this.phoneNumber;
+      this.formattedPhoneNumber = formatPhoneNumberWithPrefix(
+        this.formattedPhoneNumber,
+      );
+    }
   }
 }

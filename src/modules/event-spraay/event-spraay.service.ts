@@ -88,6 +88,7 @@ export class EventSpraayService extends GenericService(EventSpraay) {
       amount: payload.amount,
       narration,
     });
+    // Credit account
     this.logger.debug({ newTransaction });
     const newSpraay = await this.create<Partial<EventSpraay>>({
       ...payload,
@@ -118,7 +119,7 @@ export class EventSpraayService extends GenericService(EventSpraay) {
     });
 
     this.eventEmitterSrv.emit('user-notification.create', {
-      userId: event.data.userId,
+      userId: user.id,
       subject: 'Cash sprayed',
       type: UserNotificationType.USER_SPECIFIC,
       message: `You sprayed ₦${payload.amount} on ${event.data?.user?.firstName} ${event.data?.user?.lastName}`,

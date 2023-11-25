@@ -10,7 +10,7 @@ import {
   InternalServerErrorException,
   NotFoundException,
 } from '@nestjs/common';
-import { FindManyOptions, ILike, Not } from 'typeorm';
+import { FindManyOptions, ILike, In, Not } from 'typeorm';
 import { User } from '@entities/index';
 import { GenericService } from '@schematics/index';
 import {
@@ -39,6 +39,9 @@ import {
   base64ToPNG,
   uploadFileToImageKit,
   base64ToJPEG,
+  validateArrayField,
+  formatPhoneNumberWithPrefix,
+  AppRole,
 } from '@utils/index';
 import { AuthResponseDTO } from '@modules/auth/dto/auth.dto';
 import {
@@ -55,6 +58,8 @@ import {
   GroupedUserListDTO,
   CreditUserWalletDTO,
   AccountBalanceDTO,
+  UserContactsDTO,
+  UserContactsQueryDTO,
 } from './dto/user.dto';
 import { AuthService } from '../index';
 
@@ -66,6 +71,64 @@ export class UserService extends GenericService(User) {
     private readonly eventEmitterSrv: EventEmitter2,
   ) {
     super();
+  }
+
+  async findContactsFilteredByUserContacts(
+    payload: UserContactsDTO,
+    pagination?: UserContactsQueryDTO,
+  ): Promise<UsersResponseDTO> {
+    try {
+      checkForRequiredFields(['contacts'], payload);
+      validateArrayField(payload.contacts, 'contacts');
+      const contacts = payload.contacts.map((contact) =>
+        formatPhoneNumberWithPrefix(contact.phoneNumber),
+      );
+      const filter: FindManyOptions<User> = {
+        where: { role: AppRole.CUSTOMER },
+      };
+      if (contacts?.length > 0) {
+        filter.where = { ...filter.where, formattedPhoneNumber: In(contacts) };
+      }
+      if (pagination?.searchTerm) {
+        const searchFields = [
+          'phoneNumber',
+          'firstName',
+          'lastName',
+          'email',
+          'bvn',
+        ];
+        filter.where = searchFields.map((column) => ({
+          ...filter.where,
+          [column]: ILike(`%${pagination.searchTerm}%`),
+        })) as any[];
+      }
+      if (pagination?.pageNumber && pagination?.pageSize) {
+        filter.skip = (pagination.pageNumber - 1) * pagination.pageSize;
+        filter.take = pagination.pageSize;
+        const { response, paginationControl } =
+          await calculatePaginationControls<User>(this.getRepo(), filter, {
+            pageNumber: pagination.pageNumber,
+            pageSize: pagination.pageSize,
+          });
+        return {
+          success: true,
+          message: 'Records found',
+          code: HttpStatus.OK,
+          data: response,
+          paginationControl,
+        };
+      }
+      const users = await this.getRepo().find(filter);
+      return {
+        success: true,
+        message: 'Records found',
+        code: HttpStatus.OK,
+        data: users,
+      };
+    } catch (ex) {
+      this.logger.error(ex);
+      throw ex;
+    }
   }
 
   @OnEvent('after.sign-up', { async: true })
@@ -174,7 +237,7 @@ export class UserService extends GenericService(User) {
       if (!user?.id) {
         throw new NotFoundException('User not found');
       }
-      return user.walletBalance;
+      return Number(user.walletBalance);
     } catch (ex) {
       this.logger.error(ex);
       throw ex;
@@ -205,7 +268,7 @@ export class UserService extends GenericService(User) {
         success: true,
         code: HttpStatus.OK,
         message: 'Account balance',
-        currentBalance: user.data.walletBalance,
+        currentBalance: Number(user.data.walletBalance),
       };
     } catch (ex) {
       this.logger.error(ex);

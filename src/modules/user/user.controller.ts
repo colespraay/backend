@@ -20,11 +20,12 @@ import {
   ApiResponse,
   ApiTags,
 } from '@nestjs/swagger';
-import { CurrentUser, RolesGuard } from '@schematics/index';
+import { CurrentUser, Roles, RolesGuard } from '@schematics/index';
 import {
   DecodedTokenKey,
   BaseResponseTypeDTO,
   PaginationRequestType,
+  AppRole,
 } from '@utils/index';
 import { AuthResponseDTO } from '@modules/auth/dto/auth.dto';
 import {
@@ -39,6 +40,8 @@ import {
   OTPMedium,
   GroupedUserListDTO,
   AccountBalanceDTO,
+  UserContactsDTO,
+  UserContactsQueryDTO,
 } from './dto/user.dto';
 import { UserService } from './user.service';
 
@@ -184,6 +187,27 @@ export class UserController {
     @Query() pagination?: PaginationRequestType,
   ): Promise<UsersResponseDTO> {
     return await this.userSrv.findUsers(payload, pagination);
+  }
+
+  // @Roles(AppRole.CUSTOMER)
+  // @UseGuards(RolesGuard)
+  // @ApiBearerAuth('JWT')
+  @ApiQuery({ name: 'pageSize', required: false })
+  @ApiQuery({ name: 'pageNumber', required: false })
+  @ApiQuery({ name: 'searchTerm', required: false })
+  @ApiOperation({ description: 'Find users and filter by contacts' })
+  @ApiProduces('json')
+  @ApiConsumes('application/json')
+  @ApiResponse({ type: UsersResponseDTO })
+  @Post('/find-contacts/filtered-by-contacts')
+  async findContactsFilteredByUserContacts(
+    @Body() payload: UserContactsDTO,
+    @Query() pagination?: UserContactsQueryDTO,
+  ): Promise<UsersResponseDTO> {
+    return await this.userSrv.findContactsFilteredByUserContacts(
+      payload,
+      pagination,
+    );
   }
 
   @ApiOperation({ description: 'Resend OTP after login' })

@@ -81,4 +81,6 @@ User's view all plans under the provider, (Will not work for electricity)
 
 1. After money is sprayed, it does not reflect on user's account balance.
 
-2. 
+2. For some reason, account balance keeps becomming bloated to insane numbers.
+
+3. Was not debited after spraay is completed.
