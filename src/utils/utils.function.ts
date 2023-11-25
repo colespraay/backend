@@ -888,10 +888,8 @@ export const sortArray = <T>(
   sortedColumn: string,
   filter: 'asc' | 'desc' = 'desc',
 ): T[] => {
-  if (filter === 'desc') {
-    return data.sort((a, b) => b[sortedColumn] - a[sortedColumn]);
-  }
   if (filter === 'asc') {
     return data.sort((a, b) => a[sortedColumn] - b[sortedColumn]);
   }
+  return data.sort((a, b) => b[sortedColumn] - a[sortedColumn]);
 };
