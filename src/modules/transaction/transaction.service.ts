@@ -246,34 +246,31 @@ export class TransactionService extends GenericService(TransactionRecord) {
         where: { reference: payload.reference, type: payload.type },
         select: ['id'],
       });
-      if (recordFound?.id) {
-        throw new ConflictException(
-          `Transaction with reference '${payload.reference}' already exists`,
+      if (!recordFound?.id) {
+        const createdRecord = await this.create<Partial<TransactionRecord>>(
+          payload,
         );
+        switch (createdRecord.type) {
+          case TransactionType.CREDIT:
+            await this.userSrv.creditUserWallet({
+              amount: payload.amount,
+              userId: payload.userId,
+            });
+            break;
+          case TransactionType.DEBIT:
+            await this.userSrv.debitUserWallet({
+              amount: payload.amount,
+              userId: payload.userId,
+            });
+            break;
+        }
+        return {
+          success: true,
+          code: HttpStatus.CREATED,
+          message: 'Transaction logged',
+          data: createdRecord,
+        };
       }
-      const createdRecord = await this.create<Partial<TransactionRecord>>(
-        payload,
-      );
-      switch (createdRecord.type) {
-        case TransactionType.CREDIT:
-          await this.userSrv.creditUserWallet({
-            amount: payload.amount,
-            userId: payload.userId,
-          });
-          break;
-        case TransactionType.DEBIT:
-          await this.userSrv.debitUserWallet({
-            amount: payload.amount,
-            userId: payload.userId,
-          });
-          break;
-      }
-      return {
-        success: true,
-        code: HttpStatus.CREATED,
-        message: 'Transaction logged',
-        data: createdRecord,
-      };
     } catch (ex) {
       this.logger.error(ex);
       throw ex;

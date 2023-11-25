@@ -124,6 +124,16 @@ export class EventService extends GenericService(EventRecord) {
       const invites = await this.eventInviteSrv.getRepo().count({
         where: { eventId },
       });
+      // Start here
+      const invites2 = await this.eventInviteSrv
+        .getRepo()
+        .createQueryBuilder()
+        .select('COUNT(DISTINCT userId)', 'count')
+        .from('event_invite', 'ei')
+        .where('ei.eventId = :eventId', { eventId })
+        .andWhere('ei.isInviteSent = true')
+        .getRawOne();
+      console.log({ invites2 });
       const rsvps = await this.eventRsvpSrv.getRepo().count({
         where: { eventId },
       });

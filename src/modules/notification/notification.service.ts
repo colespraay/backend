@@ -41,20 +41,17 @@ export class NotificationService extends GenericService(Notification) {
         where: { subject: payload.subject, userId: payload.userId },
         select: ['id'],
       });
-      if (record?.id) {
-        throw new ConflictException(
-          'Similar notification already exists for user',
+      if (!record?.id) {
+        const createdNotification = await this.create<Partial<Notification>>(
+          payload,
         );
+        return {
+          success: true,
+          message: 'Created',
+          code: HttpStatus.CREATED,
+          data: createdNotification,
+        };
       }
-      const createdNotification = await this.create<Partial<Notification>>(
-        payload,
-      );
-      return {
-        success: true,
-        message: 'Created',
-        code: HttpStatus.CREATED,
-        data: createdNotification,
-      };
     } catch (ex) {
       this.logger.error(ex);
       throw ex;

@@ -79,3 +79,6 @@ User's view all plans under the provider, (Will not work for electricity)
 - I transferred from one Spraay account to another. It was successful and showed on the transaction history of the account I sent from, but it’s not showing in the history of the receiver, which is this attachment you’re seeing. Another thing is that the design for 3,000,005,000 looks somehow, I think the more the zero, the smaller the tests so it won’t go beyond one line.
 
 
+1. After money is sprayed, it does not reflect on user's account balance.
+
+2. 
