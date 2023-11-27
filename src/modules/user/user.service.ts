@@ -1056,6 +1056,7 @@ export class UserService extends GenericService(User) {
             },
           };
         }
+        throw new NotFoundException('Invalid, Could not validate bvn');
       }
     } catch (ex) {
       this.logger.error(ex);

@@ -103,7 +103,7 @@ export class WalletService {
             };
             await this.userSrv.getRepo().update({ id: userId }, updatedUser);
           }
-        } 
+        }
       }
     } catch (ex) {
       this.logger.error(ex);
