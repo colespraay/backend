@@ -209,25 +209,6 @@ export class UserService extends GenericService(User) {
     }
   }
 
-  async doesUserHaveEnoughBalanceInWallet(
-    userId: string,
-    withdrawalSum: number,
-  ): Promise<boolean> {
-    try {
-      const user = await this.getRepo().findOne({
-        where: { id: userId },
-        select: ['id', 'walletBalance'],
-      });
-      if (!user?.id) {
-        throw new NotFoundException('User not found');
-      }
-      return Number(withdrawalSum) > Number(user.walletBalance) ? false : true;
-    } catch (ex) {
-      this.logger.error(ex);
-      throw ex;
-    }
-  }
-
   async getCurrentWalletBalance(userId: string): Promise<number> {
     try {
       const user = await this.getRepo().findOne({
@@ -244,16 +225,23 @@ export class UserService extends GenericService(User) {
     }
   }
 
-  async checkForPotentialBalance(
-    userId: string,
+  async checkAccountBalance(
     amount: number,
+    userId: string,
   ): Promise<AccountBalanceDTO> {
     try {
-      const userBalance = await this.getAccountBalance(userId);
-      if (amount > userBalance.currentBalance) {
+      checkForRequiredFields(['amount', 'userId'], { amount, userId });
+      const user = await this.findUserById(userId);
+      const balance = Number(user.data.walletBalance);
+      if (Number(amount) > balance) {
         throw new ConflictException('Insufficient balance');
       }
-      return userBalance;
+      return {
+        success: true,
+        code: HttpStatus.OK,
+        message: 'Account balance',
+        currentBalance: balance,
+      };
     } catch (ex) {
       this.logger.error(ex);
       throw ex;

@@ -66,14 +66,8 @@ export class ElectricityPurchaseService extends GenericService(
       if (!isPinValid?.success) {
         throw new BadRequestException('Invalid transaction pin');
       }
-      const enoughBalance =
-        await this.userSrv.doesUserHaveEnoughBalanceInWallet(
-          user.id,
-          payload.amount,
-        );
-      if (!enoughBalance) {
-        throw new ConflictException('Insufficient balance');
-      }
+      await this.userSrv.checkAccountBalance(payload.amount, user.id);
+
       const narration = `Electricity unit purchase (₦${payload.amount}) for ${payload.meterNumber}`;
       const transactionDate = new Date().toLocaleString();
       const reference = `Spraay-power-${generateUniqueCode(10)}`;
@@ -144,14 +138,7 @@ export class ElectricityPurchaseService extends GenericService(
       } else {
         payload.plan = ElectricityPlan.PRE_PAID;
       }
-      const enoughBalance =
-        await this.userSrv.doesUserHaveEnoughBalanceInWallet(
-          user.id,
-          payload.amount,
-        );
-      if (!enoughBalance) {
-        throw new ConflictException('Insufficient balance');
-      }
+      await this.userSrv.checkAccountBalance(payload.amount, user.id);
       // Verify meter number from flutterwave
       const verification = await this.billSrv.verifyElectricityPlan(payload);
       return {

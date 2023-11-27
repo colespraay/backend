@@ -61,14 +61,7 @@ export class CablePurchaseService extends GenericService(CablePurchase) {
       const plan = await this.billSrv.findCableProviderById(
         payload.cablePlanId,
       );
-      const enoughBalance =
-        await this.userSrv.doesUserHaveEnoughBalanceInWallet(
-          user.id,
-          plan.amount,
-        );
-      if (!enoughBalance) {
-        throw new ConflictException('Insufficient balance');
-      }
+      await this.userSrv.checkAccountBalance(payload.amount, user.id);
       // Make purchase from flutterwave
       const narration = `Cable plan purchase (₦${plan.amount}) for ${payload.smartCardNumber}`;
       const transactionDate = new Date().toLocaleString();

@@ -60,14 +60,8 @@ export class DataPurchaseService extends GenericService(DataPurchase) {
         throw new BadRequestException('Invalid transaction pin');
       }
       const plan = await this.billSrv.findDataPlanById(payload.dataPlanId);
-      const enoughBalance =
-        await this.userSrv.doesUserHaveEnoughBalanceInWallet(
-          user.id,
-          plan.amount,
-        );
-      if (!enoughBalance) {
-        throw new ConflictException('Insufficient balance');
-      }
+      await this.userSrv.checkAccountBalance(plan.amount, user.id);
+
       // Make purchase from flutterwave
       const narration = `Data purchase (₦${plan.amount}) for ${payload.phoneNumber}`;
       const transactionDate = new Date().toLocaleString();

@@ -49,9 +49,7 @@ export class GiftingService extends GenericService(Gifting) {
       if (!isPinValid) {
         throw new UnauthorizedException('Invalid/unknown transaction pin');
       }
-      if (payload.amount > user.data.walletBalance) {
-        throw new ConflictException('Insufficient balance');
-      }
+      await this.userSrv.checkAccountBalance(payload.amount, user.data.id);
       const receiver = await this.userSrv.findOne({
         userTag: payload.receiverTag,
       });

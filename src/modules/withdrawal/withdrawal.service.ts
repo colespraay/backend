@@ -1,10 +1,4 @@
-import {
-  ConflictException,
-  HttpStatus,
-  Inject,
-  Injectable,
-  forwardRef,
-} from '@nestjs/common';
+import { HttpStatus, Inject, Injectable, forwardRef } from '@nestjs/common';
 import { EventEmitter2 } from '@nestjs/event-emitter';
 import { TransactionService } from '@modules/transaction/transaction.service';
 import { TransactionRecord, UserAccount, Withdrawal } from '@entities/index';
@@ -17,11 +11,11 @@ import {
   httpPost,
   validateUUIDField,
 } from '@utils/index';
-import { UserAccountService, UserService, WalletService } from '../index';
 import {
   WithdrawalResponseDTO,
   CreateWithdrawalDTO,
 } from './dto/withdrawal.dto';
+import { UserAccountService, UserService, WalletService } from '../index';
 
 @Injectable()
 export class WithdrawalService extends GenericService(Withdrawal) {
@@ -53,11 +47,8 @@ export class WithdrawalService extends GenericService(Withdrawal) {
         { ...payload, userId },
       );
       validateUUIDField(userId, 'userId');
+      await this.userSrv.checkAccountBalance(payload.amount, userId);
 
-      const currentBalance = await this.userSrv.getCurrentWalletBalance(userId);
-      if (payload.amount > currentBalance) {
-        throw new ConflictException('Insufficient balance');
-      }
       // Verify account existence
       const destinationAccount =
         await this.walletSrv.verifyExternalAccountNumber(

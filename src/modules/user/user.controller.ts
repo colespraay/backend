@@ -99,7 +99,7 @@ export class UserController {
     @CurrentUser(DecodedTokenKey.USER_ID) userId: string,
     @Param('amount', ParseIntPipe) amount: number,
   ): Promise<AccountBalanceDTO> {
-    return await this.userSrv.checkForPotentialBalance(userId, amount);
+    return await this.userSrv.checkAccountBalance(amount, userId);
   }
 
   @ApiOperation({ description: 'Sign up with phone-number and password' })

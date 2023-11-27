@@ -59,14 +59,7 @@ export class AirtimePurchaseService extends GenericService(AirtimePurchase) {
       if (!isPinValid?.success) {
         throw new BadRequestException('Invalid transaction pin');
       }
-      const enoughBalance =
-        await this.userSrv.doesUserHaveEnoughBalanceInWallet(
-          user.id,
-          payload.amount,
-        );
-      if (!enoughBalance) {
-        throw new ConflictException('Insufficient balance');
-      }
+      await this.userSrv.checkAccountBalance(payload.amount, user.id);
       const narration = `Airtime purchase (₦${payload.amount}) for ${payload.phoneNumber}`;
       const transactionDate = new Date().toLocaleString();
       const reference = `Spraay-airtime-${generateUniqueCode(10)}`;
