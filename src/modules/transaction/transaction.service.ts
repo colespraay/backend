@@ -1,9 +1,4 @@
-import {
-  ConflictException,
-  HttpStatus,
-  Injectable,
-  NotFoundException,
-} from '@nestjs/common';
+import { HttpStatus, Injectable, NotFoundException } from '@nestjs/common';
 import { OnEvent, EventEmitter2 } from '@nestjs/event-emitter';
 import { FindManyOptions, ILike, In, IsNull, Not } from 'typeorm';
 import { createReadStream, unlinkSync } from 'fs';

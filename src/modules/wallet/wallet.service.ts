@@ -61,42 +61,49 @@ export class WalletService {
       validateUUIDField(userId, 'userId');
       const url = 'https://api.flutterwave.com/v3/virtual-account-numbers';
       const user = await this.userSrv.findUserById(userId);
-      checkForRequiredFields(
-        ['firstName', 'lastName', 'email', 'bvn', 'phoneNumber'],
-        user.data,
-      );
-      if (user?.data && !user.data.virtualAccountNumber) {
-        const fullNameNarration = `${user.data.firstName} ${user.data.lastName}`;
-        const userRef = formatTransactionKey(
-          `Spraay-${fullNameNarration}-${generateUniqueCode(10)}`,
-        );
-        const payload = {
-          bvn: user.data.bvn,
-          email: user.data.email,
-          is_permanent: true,
-          tx_ref: userRef,
-          phonenumber: user.data.phoneNumber,
-          firstname: user.data.firstName,
-          lastname: user.data.lastName,
-          narration: fullNameNarration,
-        };
-        const flutterwaveResponse = await httpPost<
-          CreateFlutterwaveResponseDTO,
-          any
-        >(url, payload, {
-          Authorization: `Bearer ${String(process.env.FLUTTERWAVE_SECRET_KEY)}`,
-        });
-        this.logger.debug({ virtualAccount: flutterwaveResponse });
-        if (flutterwaveResponse?.status) {
-          const updatedUser: Partial<User> = {
-            bankName: flutterwaveResponse.data.bank_name,
-            virtualAccountName: fullNameNarration,
-            virtualAccountNumber: flutterwaveResponse.data.account_number,
-            flutterwaveNarration: fullNameNarration,
-            flutterwaveUserKey: userRef,
+      // checkForRequiredFields(
+      //   ['firstName', 'lastName', 'email', 'bvn', 'phoneNumber'],
+      //   user.data,
+      // );
+      const {
+        data: { firstName, lastName, bvn, phoneNumber, email },
+      } = user;
+      if (firstName && lastName && email && bvn && phoneNumber) {
+        if (user?.data && !user.data.virtualAccountNumber) {
+          const fullNameNarration = `${user.data.firstName} ${user.data.lastName}`;
+          const userRef = formatTransactionKey(
+            `Spraay-${fullNameNarration}-${generateUniqueCode(10)}`,
+          );
+          const payload = {
+            bvn: user.data.bvn,
+            email: user.data.email,
+            is_permanent: true,
+            tx_ref: userRef,
+            phonenumber: user.data.phoneNumber,
+            firstname: user.data.firstName,
+            lastname: user.data.lastName,
+            narration: fullNameNarration,
           };
-          await this.userSrv.getRepo().update({ id: userId }, updatedUser);
-        }
+          const flutterwaveResponse = await httpPost<
+            CreateFlutterwaveResponseDTO,
+            any
+          >(url, payload, {
+            Authorization: `Bearer ${String(
+              process.env.FLUTTERWAVE_SECRET_KEY,
+            )}`,
+          });
+          this.logger.debug({ virtualAccount: flutterwaveResponse });
+          if (flutterwaveResponse?.status) {
+            const updatedUser: Partial<User> = {
+              bankName: flutterwaveResponse.data.bank_name,
+              virtualAccountName: fullNameNarration,
+              virtualAccountNumber: flutterwaveResponse.data.account_number,
+              flutterwaveNarration: fullNameNarration,
+              flutterwaveUserKey: userRef,
+            };
+            await this.userSrv.getRepo().update({ id: userId }, updatedUser);
+          }
+        } 
       }
     } catch (ex) {
       this.logger.error(ex);

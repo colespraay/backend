@@ -198,14 +198,15 @@ export class EventService extends GenericService(EventRecord) {
         };
       }
       const rsvps = await this.eventRsvpSrv.getRepo().find(filter);
+      const returnedData = sortArray(
+        rsvps.map(({ event }) => event),
+        'dateCreated',
+      );
       return {
         success: true,
         code: HttpStatus.OK,
         message: 'Available events found',
-        data: sortArray(
-          rsvps.map(({ event }) => event),
-          'dateCreated',
-        ),
+        data: returnedData,
       };
     } catch (ex) {
       this.logger.error(ex);
