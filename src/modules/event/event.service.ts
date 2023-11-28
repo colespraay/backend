@@ -371,6 +371,75 @@ export class EventService extends GenericService(EventRecord) {
     }
   }
 
+  // async findEventsForCurrentUser(
+  //   userId: string,
+  //   pagination?: PaginationRequestType,
+  // ): Promise<EventsResponseDTO> {
+  //   try {
+  //     checkForRequiredFields(['userId'], { userId });
+  //     // Pull events user created
+  //     const events = await this.getRepo().find({
+  //       where: { userId, status: true, eventStatus: EventStatus.UPCOMING },
+  //       order: { dateCreated: 'DESC' },
+  //       relations: ['user'],
+  //     });
+  //     console.log({ events });
+  //     let eventIds = events.map(({ id }) => id);
+
+  //     // Pull events user has been invited to
+  //     const eventsInvites = await this.eventInviteSrv.findAllByCondition({
+  //       eventId: In(eventIds),
+  //       userId,
+  //     });
+  //     eventIds.push(...eventsInvites.map(({ eventId }) => eventId));
+
+  //     // Remove duplicate eventIds
+  //     eventIds = [...new Set(eventIds)];
+
+  //     const filter: FindManyOptions<EventRecord> = {
+  //       where: { id: In(eventIds) },
+  //       relations: [
+  //         'user',
+  //         'eventCategory',
+  //         'eventInvites',
+  //         'eventInvites.user',
+  //       ],
+  //       order: { dateCreated: 'DESC' },
+  //     };
+  //     if (pagination?.pageNumber && pagination?.pageSize) {
+  //       pagination = {
+  //         pageNumber: parseInt(String(pagination.pageNumber)),
+  //         pageSize: parseInt(String(pagination.pageSize)),
+  //       };
+  //       filter.skip = (pagination.pageNumber - 1) * pagination.pageSize;
+  //       filter.take = pagination.pageSize;
+  //       const { response, paginationControl } =
+  //         await calculatePaginationControls<EventRecord>(
+  //           this.getRepo(),
+  //           filter,
+  //           pagination,
+  //         );
+  //       return {
+  //         success: true,
+  //         message: 'Records found',
+  //         code: HttpStatus.OK,
+  //         data: response,
+  //         paginationControl,
+  //       };
+  //     }
+  //     const users = await this.getRepo().find(filter);
+  //     return {
+  //       success: true,
+  //       message: 'Records found',
+  //       code: HttpStatus.OK,
+  //       data: users,
+  //     };
+  //   } catch (ex) {
+  //     this.logger.error(ex);
+  //     throw ex;
+  //   }
+  // }
+
   async findEventsForCurrentUser(
     userId: string,
     pagination?: PaginationRequestType,
@@ -379,17 +448,21 @@ export class EventService extends GenericService(EventRecord) {
       checkForRequiredFields(['userId'], { userId });
       // Pull events user created
       const events = await this.getRepo().find({
-        where: { userId, status: true, eventStatus: EventStatus.UPCOMING },
+        where: {
+          userId,
+          eventStatus: In([EventStatus.UPCOMING, EventStatus.ONGOING]),
+        },
+        order: { dateCreated: 'DESC' },
+        relations: ['user'],
       });
+      console.log({ events });
       let eventIds = events.map(({ id }) => id);
-
       // Pull events user has been invited to
       const eventsInvites = await this.eventInviteSrv.findAllByCondition({
         eventId: In(eventIds),
         userId,
       });
       eventIds.push(...eventsInvites.map(({ eventId }) => eventId));
-
       // Remove duplicate eventIds
       eventIds = [...new Set(eventIds)];
 
@@ -404,6 +477,10 @@ export class EventService extends GenericService(EventRecord) {
         order: { dateCreated: 'DESC' },
       };
       if (pagination?.pageNumber && pagination?.pageSize) {
+        pagination = {
+          pageNumber: parseInt(String(pagination.pageNumber)),
+          pageSize: parseInt(String(pagination.pageSize)),
+        };
         filter.skip = (pagination.pageNumber - 1) * pagination.pageSize;
         filter.take = pagination.pageSize;
         const { response, paginationControl } =

@@ -1,7 +1,7 @@
 import { BadRequestException, Logger, Type } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, FindOptionsWhere } from 'typeorm';
-import { ApiMessageList } from '@utils/types/utils.types';
+import { ApiMessageList } from '@utils/index';
 
 export type Constructor<I> = new (...args: any[]) => I; // Main Point
 

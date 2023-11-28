@@ -68,7 +68,6 @@ export class EventSpraayService extends GenericService(EventSpraay) {
     const currentWalletBalance = await this.userSrv.getCurrentWalletBalance(
       user.id,
     );
-
     // Also handles the debit of user's wallet
     const transactionDate = new Date().toLocaleString();
     const narration = `₦${payload.amount} 'spraayed' for  ${event.data?.user?.firstName} ${event.data?.user?.lastName}`;

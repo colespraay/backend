@@ -8,6 +8,7 @@ import {
 import { EventEmitter2 } from '@nestjs/event-emitter';
 import { Gifting } from '@entities/index';
 import { GenericService } from '@schematics/index';
+import { TransactionService } from '@modules/transaction/transaction.service';
 import {
   TransactionType,
   UserNotificationType,
@@ -16,9 +17,8 @@ import {
   validateUUIDField,
   verifyPasswordHash,
 } from '@utils/index';
-import { TransactionService } from '@modules/transaction/transaction.service';
-import { UserService } from '../index';
 import { GiftingResponseDTO, SendGiftDTO } from './dto/gifting.dto';
+import { UserService } from '../index';
 
 @Injectable()
 export class GiftingService extends GenericService(Gifting) {

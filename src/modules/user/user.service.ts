@@ -231,6 +231,7 @@ export class UserService extends GenericService(User) {
   ): Promise<AccountBalanceDTO> {
     try {
       checkForRequiredFields(['amount', 'userId'], { amount, userId });
+      validateUUIDField(userId, 'userId');
       const user = await this.findUserById(userId);
       const balance = Number(user.data.walletBalance);
       if (Number(amount) > balance) {

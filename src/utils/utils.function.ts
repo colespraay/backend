@@ -323,6 +323,10 @@ export const calculatePaginationControls = async <T>(
   payload: PaginationRequestType,
 ): Promise<{ paginationControl: PaginationResponseType; response: T[] }> => {
   const [response, total] = await repository.findAndCount(options);
+  payload = {
+    pageNumber: parseInt(String(payload.pageNumber)),
+    pageSize: parseInt(String(payload.pageSize)),
+  };
   return {
     paginationControl: {
       totalPages: Math.ceil(total / payload?.pageSize),
@@ -340,6 +344,10 @@ export const calculatePagination = <T>(
   fullArrayItems: T[],
   payload: PaginationRequestType,
 ): { paginationControl: PaginationResponseType; response: T[] } => {
+  payload = {
+    pageNumber: parseInt(String(payload.pageNumber)),
+    pageSize: parseInt(String(payload.pageSize)),
+  };
   const total = fullArrayItems.length ?? 0;
   const response = fullArrayItems.slice(
     (payload.pageNumber - 1) * payload.pageSize,

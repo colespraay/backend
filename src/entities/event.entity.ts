@@ -7,6 +7,7 @@ import {
   JoinColumn,
   ManyToOne,
 } from 'typeorm';
+import { GeoCoordinateDTO } from '@modules/event/dto/event.dto';
 import { generateUniqueKey, generateQRCode, EventStatus } from '@utils/index';
 import {
   Base,
@@ -17,7 +18,6 @@ import {
   EventCategory,
   EventRSVP,
 } from './index';
-import { GeoCoordinateDTO } from '@modules/event/dto/event.dto';
 
 @Entity({ name: 'event' })
 export class EventRecord extends Base {
