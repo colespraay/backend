@@ -869,16 +869,18 @@ export const validateArrayField = (
   }
 };
 
-export const convert12HourTo24HourFormat = (time12: string) => {
-  const [time, period] = time12.split(' ');
-  const [hours, minutes] = time.split(':').map(Number);
-  let parsedHour = 0;
-  if (period === 'pm' && hours !== 12) {
-    parsedHour += 12;
+export const convert12HourTo24HourFormat = (time12h: string) => {
+  const [time, period] = time12h.split(' ');
+  const hourMinuteSplit = time.split(':').map(Number);
+  let hour = hourMinuteSplit.shift();
+  const minutes = hourMinuteSplit.pop();
+  hour = parseInt(String(hour), 10);
+  if (period.toLowerCase() === 'pm' && hour < 12) {
+    hour += 12;
   }
-  return `${parsedHour.toString().padStart(2, '0')}:${minutes
+  return `${hour.toString().padStart(2, '0')}:${minutes
     .toString()
-    .padStart(2, '0')}`;
+    .padEnd(2, '0')}`;
 };
 
 export const addLeadingZeroes = (num: number): string => {
