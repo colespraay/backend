@@ -221,7 +221,7 @@ export class EventController {
   //   await this.eventSrv.deactivatePastEvents();
   // }
 
-  @Cron(CronExpression.EVERY_HOUR, {
+  @Cron(CronExpression.EVERY_30_MINUTES, {
     name: 'startOngoingEvents',
     timeZone: 'Africa/Lagos',
   })
