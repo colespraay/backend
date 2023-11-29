@@ -869,7 +869,7 @@ export const validateArrayField = (
   }
 };
 
-export const convert12HourTo24HourFormat = (time12h: string) => {
+export const convert12HourTo24HourFormat = (time12h: string): string => {
   const [time, period] = time12h.split(' ');
   const hourMinuteSplit = time.split(':').map(Number);
   let hour = hourMinuteSplit.shift();
