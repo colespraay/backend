@@ -9,6 +9,7 @@ import {
   forwardRef,
   InternalServerErrorException,
   NotFoundException,
+  OnModuleInit,
 } from '@nestjs/common';
 import { FindManyOptions, ILike, In, Not } from 'typeorm';
 import { User } from '@entities/index';
@@ -64,13 +65,20 @@ import {
 import { AuthService } from '../index';
 
 @Injectable()
-export class UserService extends GenericService(User) {
+export class UserService extends GenericService(User) implements OnModuleInit {
   constructor(
     @Inject(forwardRef(() => AuthService))
     private readonly authSrv: AuthService,
     private readonly eventEmitterSrv: EventEmitter2,
   ) {
     super();
+  }
+
+  async onModuleInit() {
+    // this.sendWelcomeEmail(
+    //   'fb64d86f-5336-4320-a4d2-24e64f029425',
+    //   'abelanico6@gmail.com',
+    // );
   }
 
   async findContactsFilteredByUserContacts(
@@ -387,10 +395,47 @@ export class UserService extends GenericService(User) {
           { id: userExists.id },
           { uniqueVerificationCode: uniqueCode },
         );
+        const today = new Date();
+        const instagramUrl = String(process.env.INSTAGRAM_URL);
+        const twitterUrl = String(process.env.TWITTER_URL);
+        const facebookUrl = String(process.env.FACEBOOK_URL);
         const htmlEmailTemplate = `
-            <h2>Please copy the code below to verify your account ownership</h2>
-            <h3>${uniqueCode}</h3>
-          `;
+        <section style="background: white; color: black; font-size: 15px; font-family: 'Gill Sans', 'Gill Sans MT', Calibri, 'Trebuchet MS', sans-serif; display: flex; justify-content: center; margin: 0;">
+          <div style="padding: 2rem; width: 80%;">
+            <section style="text-align: center;">
+                <div style="width: fit-content; margin: 20px 0px;display: inline-block;">
+                    <img src="https://ik.imagekit.io/un0omayok/Logo%20animaion.png?updatedAt=1701281040423" alt="">
+                </div>
+            </section>
+
+            <section style="width: 100%; height: auto; font-size: 18px; text-align: justify;">
+                <p style="font-weight:300">Hi ${userExists.firstName},</p>
+                <p style="font-weight:300">
+                    You've recently requested to reset your password. Copy the code below 
+                    to create a new password for your Spraay App account.
+                </p>
+                <h1 style="text-align: center; font-size: 50px;">${uniqueCode}</h1>
+                <p style="font-weight:300">
+                    If you did not make this request, please ignore this message.
+                </p>
+            </section>
+
+            <section style="text-align: center; height: 8rem; background-color: #5B45FF; border-radius: 10px; margin-top: 2rem; margin-bottom: 2rem;">
+              <a href="${instagramUrl}" style="margin-right: 30px;display: inline-block;padding-top:40px;"><img src="https://ik.imagekit.io/un0omayok/mdi_instagram.png?updatedAt=1701281040417" alt=""></a>
+              <a href="${twitterUrl}" style="margin-right: 30px;display: inline-block;padding-top:40px;"><img src="https://ik.imagekit.io/un0omayok/simple-icons_x.png?updatedAt=1701281040408" alt=""></a>
+              <a href="${facebookUrl}" style="display: inline-block;padding-top:40px;"><img src="https://ik.imagekit.io/un0omayok/ic_baseline-facebook.png?updatedAt=1701281040525" alt=""></a>
+            </section>
+
+            <section style="padding: 20px; border-bottom: 2px solid #000; text-align: center; font-size: 20px;">
+                <p style="font-weight:300">Spraay software limited</p>
+            </section>
+
+            <section style="text-align: center; font-size: 18px;">
+                <p style="font-weight: 400;">Spraay &copy;${today.getFullYear()}</p>
+                <p style="font-weight: 400;">Click here to <a href="#" style="color: #5B45FF;">Unsubscribe</a></p>
+            </section>
+          </div>
+        </section>`;
         const emailResponse = await sendEmail(
           htmlEmailTemplate,
           'Verify Account Ownership',
@@ -743,6 +788,7 @@ export class UserService extends GenericService(User) {
       }
       throw new NotFoundException('User was not found');
     } catch (ex) {
+      this.logger.error(ex);
       throw ex;
     }
   }
@@ -784,6 +830,9 @@ export class UserService extends GenericService(User) {
       }
       if (payload.email && payload.email !== record.email) {
         validateEmailField(payload.email);
+        if (!record.email) {
+          await this.sendWelcomeEmail(record.id, payload.email);
+        }
         record.email = payload.email.toUpperCase();
       }
       if (payload.firstName && payload.firstName !== record.firstName) {
@@ -884,6 +933,84 @@ export class UserService extends GenericService(User) {
         code: HttpStatus.OK,
         message: 'Updated',
       };
+    } catch (ex) {
+      this.logger.error(ex);
+      throw ex;
+    }
+  }
+
+  private async sendWelcomeEmail(userId: string, email: string): Promise<void> {
+    try {
+      const user = await this.findUserById(userId);
+      if (user?.data?.email) {
+        const today = new Date();
+        const instagramUrl = String(process.env.INSTAGRAM_URL);
+        const twitterUrl = String(process.env.TWITTER_URL);
+        const facebookUrl = String(process.env.FACEBOOK_URL);
+        const html = `<section style="background: white; color: black; font-size: 15px; font-family: 'Gill Sans', 'Gill Sans MT', Calibri, 'Trebuchet MS', sans-serif; display: flex; justify-content: center; margin: 0;">
+        <div style="padding: 2rem; width: 80%;">
+            <section style="text-align: center;">
+                <div style="width: fit-content; margin: 20px 0px;display: inline-block;">
+                    <img src="https://ik.imagekit.io/un0omayok/Logo%20animaion.png?updatedAt=1701281040423" alt="">
+                </div>
+            </section>
+    
+            <section style="width: 100%; height: auto; font-size: 18px; text-align: justify;">
+                <p style="font-weight:300">Hi ${user.data.firstName},</p>
+                <p style="font-weight:300">
+                    Welcome to Spraay, where celebration meets convenience! I am Stephanie and I'm thrilled to have you onboard. 
+                    Get ready to immerse yourself in the fun of virtual money spraying, seamless bill payments, and a host
+                    of other exciting features designed to make your life more festive.
+                </p>
+                <p style="font-weight:300">
+                    Here's a quick guide to get started:
+                </p>
+                <ul>
+                    <li>
+                       <p style="font-weight:300">
+                        <b>Spray at Events: </b> Easily manage your bills nd stay connected
+                        with the convenience of Spraay App.
+                       </p>
+                    </li>
+                    <li>
+                        <p style="font-weight:300">
+                         <b>Bill Payments: </b> Join events, celebrate, and spray
+                         virtual cash in a joyous digital tradition.
+                        </p>
+                    </li>
+                    <li>
+                        <p style="font-weight:300">
+                         <b>Peer-to-Peer Gifting: </b> Spread the love by spreading cash
+                         gifts to friends and family with a simple swipe.
+                        </p>
+                    </li>
+                </ul>
+                <p style="font-weight:300">
+                    Feel the thrill of celebration anytime anywhere. If you have any questions
+                    or need our assistance our support team is just a message away.
+                </p>
+                <p style="font-weight:300">Best regards,</p>
+                <p style="font-weight:300">Stephanie</p>
+            </section>
+    
+          <section style="text-align: center; height: 8rem; background-color: #5B45FF; border-radius: 10px; margin-top: 2rem; margin-bottom: 2rem;">
+            <a href="${instagramUrl}" style="margin-right: 30px;display: inline-block;padding-top:40px;"><img src="https://ik.imagekit.io/un0omayok/mdi_instagram.png?updatedAt=1701281040417" alt=""></a>
+            <a href="${twitterUrl}" style="margin-right: 30px;display: inline-block;padding-top:40px;"><img src="https://ik.imagekit.io/un0omayok/simple-icons_x.png?updatedAt=1701281040408" alt=""></a>
+            <a href="${facebookUrl}" style="display: inline-block;padding-top:40px;"><img src="https://ik.imagekit.io/un0omayok/ic_baseline-facebook.png?updatedAt=1701281040525" alt=""></a>
+          </section>
+    
+            <section style="padding: 20px; border-bottom: 2px solid #000; text-align: center; font-size: 20px;">
+                <p style="font-weight:300">Spraay software limited</p>
+            </section>
+    
+            <section style="text-align: center; font-size: 18px;">
+                <p style="font-weight: 400;">Spraay &copy;${today.getFullYear()}</p>
+                <p style="font-weight: 400;">Click here to <a href="#" style="color: #5B45FF;">Unsubscribe</a></p>
+            </section>
+        </div>
+    </section>`;
+        await sendEmail(html, 'Welcome to Spraay', [email]);
+      }
     } catch (ex) {
       this.logger.error(ex);
       throw ex;
