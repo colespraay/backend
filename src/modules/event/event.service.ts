@@ -763,6 +763,14 @@ export class EventService extends GenericService(EventRecord) {
       const facebookUrl = String(process.env.FACEBOOK_URL);
       const sentReminderList: string[] = [];
       for (const event of events) {
+        const formattedDate = new Date(event.eventDate).toLocaleDateString(
+          'en-US',
+          {
+            year: 'numeric',
+            month: 'long',
+            day: 'numeric',
+          },
+        );
         const attendeeCount = [
           ...new Set(event.eventRsvps.map(({ userId }) => userId)),
         ];
@@ -786,8 +794,8 @@ export class EventService extends GenericService(EventRecord) {
                           Event Details:
                       </p>
                       <ul>
-                          <li>Date: <b>28 October, 2023</b></li>
-                          <li>Time: <b>12:20 am</b></li>
+                          <li>Date: <b>${formattedDate}</b></li>
+                          <li>Time: <b>${event.time}</b></li>
                           <li>Event Code: <b>${event.eventCode}</b></li>
                           <li>Expected Guests: <b>${
                             attendeeCount.length ?? 0
