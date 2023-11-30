@@ -152,14 +152,15 @@ export class EventRSVPService extends GenericService(EventRSVP) {
       const twitterUrl = String(process.env.TWITTER_URL);
       const facebookUrl = String(process.env.FACEBOOK_URL);
       const today = new Date();
-      const formattedDate = new Date(
-        rsvpRecord.data.event.eventDate,
-      ).toLocaleDateString('en-US', {
-        year: 'numeric',
-        month: 'long',
-        day: 'numeric',
-      });
       const event = rsvpRecord.data.event;
+      const formattedDate = new Date(event.eventDate).toLocaleDateString(
+        'en-US',
+        {
+          year: 'numeric',
+          month: 'long',
+          day: 'numeric',
+        },
+      );
       const rsvpUserFullName = `${rsvpRecord.data.user.firstName} ${rsvpRecord.data.user.lastName}`;
       const attendeeCount = [
         ...new Set(event.eventRsvps.map(({ userId }) => userId)),
