@@ -812,7 +812,7 @@ export class EventService extends GenericService(EventRecord) {
                       <a href="${instagramUrl}" style="margin-right: 30px;display: inline-block;padding-top:40px;"><img src="https://ik.imagekit.io/un0omayok/mdi_instagram.png?updatedAt=1701281040417" alt=""></a>
                       <a href="${twitterUrl}" style="margin-right: 30px;display: inline-block;padding-top:40px;"><img src="https://ik.imagekit.io/un0omayok/simple-icons_x.png?updatedAt=1701281040408" alt=""></a>
                       <a href="${facebookUrl}" style="display: inline-block;padding-top:40px;"><img src="https://ik.imagekit.io/un0omayok/ic_baseline-facebook.png?updatedAt=1701281040525" alt=""></a>
-                    </section>
+                  </section>
           
                   <section style="padding: 20px; border-bottom: 2px solid #000; text-align: center; font-size: 20px;">
                       <p style="font-weight:300">Spraay software limited</p>
