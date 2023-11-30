@@ -300,11 +300,11 @@ export class AuthService {
       
               <section style="width: 100%; height: auto; font-size: 18px; text-align: justify;">
                   <p style="font-weight:300">Hi ${user.data.firstName},</p>
-                  <p style="font-weight:300">Please be informed that your spray app was accessed on <span style="font-weight: 400;">${formattedDate} at ${formattedTime}</span></p>
+                  <p style="font-weight:300">Please be informed that your spraay app was accessed on <span style="font-weight: 400;">${formattedDate} at ${formattedTime}</span></p>
                   <p style="font-weight:300">
                       If you did not logon to your account at the time detailed above, please call our contact centre on
                       <span style="font-weight: 400;"><a href="tel:070 3000000" style="color: inherit;">070 3000000,</a> <a href="tel:+234 1-2712005-7" style="color: inherit;">+234 1-2712005-7</a></span>, or send an email to
-                      <span style="font-weight: 400;"><a href="mailto:contactenter@spraay.ng" style="color: inherit;">contactenter@spraay.ng</a></span>
+                      <span style="font-weight: 400;"><a href="mailto:hello@spraay.ng" style="color: inherit;">hello@spraay.ng</a></span>
                   </p>
                   <p style="font-weight:300">Thank you for choosing spray</p>
               </section>

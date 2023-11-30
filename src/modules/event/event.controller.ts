@@ -216,10 +216,13 @@ export class EventController {
     return await this.eventSrv.deleteEvents(eventIds);
   }
 
-  // @Cron(CronExpression.EVERY_2_HOURS)
-  // async deactivatePastEvents(): Promise<void> {
-  //   await this.eventSrv.deactivatePastEvents();
-  // }
+  @Cron(CronExpression.EVERY_4_HOURS, {
+    name: 'deactivatePastEvents',
+    timeZone: 'Africa/Lagos',
+  })
+  async deactivatePastEvents(): Promise<void> {
+    await this.eventSrv.deactivatePastEvents();
+  }
 
   @Cron(CronExpression.EVERY_30_MINUTES, {
     name: 'startOngoingEvents',
@@ -227,5 +230,13 @@ export class EventController {
   })
   async startOngoingEvents(): Promise<void> {
     await this.eventSrv.startOngoingEvents();
+  }
+
+  @Cron(CronExpression.EVERY_HOUR, {
+    name: 'sendRemindersToEventOrganizers',
+    timeZone: 'Africa/Lagos',
+  })
+  async sendRemindersToEventOrganizers(): Promise<void> {
+    await this.sendRemindersToEventOrganizers();
   }
 }

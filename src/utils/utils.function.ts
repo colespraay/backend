@@ -903,3 +903,14 @@ export const sortArray = <T>(
   }
   return data.sort((a, b) => b[sortedColumn] - a[sortedColumn]);
 };
+
+export const differenceInDays = (date1: Date, date2: Date): number => {
+  // Time difference in milliseconds
+  const timeDiff = date2.getTime() - date1.getTime();
+
+  // Convert time difference from milliseconds to days
+  const daysDiff = timeDiff / (1000 * 3600 * 24);
+
+  // Round to get the absolute difference in days
+  return Math.abs(Math.round(daysDiff));
+};

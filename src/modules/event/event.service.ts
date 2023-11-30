@@ -20,6 +20,7 @@ import {
   checkForRequiredFields,
   compareEnumValueFields,
   convert12HourTo24HourFormat,
+  differenceInDays,
   sendEmail,
   sortArray,
   validateFutureDate,
@@ -714,21 +715,119 @@ export class EventService extends GenericService(EventRecord) {
 
   async deactivatePastEvents(): Promise<void> {
     try {
-      const events = await this.findAllByCondition({ status: true });
-      if (events?.length > 0) {
-        const eventIds: string[] = [];
-        const today = new Date();
-        for (const event of events) {
-          const eventDate = new Date(event.eventDate);
-          if (eventDate.getTime() > today.getTime()) {
-            eventIds.push(event.id);
-          }
+      const date24HoursAgo = new Date();
+      date24HoursAgo.setDate(date24HoursAgo.getDate() - 1);
+      const events = await this.getRepo()
+        .createQueryBuilder('event')
+        .where('event.eventDate >= :date', { date: date24HoursAgo })
+        .andWhere('event.status = :status', { status: true })
+        .andWhere('event.eventStatus = :eventStatus', {
+          eventStatus: EventStatus.ONGOING,
+        })
+        .getMany();
+      await this.getRepo().update(
+        { id: In(events.map(({ id }) => id)) },
+        {
+          status: false,
+          eventStatus: EventStatus.PAST,
+          isNotificationSent: true,
+        },
+      );
+    } catch (ex) {
+      this.logger.error(ex);
+      throw ex;
+    }
+  }
+
+  async sendRemindersToEventOrganizers(): Promise<void> {
+    try {
+      const today = new Date();
+      let events = await this.getRepo()
+        .createQueryBuilder('event')
+        .leftJoinAndSelect('event.user', 'user')
+        .leftJoinAndSelect('event.eventRsvps', 'eventRsvps')
+        .where('event.eventDate > :currentDate', { currentDate: today })
+        .andWhere('event.eventStatus = :eventStatus', {
+          eventStatus: EventStatus.UPCOMING,
+        })
+        .andWhere('event.isNotificationSent = :isNotificationSent', {
+          isNotificationSent: false,
+        })
+        .take(5)
+        .getMany();
+      events = events.filter(
+        (event) => differenceInDays(new Date(event.eventDate), new Date()) <= 2,
+      );
+      const instagramUrl = String(process.env.INSTAGRAM_URL);
+      const twitterUrl = String(process.env.TWITTER_URL);
+      const facebookUrl = String(process.env.FACEBOOK_URL);
+      const sentReminderList: string[] = [];
+      for (const event of events) {
+        const attendeeCount = [
+          ...new Set(event.eventRsvps.map(({ userId }) => userId)),
+        ];
+        const html = `
+              <section style="background: white; color: black; font-size: 15px; font-family: 'Gill Sans', 'Gill Sans MT', Calibri, 'Trebuchet MS', sans-serif; display: flex; justify-content: center; margin: 0;">
+              <div style="padding: 2rem; width: 80%;">
+                  <section style="text-align: center;">
+                    <div style="width: fit-content; margin: 20px 0px;display: inline-block;">
+                      <img src="https://ik.imagekit.io/un0omayok/Logo%20animaion.png?updatedAt=1701281040423" alt="">
+                    </div>
+                  </section>
+          
+                  <section style="width: 100%; height: auto; font-size: 18px; text-align: justify;">
+                      <p style="font-weight:300">Hi ${event.user.firstName},</p>
+                      <p style="font-weight:300">
+                        A friendly reminder about your upcoming event <b>${
+                          event.eventTag
+                        }</b> on Spraay App.
+                      </p>
+                      <p style="font-weight:300">
+                          Event Details:
+                      </p>
+                      <ul>
+                          <li>Date: <b>28 October, 2023</b></li>
+                          <li>Time: <b>12:20 am</b></li>
+                          <li>Event Code: <b>${event.eventCode}</b></li>
+                          <li>Expected Guests: <b>${
+                            attendeeCount.length ?? 0
+                          }</b></li>
+                      </ul>
+          
+                      <p style="font-weight:300">
+                        If there is a change of plan, kindly update your event on the Spraay App, So your 
+                        guests can be notified.
+                      </p>
+                  </section>
+          
+                  <section style="text-align: center; height: 8rem; background-color: #5B45FF; border-radius: 10px; margin-top: 2rem; margin-bottom: 2rem;">
+                      <a href="${instagramUrl}" style="margin-right: 30px;display: inline-block;padding-top:40px;"><img src="https://ik.imagekit.io/un0omayok/mdi_instagram.png?updatedAt=1701281040417" alt=""></a>
+                      <a href="${twitterUrl}" style="margin-right: 30px;display: inline-block;padding-top:40px;"><img src="https://ik.imagekit.io/un0omayok/simple-icons_x.png?updatedAt=1701281040408" alt=""></a>
+                      <a href="${facebookUrl}" style="display: inline-block;padding-top:40px;"><img src="https://ik.imagekit.io/un0omayok/ic_baseline-facebook.png?updatedAt=1701281040525" alt=""></a>
+                    </section>
+          
+                  <section style="padding: 20px; border-bottom: 2px solid #000; text-align: center; font-size: 20px;">
+                      <p style="font-weight:300">Spraay software limited</p>
+                  </section>
+          
+                  <section style="text-align: center; font-size: 18px;">
+                      <p style="font-weight: 400;">Spraay &copy;${today.getFullYear()}</p>
+                      <p style="font-weight: 400;">Click here to <a href="#" style="color: #5B45FF;">Unsubscribe</a></p>
+                  </section>
+              </div>
+          </section>
+        `;
+        const emailResponse = await sendEmail(html, `Spraay Event Reminder`, [
+          event.user.email,
+        ]);
+        if (emailResponse?.success) {
+          sentReminderList.push(event.id);
         }
-        await this.getRepo().update(
-          { id: In(eventIds) },
-          { status: false, eventStatus: EventStatus.PAST },
-        );
       }
+      await this.getRepo().update(
+        { id: In(sentReminderList) },
+        { isNotificationSent: true },
+      );
     } catch (ex) {
       this.logger.error(ex);
       throw ex;

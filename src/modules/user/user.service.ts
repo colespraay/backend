@@ -358,10 +358,48 @@ export class UserService extends GenericService(User) implements OnModuleInit {
       let responseMessage = 'Token has been sent';
       switch (medium) {
         case OTPMedium.EMAIL:
+          const today = new Date();
+          const instagramUrl = String(process.env.INSTAGRAM_URL);
+          const twitterUrl = String(process.env.TWITTER_URL);
+          const facebookUrl = String(process.env.FACEBOOK_URL);
           // Send code
           const htmlEmailTemplate = `
-            <h2>Please copy the code below to verify your account</h2>
-            <h3>${token}</h3>
+            <section style="background: white; color: black; font-size: 15px; font-family: 'Gill Sans', 'Gill Sans MT', Calibri, 'Trebuchet MS', sans-serif; display: flex; justify-content: center; margin: 0;">
+              <div style="padding: 2rem; width: 80%;">
+                <section style="text-align: center;">
+                    <div style="width: fit-content; margin: 20px 0px;display: inline-block;">
+                        <img src="https://ik.imagekit.io/un0omayok/Logo%20animaion.png?updatedAt=1701281040423" alt="">
+                    </div>
+                </section>
+    
+                <section style="width: 100%; height: auto; font-size: 18px; text-align: justify;">
+                    <p style="font-weight:300">Hi ${record.firstName},</p>
+                    <p style="font-weight:300">
+                        You've recently requested to reset your password. Copy the code below 
+                        to create a new password for your Spraay App account.
+                    </p>
+                    <h1 style="text-align: center; font-size: 50px;">${token}</h1>
+                    <p style="font-weight:300">
+                        If you did not make this request, please ignore this message.
+                    </p>
+                </section>
+    
+                <section style="text-align: center; height: 8rem; background-color: #5B45FF; border-radius: 10px; margin-top: 2rem; margin-bottom: 2rem;">
+                  <a href="${instagramUrl}" style="margin-right: 30px;display: inline-block;padding-top:40px;"><img src="https://ik.imagekit.io/un0omayok/mdi_instagram.png?updatedAt=1701281040417" alt=""></a>
+                  <a href="${twitterUrl}" style="margin-right: 30px;display: inline-block;padding-top:40px;"><img src="https://ik.imagekit.io/un0omayok/simple-icons_x.png?updatedAt=1701281040408" alt=""></a>
+                  <a href="${facebookUrl}" style="display: inline-block;padding-top:40px;"><img src="https://ik.imagekit.io/un0omayok/ic_baseline-facebook.png?updatedAt=1701281040525" alt=""></a>
+                </section>
+    
+                <section style="padding: 20px; border-bottom: 2px solid #000; text-align: center; font-size: 20px;">
+                    <p style="font-weight:300">Spraay software limited</p>
+                </section>
+    
+                <section style="text-align: center; font-size: 18px;">
+                    <p style="font-weight: 400;">Spraay &copy;${today.getFullYear()}</p>
+                    <p style="font-weight: 400;">Click here to <a href="#" style="color: #5B45FF;">Unsubscribe</a></p>
+                </section>
+              </div>
+            </section>
           `;
           await sendEmail(htmlEmailTemplate, 'Verify Account', [record.email]);
           responseMessage = 'Token has been sent to your email';
