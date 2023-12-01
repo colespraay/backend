@@ -70,6 +70,11 @@ export class AuthService {
           process.env.ENCRYPTION_KEY,
         );
         const token = this.signPayload({ data: payloadToSign });
+        if (payload?.deviceId) {
+          await this.userSrv
+            .getRepo()
+            .update({ id: user.data.id }, { deviceId: payload.deviceId });
+        }
         this.eventEmitterSrv.emit('login.notification', id);
         return {
           success: true,
@@ -125,6 +130,11 @@ export class AuthService {
           process.env.ENCRYPTION_KEY,
         );
         const token = this.signPayload({ data: payloadToSign });
+        if (payload?.deviceId) {
+          await this.userSrv
+            .getRepo()
+            .update({ id: user.data.id }, { deviceId: payload.deviceId });
+        }
         this.eventEmitterSrv.emit('login.notification', id);
         return {
           success: true,

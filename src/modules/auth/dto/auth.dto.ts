@@ -24,6 +24,9 @@ export class LoginUserDTO {
 
   @ApiProperty()
   password: string;
+
+  @ApiProperty({ nullable: true })
+  deviceId?: string;
 }
 
 export class LoginPhoneUserDTO {
@@ -32,6 +35,9 @@ export class LoginPhoneUserDTO {
 
   @ApiProperty()
   password: string;
+
+  @ApiProperty({ nullable: true })
+  deviceId?: string;
 }
 
 export class ThirdPartyLoginDTO {
