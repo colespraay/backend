@@ -1,10 +1,6 @@
-import {
-  ConflictException,
-  HttpStatus,
-  Injectable,
-  NotFoundException,
-} from '@nestjs/common';
+import { HttpStatus, Injectable, NotFoundException } from '@nestjs/common';
 import { OnEvent } from '@nestjs/event-emitter';
+import { FindManyOptions } from 'typeorm';
 import { Notification } from '@entities/index';
 import { GenericService } from '@schematics/index';
 import {
@@ -12,18 +8,23 @@ import {
   calculatePaginationControls,
   checkForRequiredFields,
   compareEnumValueFields,
+  sendPushNotification,
   validateUUIDField,
 } from '@utils/index';
+import { UserService } from '@modules/user/user.service';
 import {
   CreateNotificationDTO,
   FindNotificationDTO,
   NotificationResponseDTO,
   NotificationsResponseDTO,
 } from './dto/notification.dto';
-import { FindManyOptions } from 'typeorm';
 
 @Injectable()
 export class NotificationService extends GenericService(Notification) {
+  constructor(private readonly userSrv: UserService) {
+    super();
+  }
+
   @OnEvent('user-notification.create', { async: true })
   async createNotification(
     payload: CreateNotificationDTO,
@@ -45,6 +46,17 @@ export class NotificationService extends GenericService(Notification) {
         const createdNotification = await this.create<Partial<Notification>>(
           payload,
         );
+        const user = await this.userSrv.getRepo().findOne({
+          where: { id: payload.userId },
+        });
+        if (user?.id && user.allowPushNotifications) {
+          const pushNotifications = await sendPushNotification(
+            payload.message,
+            user.deviceId,
+            payload.subject,
+          );
+          this.logger.log({ pushNotifications });
+        }
         return {
           success: true,
           message: 'Created',

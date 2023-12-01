@@ -526,10 +526,11 @@ export const sendPushNotification = async (
         'Content-Type': 'application/json',
       },
     );
+    // logger.log({ response, res_result: response.results });
     if (response.success === 1 && response.failure === 0) {
       return {
         success: true,
-        message: 'Push notification was sent',
+        message: `Push notification was sent: ${JSON.stringify(response)}`,
         code: HttpStatus.BAD_GATEWAY,
       };
     }
