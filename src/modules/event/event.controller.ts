@@ -237,6 +237,6 @@ export class EventController {
     timeZone: 'Africa/Lagos',
   })
   async sendRemindersToEventOrganizers(): Promise<void> {
-    await this.sendRemindersToEventOrganizers();
+    await this.eventSrv.sendRemindersToEventOrganizers();
   }
 }
