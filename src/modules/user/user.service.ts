@@ -538,6 +538,7 @@ export class UserService extends GenericService(User) implements OnModuleInit {
             password: hashedPassword,
           },
         );
+        await this.sendEmailAfterPasswordChange(userExists.id);
         return {
           success: true,
           code: HttpStatus.OK,
@@ -546,6 +547,7 @@ export class UserService extends GenericService(User) implements OnModuleInit {
       }
       throw new NotFoundException('Invalid verification code');
     } catch (ex) {
+      this.logger.error(ex);
       throw ex;
     }
   }
@@ -1049,6 +1051,63 @@ export class UserService extends GenericService(User) implements OnModuleInit {
     </section>`;
         await sendEmail(html, 'Welcome to Spraay', [email]);
       }
+    } catch (ex) {
+      this.logger.error(ex);
+      throw ex;
+    }
+  }
+
+  private async sendEmailAfterPasswordChange(userId: string): Promise<void> {
+    try {
+      const user = await this.findUserById(userId);
+      const instagramUrl = String(process.env.INSTAGRAM_URL);
+      const twitterUrl = String(process.env.TWITTER_URL);
+      const facebookUrl = String(process.env.FACEBOOK_URL);
+      const today = new Date();
+      const html = `
+      <section style="background: white; color: black; font-size: 15px; font-family: 'Gill Sans', 'Gill Sans MT', Calibri, 'Trebuchet MS', sans-serif; display: flex; justify-content: center; margin: 0;">
+      <div style="padding: 2rem; width: 80%;">
+          <section style="text-align: center;">
+              <div style="width: fit-content; margin: 20px 0px;display: inline-block;">
+                  <img src="https://ik.imagekit.io/un0omayok/Logo%20animaion.png?updatedAt=1701281040423" alt="">
+              </div>
+          </section>
+  
+          <section style="width: 100%; height: auto; font-size: 18px; text-align: justify;">
+              <p style="font-weight:300">Hi ${user.data.firstName},</p>
+              <p style="font-weight:300">
+                 This is to confirm that your Spraay App password has been successfully 
+                 reset.
+              </p>
+              <p style="font-weight:300">
+                  If you did not initiate this, please contact our 
+                  <span style="font-weight: 400;">
+                      <a href="mailto:hello@spraay.ng" style="color: inherit;">support team.</a>
+                  </span>
+              </p>
+  
+              <p style="font-weight:300">
+                  Thank you for choosing Spraay App.
+              </p>
+          </section>
+  
+          <section style="text-align: center; height: 8rem; background-color: #5B45FF; border-radius: 10px; margin-top: 2rem; margin-bottom: 2rem;">
+          <a href="${instagramUrl}" style="margin-right: 30px;display: inline-block;padding-top:40px;"><img src="https://ik.imagekit.io/un0omayok/mdi_instagram.png?updatedAt=1701281040417" alt=""></a>
+          <a href="${twitterUrl}" style="margin-right: 30px;display: inline-block;padding-top:40px;"><img src="https://ik.imagekit.io/un0omayok/simple-icons_x.png?updatedAt=1701281040408" alt=""></a>
+          <a href="${facebookUrl}" style="display: inline-block;padding-top:40px;"><img src="https://ik.imagekit.io/un0omayok/ic_baseline-facebook.png?updatedAt=1701281040525" alt=""></a>
+        </section>
+  
+          <section style="padding: 20px; border-bottom: 2px solid #000; text-align: center; font-size: 20px;">
+              <p style="font-weight:300">Spraay software limited</p>
+          </section>
+  
+          <section style="text-align: center; font-size: 18px;">
+              <p style="font-weight: 400;">Spraay &copy;${today.getFullYear()}</p>
+              <p style="font-weight: 400;">Click here to <a href="#" style="color: #5B45FF;">Unsubscribe</a></p>
+          </section>
+      </div>
+      </section>`;
+      await sendEmail(html, 'Spraay Password Change', [user.data.email]);
     } catch (ex) {
       this.logger.error(ex);
       throw ex;

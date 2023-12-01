@@ -220,7 +220,13 @@ export class EventService extends GenericService(EventRecord) {
       checkForRequiredFields(['eventId'], { eventId });
       const record = await this.getRepo().findOne({
         where: { id: eventId },
-        relations: ['user', 'eventInvites', 'eventInvites.user'],
+        relations: [
+          'user',
+          'eventRsvps',
+          'eventRsvps.user',
+          'eventInvites',
+          'eventInvites.user',
+        ],
       });
       if (!record?.id) {
         throw new NotFoundException('Event not found');
@@ -628,6 +634,10 @@ export class EventService extends GenericService(EventRecord) {
         record.eventCoverImage = payload.eventCoverImage;
       }
       if (payload.venue && record.venue !== payload.venue) {
+        this.eventEmitterSrv.emit('email.sendEventChangeEmail', {
+          eventId: record.id,
+          previousVenue: record.venue,
+        });
         record.venue = payload.venue;
       }
       if (
@@ -836,6 +846,93 @@ export class EventService extends GenericService(EventRecord) {
         { id: In(sentReminderList) },
         { isNotificationSent: true },
       );
+    } catch (ex) {
+      this.logger.error(ex);
+      throw ex;
+    }
+  }
+
+  @OnEvent('email.sendEventChangeEmail', { async: true })
+  private async sendEventChangeEmail(payload: {
+    eventId: string;
+    previousVenue: string;
+  }): Promise<void> {
+    try {
+      const { eventId, previousVenue } = payload;
+      const event = await this.findEventById(eventId);
+      if (event?.data?.id) {
+        const today = new Date();
+        const instagramUrl = String(process.env.INSTAGRAM_URL);
+        const twitterUrl = String(process.env.TWITTER_URL);
+        const facebookUrl = String(process.env.FACEBOOK_URL);
+        const subject = `Venue Change For ${event.data.eventTag}`;
+        for (const rsvp of event.data.eventRsvps) {
+          const organizer = event.data.user;
+          const html = `
+          <section style="background: white; color: black; font-size: 15px; font-family: 'Gill Sans', 'Gill Sans MT', Calibri, 'Trebuchet MS', sans-serif; display: flex; justify-content: center; margin: 0;">
+          <div style="padding: 2rem; width: 80%;">
+              <section style="text-align: center;">
+                  <div style="width: fit-content; margin: 20px 0px;display: inline-block;">
+                      <img src="https://ik.imagekit.io/un0omayok/Logo%20animaion.png?updatedAt=1701281040423" alt="">
+                  </div>
+              </section>
+      
+              <section style="width: 100%; height: auto; font-size: 18px; text-align: justify;">
+                  <p style="font-weight:300">Hi ${rsvp.user.firstName},</p>
+                  <p style="font-weight:300">
+                     It's me ${
+                       organizer.firstName
+                     }. I want to inform you about an important update 
+                     regarding my upcoming event <b>${
+                       event.data.eventTag
+                     }</b> on Spraay App. There has been 
+                     a change in the venue:
+                  </p>
+                  <ul>
+                      <li>
+                          Previous Venue: <b>${previousVenue}</b>
+                      </li>
+                      <li>
+                          New Venue: <b>${event.data.venue}</b>
+                      </li>
+                  </ul>
+                  <p style="font-weight:300">
+                      I apologize for any inconvenience this change may cause. Your attendance is important to me, 
+                      and I appreciate your flexibility.
+                  </p>
+      
+                  <p style="font-weight:300">
+                      Thank you for your understanding and flexibility.
+                  </p>
+      
+                  <p style="font-weight:300">
+                      Best regards,
+                  </p>
+                  <p style="font-weight:300">
+                      ${organizer.firstName}
+                  </p>
+              </section>
+      
+              <section style="text-align: center; height: 8rem; background-color: #5B45FF; border-radius: 10px; margin-top: 2rem; margin-bottom: 2rem;">
+                <a href="${instagramUrl}" style="margin-right: 30px;display: inline-block;padding-top:40px;"><img src="https://ik.imagekit.io/un0omayok/mdi_instagram.png?updatedAt=1701281040417" alt=""></a>
+                <a href="${twitterUrl}" style="margin-right: 30px;display: inline-block;padding-top:40px;"><img src="https://ik.imagekit.io/un0omayok/simple-icons_x.png?updatedAt=1701281040408" alt=""></a>
+                <a href="${facebookUrl}" style="display: inline-block;padding-top:40px;"><img src="https://ik.imagekit.io/un0omayok/ic_baseline-facebook.png?updatedAt=1701281040525" alt=""></a>
+              </section>
+      
+              <section style="padding: 20px; border-bottom: 2px solid #000; text-align: center; font-size: 20px;">
+                  <p style="font-weight:300">Spraay software limited</p>
+              </section>
+      
+              <section style="text-align: center; font-size: 18px;">
+                  <p style="font-weight: 400;">Spraay &copy;${today.getFullYear()}</p>
+                  <p style="font-weight: 400;">Click here to <a href="#" style="color: #5B45FF;">Unsubscribe</a></p>
+              </section>
+          </div>
+        </section>
+          `;
+          await sendEmail(html, subject, [rsvp.user.email]);
+        }
+      }
     } catch (ex) {
       this.logger.error(ex);
       throw ex;

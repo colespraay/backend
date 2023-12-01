@@ -22,11 +22,12 @@ import {
   EventInviteResponseDTO,
   CreatedEventInvitesResponseDTO,
 } from './dto/event-invite.dto';
-import { EventService } from '../index';
+import { EventService, UserService } from '../index';
 
 @Injectable()
 export class EventInviteService extends GenericService(EventInvite) {
   constructor(
+    private readonly userSrv: UserService,
     private readonly eventEmitter: EventEmitter2,
     private readonly eventSrv: EventService,
   ) {
@@ -69,24 +70,7 @@ export class EventInviteService extends GenericService(EventInvite) {
       const createdInvites = await this.createMany<Partial<EventInvite>>(
         payload.userIds.map((userId) => ({ userId, eventId: payload.eventId })),
       );
-      this.eventEmitter.emit(
-        'notification.created',
-        createdInvites.map((invite) => ({
-          subject: `INVITATION TO EVENT ${event.eventName}`,
-          message: `You are invited to ${event.eventName}`,
-          html: `<h1>You are invited to ${event.eventName}</h1>`,
-          purpose: NotificationPurpose.EVENT_INVITE,
-          userId: invite.userId,
-        })),
-      );
-      createdInvites.forEach((invite) => {
-        this.eventEmitter.emit('user-notification.create', {
-          userId: invite.userId,
-          subject: 'Event invite',
-          type: UserNotificationType.USER_SPECIFIC,
-          message: `You are invited to ${event.eventName}`,
-        });
-      });
+      await this.sendInviteNotifications(createdInvites, payload.eventId);
       return {
         success: true,
         code: HttpStatus.CREATED,
@@ -140,6 +124,104 @@ export class EventInviteService extends GenericService(EventInvite) {
         code: HttpStatus.OK,
         message: 'Deleted',
       };
+    } catch (ex) {
+      this.logger.error(ex);
+      throw ex;
+    }
+  }
+
+  private async sendInviteNotifications(
+    createdInvites: EventInvite[],
+    eventId: string,
+  ): Promise<void> {
+    try {
+      const today = new Date();
+      const instagramUrl = String(process.env.INSTAGRAM_URL);
+      const twitterUrl = String(process.env.TWITTER_URL);
+      const facebookUrl = String(process.env.FACEBOOK_URL);
+      const users = await this.userSrv.getRepo().find({
+        where: { id: In(createdInvites.map(({ userId }) => userId)) },
+      });
+      const organizedEvent = await this.eventSrv.findEventById(eventId);
+      const event = organizedEvent.data;
+      const subject = `Invitation To Event ${event.eventTag} - ${event.eventName}`;
+      const formattedDate = new Date(
+        organizedEvent.data.eventDate,
+      ).toLocaleDateString('en-US', {
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric',
+      });
+      const inviteTemplates = createdInvites.map((invite) => {
+        const user = users.find((user) => user.id === invite.id);
+        const html = `
+            <section style="background: white; color: black; font-size: 15px; font-family: 'Gill Sans', 'Gill Sans MT', Calibri, 'Trebuchet MS', sans-serif; display: flex; justify-content: center; margin: 0;">
+                <div style="padding: 2rem; width: 80%;">
+                    <section style="text-align: center;">
+                        <div style="width: fit-content; margin: 20px 0px;display: inline-block;">
+                            <img src="https://ik.imagekit.io/un0omayok/Logo%20animaion.png?updatedAt=1701281040423" alt="">
+                        </div>
+                    </section>
+            
+                    <section style="width: 100%; height: auto; font-size: 18px; text-align: justify;">
+                        <p style="font-weight:300">Hi ${user.firstName},</p>
+                        <p style="font-weight:300">
+                          Exciting news!
+                        </p>
+                        <b style="font-weight:300">
+                            Your friend <b>${
+                              organizedEvent.data.user.firstName
+                            }</b> has invited you to <b>${
+          organizedEvent.data.eventTag
+        } - ${organizedEvent.data.eventName}</b> on Spraay App.
+                        </p>
+            
+                        <ul>
+                            <li>Date: <b>${formattedDate}</b></li>
+                            <li>Event Code: <b>${
+                              organizedEvent.data.eventCode
+                            }</b></li>
+                            <li>Venue: <b>${organizedEvent.data.venue}</b></li>
+                        </ul>
+                        <p style="font-weight:300">
+                            Are you attending?
+                        </p>
+                    </section>
+            
+                    <section style="text-align: center; height: 8rem; background-color: #5B45FF; border-radius: 10px; margin-top: 2rem; margin-bottom: 2rem;">
+                      <a href="${instagramUrl}" style="margin-right: 30px;display: inline-block;padding-top:40px;"><img src="https://ik.imagekit.io/un0omayok/mdi_instagram.png?updatedAt=1701281040417" alt=""></a>
+                      <a href="${twitterUrl}" style="margin-right: 30px;display: inline-block;padding-top:40px;"><img src="https://ik.imagekit.io/un0omayok/simple-icons_x.png?updatedAt=1701281040408" alt=""></a>
+                      <a href="${facebookUrl}" style="display: inline-block;padding-top:40px;"><img src="https://ik.imagekit.io/un0omayok/ic_baseline-facebook.png?updatedAt=1701281040525" alt=""></a>
+                    </section>
+            
+                    <section style="padding: 20px; border-bottom: 2px solid #000; text-align: center; font-size: 20px;">
+                        <p style="font-weight:300">Spraay software limited</p>
+                    </section>
+            
+                    <section style="text-align: center; font-size: 18px;">
+                        <p style="font-weight: 400;">Spraay &copy;${today.getFullYear()}</p>
+                        <p style="font-weight: 400;">Click here to <a href="#" style="color: #5B45FF;">Unsubscribe</a></p>
+                    </section>
+                </div>
+            </section>
+          `;
+        return {
+          subject,
+          message: `You are invited to ${event.eventTag} - ${event.eventName}`,
+          html,
+          purpose: NotificationPurpose.EVENT_INVITE,
+          userId: invite.userId,
+        };
+      });
+      this.eventEmitter.emit('notification.created', inviteTemplates);
+      createdInvites.forEach((invite) => {
+        this.eventEmitter.emit('user-notification.create', {
+          userId: invite.userId,
+          subject: 'Event invite',
+          type: UserNotificationType.USER_SPECIFIC,
+          message: `You are invited to ${event.eventName}`,
+        });
+      });
     } catch (ex) {
       this.logger.error(ex);
       throw ex;
