@@ -239,4 +239,12 @@ export class EventController {
   async sendRemindersToEventOrganizers(): Promise<void> {
     await this.eventSrv.sendRemindersToEventOrganizers();
   }
+
+  @Cron(CronExpression.EVERY_10_MINUTES, {
+    name: 'sendNotificationToInvitees',
+    timeZone: 'Africa/Lagos',
+  })
+  async sendNotificationToInvitees(): Promise<void> {
+    return await this.eventSrv.sendNotificationToInvitees();
+  }
 }

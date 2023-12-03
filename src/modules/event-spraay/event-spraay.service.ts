@@ -17,6 +17,7 @@ import {
   calculatePaginationControls,
   checkForRequiredFields,
   generateUniqueCode,
+  sendEmail,
   validateUUIDField,
 } from '@utils/index';
 import { TransactionService } from '@modules/transaction/transaction.service';
@@ -103,6 +104,8 @@ export class EventSpraayService extends GenericService(EventSpraay) {
       userId: event.data.userId,
     });
     this.logger.debug({ creditTransaction });
+
+    await this.sendNotificationAfterSpraying(newSpraay.id);
 
     this.eventEmitterSrv.emit('user-notification.create', {
       userId: event.data.userId,
@@ -217,6 +220,120 @@ export class EventSpraayService extends GenericService(EventSpraay) {
         message: 'Total found',
         total,
       };
+    } catch (ex) {
+      this.logger.error(ex);
+      throw ex;
+    }
+  }
+
+  private async sendNotificationAfterSpraying(
+    eventSpraayId: string,
+  ): Promise<void> {
+    try {
+      const sprayRecord = await this.getRepo().findOne({
+        where: { id: eventSpraayId },
+        relations: ['transaction', 'event', 'event.user'],
+      });
+      if (sprayRecord?.id) {
+        const formattedDate = new Date(
+          sprayRecord.dateCreated,
+        ).toLocaleDateString('en-US', {
+          year: 'numeric',
+          month: 'long',
+          day: 'numeric',
+        });
+        const html = `<section style="background: white; color: black; font-size: 15px; font-family: 'Gill Sans', 'Gill Sans MT', Calibri, 'Trebuchet MS', sans-serif; display: flex; justify-content: center; margin: 0;">
+        <div style="padding: 2rem; width: 80%;">
+            <section style="text-align: center;">
+                <div style="width: fit-content; margin: 20px 0px;display: inline-block;">
+                    <img src="https://ik.imagekit.io/un0omayok/Logo%20animaion.png?updatedAt=1701281040423" alt="">
+                </div>
+            </section>
+    
+            <section style="width: 100%; height: auto; font-size: 18px; text-align: justify;">
+                <p style="font-weight:300">Hi ${
+                  sprayRecord.event?.user?.firstName
+                },</p>
+                <p style="font-weight:300">
+                  Your guests are truly embracing the joyous atmosphere you've created!
+                </p>
+                <p style="font-weight:300">
+                    One of your invited guests has engaged in the celebration by spraying cash at <b>${
+                      sprayRecord.event.eventTag
+                    }</b> 
+                    using Spraay App.
+                </p>
+                <p style="font-weight:300">
+                    Thank you for choosing Spraay App to enhance your event experience.
+                </p>
+                <h6 style="text-align: center; margin: 0;">Spraay Amount</h6>
+                <h1 style="text-align: center; font-size: 50px; margin: 0; color: #49E17F;">
+                <span style="font-size: 30px;">+</span>
+                ₦${sprayRecord.amount.toLocaleString('en-US', {
+                  minimumFractionDigits: 2,
+                })}
+                </h1>
+    
+                <table style="width: 100%;padding: 10px 0">
+                    <tbody>
+                        <tr>
+                            <td style="text-align: left;padding: 15px;border-bottom: 1px solid #ccc;">Event Name</td>
+                            <td style="text-align: right;padding: 15px;border-bottom: 1px solid #ccc;">
+                              ${sprayRecord.event.eventName}
+                            </td>
+                        </tr>
+                        <tr>
+                            <td style="text-align: left;padding: 15px;border-bottom: 1px solid #ccc;">
+                                Transaction Date
+                            </td>
+                            <td style="text-align: right;padding: 15px;border-bottom: 1px solid #ccc;">
+                              ${formattedDate}
+                            </td>
+                        </tr>
+                        <tr>
+                            <td style="text-align: left;padding: 15px;border-bottom: 1px solid #ccc;">
+                                Transaction Reference
+                            </td>
+                            <td style="text-align: right;padding: 15px;border-bottom: 1px solid #ccc;">
+                              ${sprayRecord.transaction.reference}
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+    
+                <p style="padding-bottom: 50px;font-weight:300;border-bottom: 1px solid #ccc;">
+                    Thank you for choosing Spraay App to enhance your event experience!
+                </p>
+    
+                <p style="font-weight:300">
+                    If you have any issues with payment, kindly reply to this email or send an 
+                    email to  <span style="font-weight: 400;">
+                        <a href="mailto:hello@spraay.ng" style="color: inherit;">hello@spraay.ng.</a>
+                    </span>
+                </p>
+            </section>
+    
+            <section style="text-align: center; height: 8rem; background-color: #5B45FF; border-radius: 10px; margin-top: 2rem; margin-bottom: 2rem;">
+                <a href="#" style="margin-right: 30px;display: inline-block;padding-top:40px;"><img src="https://ik.imagekit.io/un0omayok/mdi_instagram.png?updatedAt=1701281040417" alt=""></a>
+                <a href="#" style="margin-right: 30px;display: inline-block;padding-top:40px;"><img src="https://ik.imagekit.io/un0omayok/simple-icons_x.png?updatedAt=1701281040408" alt=""></a>
+                <a href="#" style="display: inline-block;padding-top:40px;"><img src="https://ik.imagekit.io/un0omayok/ic_baseline-facebook.png?updatedAt=1701281040525" alt=""></a>
+            </section>
+    
+            <section style="padding: 20px; border-bottom: 2px solid #000; text-align: center; font-size: 20px;">
+                <p style="font-weight:300">Spraay software limited</p>
+            </section>
+    
+            <section style="text-align: center; font-size: 18px;">
+                <p style="font-weight: 400;">Spraay &copy2023</p>
+                <p style="font-weight: 400;">Click here to <a href="#" style="color: #5B45FF;">Unsubscribe</a></p>
+            </section>
+        </div>
+        </section>
+        `;
+        await sendEmail(html, 'Money Sprayed At Your Event', [
+          sprayRecord.event.user.email,
+        ]);
+      }
     } catch (ex) {
       this.logger.error(ex);
       throw ex;

@@ -650,7 +650,6 @@ export class EventService extends GenericService(EventRecord) {
         );
         record.eventGeoCoordinates = payload.eventGeoCoordinates;
       }
-      this.eventEmitterSrv.emit('notification.event-update', record.id);
       const updatedRecord: Partial<EventRecord> = {
         status: record.status,
         venue: record.venue,
@@ -852,6 +851,102 @@ export class EventService extends GenericService(EventRecord) {
     }
   }
 
+  async sendNotificationToInvitees(): Promise<void> {
+    try {
+      // Calculate two days ahead from the current date
+      const twoDaysAhead = new Date();
+      twoDaysAhead.setDate(twoDaysAhead.getDate() + 2);
+      // Query events that are exactly two days away
+      const events = await this.getRepo()
+        .createQueryBuilder('event')
+        .leftJoinAndSelect('event.user', 'eventUser')
+        .leftJoinAndSelect('event.eventRsvps', 'eventRsvps')
+        .leftJoinAndSelect('eventRsvps.user', 'user')
+        .where('event.eventDate = :twoDaysAhead', { twoDaysAhead })
+        .andWhere('event.eventStatus = :eventStatus', {
+          eventStatus: EventStatus.UPCOMING,
+        })
+        .andWhere('event.isRSVPNotificationSent = :isRSVPNotificationSent', {
+          isRSVPNotificationSent: false,
+        })
+        .take(2)
+        .getMany();
+
+      const today = new Date();
+      const subject = 'Spraay Event Reminder';
+      const instagramUrl = String(process.env.INSTAGRAM_URL);
+      const twitterUrl = String(process.env.TWITTER_URL);
+      const facebookUrl = String(process.env.FACEBOOK_URL);
+      const eventIds: string[] = [];
+      for (const event of events) {
+        const formattedDate = new Date(event.eventDate).toLocaleDateString(
+          'en-US',
+          {
+            year: 'numeric',
+            month: 'long',
+            day: 'numeric',
+          },
+        );
+        for (const rsvp of event.eventRsvps) {
+          const html = `
+          <section style="background: white; color: black; font-size: 15px; font-family: 'Gill Sans', 'Gill Sans MT', Calibri, 'Trebuchet MS', sans-serif; display: flex; justify-content: center; margin: 0;">
+          <div style="padding: 2rem; width: 80%;">
+              <section style="text-align: center;">
+                  <div style="width: fit-content; margin: 20px 0px;display: inline-block;">
+                    <img src="https://ik.imagekit.io/un0omayok/Logo%20animaion.png?updatedAt=1701281040423" alt="">
+                  </div>
+              </section>
+      
+              <section style="width: 100%; height: auto; font-size: 18px; text-align: justify;">
+                  <p style="font-weight:300">Hi ${rsvp.user.firstName},</p>
+                  <p style="font-weight:300">
+                    Don't forget <b>${event.eventCode} - ${
+            event.eventName
+          }</b> is coming up soon. Remember to fund your wallet for the ultimate Spraay experience.
+                  </p>
+                  <p style="font-weight:300">
+                      Event Details:
+                  </p>
+      
+                  <ul>
+                      <li>Date: <b>${formattedDate}</b></li>
+                      <li>Time: <b>${event.time}</b></li>
+                      <li>Event Code: <b>${event.eventCode}</b></li>
+                      <li>Venue: <b>${event.venue}</b></li>
+                  </ul>
+              </section>
+      
+              <section style="text-align: center; height: 8rem; background-color: #5B45FF; border-radius: 10px; margin-top: 2rem; margin-bottom: 2rem;">
+                <a href="${instagramUrl}" style="margin-right: 30px;display: inline-block;padding-top:40px;"><img src="https://ik.imagekit.io/un0omayok/mdi_instagram.png?updatedAt=1701281040417" alt=""></a>
+                <a href="${twitterUrl}" style="margin-right: 30px;display: inline-block;padding-top:40px;"><img src="https://ik.imagekit.io/un0omayok/simple-icons_x.png?updatedAt=1701281040408" alt=""></a>
+                <a href="${facebookUrl}" style="display: inline-block;padding-top:40px;"><img src="https://ik.imagekit.io/un0omayok/ic_baseline-facebook.png?updatedAt=1701281040525" alt=""></a>
+              </section>
+      
+              <section style="padding: 20px; border-bottom: 2px solid #000; text-align: center; font-size: 20px;">
+                  <p style="font-weight:300">Spraay software limited</p>
+              </section>
+      
+              <section style="text-align: center; font-size: 18px;">
+                  <p style="font-weight: 400;">Spraay &copy;${today.getFullYear()}</p>
+                  <p style="font-weight: 400;">Click here to <a href="#" style="color: #5B45FF;">Unsubscribe</a></p>
+              </section>
+          </div>
+      </section>
+          `;
+          await sendEmail(html, subject, [rsvp.user.email]);
+        }
+        eventIds.push(event.id);
+      }
+      await this.getRepo().update(
+        { id: In(eventIds) },
+        { isRSVPNotificationSent: true },
+      );
+    } catch (ex) {
+      this.logger.error(ex);
+      throw ex;
+    }
+  }
+
   @OnEvent('email.sendEventChangeEmail', { async: true })
   private async sendEventChangeEmail(payload: {
     eventId: string;
@@ -931,35 +1026,6 @@ export class EventService extends GenericService(EventRecord) {
         </section>
           `;
           await sendEmail(html, subject, [rsvp.user.email]);
-        }
-      }
-    } catch (ex) {
-      this.logger.error(ex);
-      throw ex;
-    }
-  }
-
-  @OnEvent('notification.event-update', { async: true })
-  private async sendNotificationToEventRsvps(eventId: string): Promise<void> {
-    try {
-      checkForRequiredFields(['eventId'], { eventId });
-      const event = await this.getRepo().findOne({
-        where: { id: eventId },
-        relations: ['eventRsvps', 'eventRsvps.user'],
-      });
-      if (event?.id) {
-        const emails = event.eventRsvps.map(({ user }) => user.email);
-        if (emails?.length > 0) {
-          const html = `
-            <h1>Event Updated</h1>
-            <p>Name: ${event.eventName}</p>
-            <p>Venue: ${event.venue}</p>
-            <p>Date: ${new Date(event.dateCreated).toLocaleDateString()}, ${
-            event.time
-          }
-            </p>
-          `;
-          await sendEmail(html, `Event ${event.eventName} Updated`, emails);
         }
       }
     } catch (ex) {

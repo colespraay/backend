@@ -1048,7 +1048,8 @@ export class UserService extends GenericService(User) implements OnModuleInit {
                 <p style="font-weight: 400;">Click here to <a href="#" style="color: #5B45FF;">Unsubscribe</a></p>
             </section>
         </div>
-    </section>`;
+          </section>
+        `;
         await sendEmail(html, 'Welcome to Spraay', [email]);
       }
     } catch (ex) {

@@ -88,6 +88,10 @@ export class EventRecord extends Base {
   isNotificationSent: boolean;
 
   @ApiProperty()
+  @Column({ type: 'boolean', default: false })
+  isRSVPNotificationSent: boolean;
+
+  @ApiProperty()
   @Column({ type: 'json', default: { longitude: 0, latitude: 0 } })
   eventGeoCoordinates: GeoCoordinateDTO;
 

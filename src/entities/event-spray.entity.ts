@@ -13,7 +13,7 @@ export class EventSpraay extends Base {
     onDelete: 'CASCADE',
     onUpdate: 'CASCADE',
   })
-  event: Event;
+  event: EventRecord;
 
   @Column({ type: 'uuid' })
   userId: string;
