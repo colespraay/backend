@@ -28,6 +28,10 @@ export class ElectricityPurchase extends Base {
   )
   transaction: TransactionRecord;
 
+  @ApiProperty()
+  @Column({ type: 'text', nullable: true })
+  flutterwaveReference: string;
+
   @Column({ type: 'uuid' })
   userId: string;
 

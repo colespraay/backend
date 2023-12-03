@@ -717,7 +717,7 @@ export class EventService extends GenericService(EventRecord) {
         );
       }
     } catch (ex) {
-      this.logger.error(ex);
+      this.logger.error(ex, 'startOngoingEvents');
       throw ex;
     }
   }
@@ -743,7 +743,7 @@ export class EventService extends GenericService(EventRecord) {
         },
       );
     } catch (ex) {
-      this.logger.error(ex);
+      this.logger.error(ex, 'deactivatePastEvents');
       throw ex;
     }
   }
@@ -846,7 +846,7 @@ export class EventService extends GenericService(EventRecord) {
         { isNotificationSent: true },
       );
     } catch (ex) {
-      this.logger.error(ex);
+      this.logger.error(ex, 'sendRemindersToEventOrganizers');
       throw ex;
     }
   }
@@ -942,7 +942,7 @@ export class EventService extends GenericService(EventRecord) {
         { isRSVPNotificationSent: true },
       );
     } catch (ex) {
-      this.logger.error(ex);
+      this.logger.error(ex, 'sendNotificationToInvitees');
       throw ex;
     }
   }

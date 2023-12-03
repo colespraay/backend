@@ -76,6 +76,9 @@ export class FlutterwaveBillPaymentResponsePartial {
 export class FlutterwaveBillPaymentResponseDTO extends BaseResponseTypeDTO {
   @ApiProperty({ type: () => FlutterwaveBillPaymentResponsePartial })
   data: FlutterwaveBillPaymentResponsePartial;
+
+  @ApiProperty({ nullable: true })
+  token?: string;
 }
 
 export class FlutterwaveDataPlanPartial {

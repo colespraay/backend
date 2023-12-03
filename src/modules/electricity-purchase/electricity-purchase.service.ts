@@ -7,6 +7,7 @@ import {
   ElectricityPlan,
   ElectricityProvider,
   generateUniqueCode,
+  sendEmail,
   TransactionType,
 } from '@utils/index';
 import { TransactionService } from '@modules/transaction/transaction.service';
@@ -95,12 +96,16 @@ export class ElectricityPurchaseService extends GenericService(
         meterNumber: payload.meterNumber,
         provider: payload.provider,
         plan: payload.plan,
-        // TODO: after moving to prod, check fields returned from flutterwave and return electricity token
-        unitToken: electricUnitPurchaseResponse.data.flw_ref,
+        unitToken: electricUnitPurchaseResponse.token,
+        flutterwaveReference: electricUnitPurchaseResponse.data.tx_ref,
         transactionId: newTransaction.data.id,
         amount: payload.amount,
         userId: user.id,
       });
+      await this.sendElectricityUnitToUser(
+        user.id,
+        electricUnitPurchaseResponse.token,
+      );
       return {
         success: true,
         code: HttpStatus.CREATED,
@@ -147,6 +152,76 @@ export class ElectricityPurchaseService extends GenericService(
           name: verification.data.customer,
         },
       };
+    } catch (ex) {
+      this.logger.error(ex);
+      throw ex;
+    }
+  }
+
+  private async sendElectricityUnitToUser(
+    userId: string,
+    token: string,
+  ): Promise<void> {
+    try {
+      const user = await this.userSrv.findUserById(userId);
+      if (user?.data?.id) {
+        const instagramUrl = String(process.env.INSTAGRAM_URL);
+        const twitterUrl = String(process.env.TWITTER_URL);
+        const facebookUrl = String(process.env.FACEBOOK_URL);
+        const html = `
+        <section style="background: white; color: black; font-size: 15px; font-family: 'Gill Sans', 'Gill Sans MT', Calibri, 'Trebuchet MS', sans-serif; display: flex; justify-content: center; margin: 0;">
+        <div style="padding: 2rem; width: 80%;">
+            <section style="text-align: center;">
+                <div style="width: fit-content; margin: 20px 0px;display: inline-block;">
+                    <img src="https://ik.imagekit.io/un0omayok/Logo%20animaion.png?updatedAt=1701281040423" alt="">
+                </div>
+            </section>
+    
+            <section style="width: 100%; height: auto; font-size: 18px; text-align: justify;">
+                <p style="font-weight:300">Hi ${user.data.firstName},</p>
+                <p style="font-weight:300">
+                  Your electricity bill payment has been successfully processed.
+                </p>
+                <p style="font-weight:300">
+                    As promised, here is your electricity token:
+                </p>
+                <p style="font-weight:300">
+                    <b>Token: ${token}</b>
+                </p>
+                <p style="font-weight:300">
+                  Please use this token to recharge your meter and enjoy uninterrupted power supply.
+                </p>
+                <p style="font-weight:300">
+                    Should you have any queries or need further assistance, don't hesitate to reach out to 
+                    our support team.
+                </p>
+                <p style="font-weight:300">
+                    Thank you for choosing Spraay App for your electricity bill payment. We strive to 
+                    make your life easier and more convenient.
+                </p>
+            </section>
+    
+            <section style="text-align: center; height: 8rem; background-color: #5B45FF; border-radius: 10px; margin-top: 2rem; margin-bottom: 2rem;">
+              <a href="${instagramUrl}" style="margin-right: 30px;display: inline-block;padding-top:40px;"><img src="https://ik.imagekit.io/un0omayok/mdi_instagram.png?updatedAt=1701281040417" alt=""></a>
+              <a href="${twitterUrl}" style="margin-right: 30px;display: inline-block;padding-top:40px;"><img src="https://ik.imagekit.io/un0omayok/simple-icons_x.png?updatedAt=1701281040408" alt=""></a>
+              <a href="${facebookUrl}" style="display: inline-block;padding-top:40px;"><img src="https://ik.imagekit.io/un0omayok/ic_baseline-facebook.png?updatedAt=1701281040525" alt=""></a>
+            </section>
+    
+            <section style="padding: 20px; border-bottom: 2px solid #000; text-align: center; font-size: 20px;">
+                <p style="font-weight:300">Spraay software limited</p>
+            </section>
+    
+            <section style="text-align: center; font-size: 18px;">
+                <p style="font-weight: 400;">Spraay &copy;${new Date().getFullYear()}</p>
+                <p style="font-weight: 400;">Click here to <a href="#" style="color: #5B45FF;">Unsubscribe</a></p>
+            </section>
+        </div>
+      </section>
+        `;
+        await sendEmail(html, 'Successful Electricity Purchase', [
+          user.data.email,
+        ]);
+      }
     } catch (ex) {
       this.logger.error(ex);
       throw ex;

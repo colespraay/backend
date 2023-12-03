@@ -11,6 +11,7 @@ import {
   CableProvider,
   ElectricityProvider,
   compareEnumValueFields,
+  generateUniqueCode,
   httpGet,
   httpPost,
 } from '@utils/index';
@@ -178,26 +179,40 @@ export class BillService implements OnModuleInit {
           success: true,
           code: HttpStatus.OK,
           message: 'Electricity unit purchase successful',
+          token: generateUniqueCode(8),
           data: {
             phone_number: payload.meterNumber,
             amount: payload.amount,
             network: payload.provider,
             flw_ref: reqPayload.reference,
             tx_ref: reqPayload.reference,
-            reference: null,
+            reference: generateUniqueCode(8),
           },
         };
       }
-      const resp = await httpPost<any, any>(url, reqPayload, {
+      const headers = {
         Authorization: `Bearer ${this.flutterwaveSecretKey}`,
-      });
+      };
+      const resp = await httpPost<any, any>(url, reqPayload, headers);
       if (resp.status === 'success') {
-        return {
+        const dataResponse: FlutterwaveBillPaymentResponseDTO = {
           success: true,
           code: HttpStatus.OK,
           message: 'Electricity unit purchase successful',
           data: resp.data,
         };
+        const verificationUrl = `https://api.flutterwave.com/v3/bills/${resp.data.reference}`;
+        const tokenRetrievalResponse = await httpGet<any>(
+          verificationUrl,
+          headers,
+        );
+        if (
+          tokenRetrievalResponse?.status === 'success' &&
+          tokenRetrievalResponse?.data
+        ) {
+          dataResponse.token = tokenRetrievalResponse.data.token;
+        }
+        return dataResponse;
       }
     } catch (ex) {
       this.logger.error(ex);

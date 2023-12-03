@@ -92,48 +92,53 @@ export class NotificationMessageService extends GenericService(
   }
 
   async sendNotificationsInQueue(): Promise<void> {
-    const notifications = await this.getRepo().find({
-      where: { numberOfTries: LessThan(4) },
-      relations: ['user'],
-    });
-    if (notifications?.length > 0) {
-      const notificationsToDelete: string[] = [];
-      for (const item of notifications) {
-        try {
-          switch (item.type) {
-            default:
-            case NotificationType.EMAIL:
-              await sendEmail(item.html, item.subject, [item.user.email]);
-              break;
-            case NotificationType.SMS:
-              if (item.user.phoneNumber) {
-                await sendSMS(
-                  item.message,
-                  [item.user.phoneNumber],
-                  item.subject,
-                );
-              }
-              break;
-            case NotificationType.PUSH_NOTIFICATION:
-              if (item.user.deviceId) {
-                await sendPushNotification(
-                  item.message,
-                  item.user.deviceId,
-                  item.subject,
-                );
-              }
-              break;
+    try {
+      const notifications = await this.getRepo().find({
+        where: { numberOfTries: LessThan(4) },
+        relations: ['user'],
+      });
+      if (notifications?.length > 0) {
+        const notificationsToDelete: string[] = [];
+        for (const item of notifications) {
+          try {
+            switch (item.type) {
+              default:
+              case NotificationType.EMAIL:
+                await sendEmail(item.html, item.subject, [item.user.email]);
+                break;
+              case NotificationType.SMS:
+                if (item.user.phoneNumber) {
+                  await sendSMS(
+                    item.message,
+                    [item.user.phoneNumber],
+                    item.subject,
+                  );
+                }
+                break;
+              case NotificationType.PUSH_NOTIFICATION:
+                if (item.user.deviceId) {
+                  await sendPushNotification(
+                    item.message,
+                    item.user.deviceId,
+                    item.subject,
+                  );
+                }
+                break;
+            }
+          } catch (ex) {
+            this.logger.error(ex);
+            const numberOfTries = item.numberOfTries + 1;
+            await this.getRepo().update({ id: item.id }, { numberOfTries });
           }
-        } catch (ex) {
-          this.logger.error(ex);
-          const numberOfTries = item.numberOfTries + 1;
-          await this.getRepo().update({ id: item.id }, { numberOfTries });
+          notificationsToDelete.push(item.id);
         }
-        notificationsToDelete.push(item.id);
+        console.log({ notificationsToDelete });
+        // Delete all notifications that have been sent
+        await this.delete({ id: In(notificationsToDelete) });
       }
-      console.log({ notificationsToDelete });
-      // Delete all notifications that have been sent
-      await this.delete({ id: In(notificationsToDelete) });
+    } catch (ex) {
+      this.logger.error(ex, 'sendNotificationsInQueue');
+      throw ex;
     }
   }
 }
