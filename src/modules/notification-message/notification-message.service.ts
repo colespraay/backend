@@ -96,6 +96,7 @@ export class NotificationMessageService extends GenericService(
       const notifications = await this.getRepo().find({
         where: { numberOfTries: LessThan(4) },
         relations: ['user'],
+        take: 5,
       });
       if (notifications?.length > 0) {
         const notificationsToDelete: string[] = [];

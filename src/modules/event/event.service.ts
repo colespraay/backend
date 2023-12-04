@@ -695,12 +695,15 @@ export class EventService extends GenericService(EventRecord) {
 
   async startOngoingEvents(): Promise<void> {
     try {
-      const events = await this.findAllByCondition({
-        status: true,
-        eventStatus: EventStatus.UPCOMING,
+      const events = await this.getRepo().find({
+        where: {
+          status: true,
+          eventStatus: EventStatus.UPCOMING,
+        },
       });
+      let eventsList = [];
       if (events?.length > 0) {
-        const eventsList = events.filter(({ eventDate, time }) => {
+        eventsList = events.filter(({ eventDate, time }) => {
           const castEventDate = new Date(eventDate);
           const timeString = convert12HourTo24HourFormat(time);
           const [hours, minutes] = timeString.split(':').map(Number);
@@ -711,6 +714,8 @@ export class EventService extends GenericService(EventRecord) {
           // Return events who's start Date has opened
           return new Date().getTime() >= castEventDate.getTime();
         });
+      }
+      if (eventsList?.length > 0) {
         await this.getRepo().update(
           { id: In(eventsList.map(({ id }) => id)) },
           { eventStatus: EventStatus.ONGOING },
