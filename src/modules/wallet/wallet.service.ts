@@ -8,14 +8,15 @@ import {
 import { EventEmitter2, OnEvent } from '@nestjs/event-emitter';
 import {
   TransactionType,
+  addLeadingZeroes,
   checkForRequiredFields,
-  formatTransactionKey,
+  generateRandomName,
+  generateRandomNumber,
   generateUniqueCode,
   httpGet,
   httpPost,
-  validateUUIDField,
+  validateEmailField,
 } from '@utils/index';
-import { User } from '@entities/index';
 import { UserService } from '@modules/user/user.service';
 import { BankService } from '@modules/bank/bank.service';
 import { UserAccountService } from '@modules/user-account/user-account.service';
@@ -23,7 +24,6 @@ import {
   BankAccountStatementDTO,
   BankListDTO,
   BankListPartialDTO,
-  CreateFlutterwaveResponseDTO,
   FindStatementOfAccountDTO,
   FindTransferChargeDTO,
   InterbankTransferChargeDTO,
@@ -34,6 +34,7 @@ import {
   VerifyAccountExistenceDTO,
   VerifyAccountExistenceResponseDTO,
   VerifyAccountExistenceResponsePartial,
+  WebhookResponseDTO,
 } from './dto/wallet.dto';
 
 @Injectable()
@@ -54,55 +55,64 @@ export class WalletService {
     private readonly eventEmitterSrv: EventEmitter2,
   ) {}
 
+  // URL: https://playground.alat.ng/api-details#api=wallet-creation-api&operation=generate-account-for-partnership
   @OnEvent('create-wallet', { async: true })
   async createWallet(userId: string): Promise<void> {
     try {
-      checkForRequiredFields(['userId'], { userId });
-      validateUUIDField(userId, 'userId');
-      const url = 'https://api.flutterwave.com/v3/virtual-account-numbers';
-      const user = await this.userSrv.findUserById(userId);
-      // checkForRequiredFields(
-      //   ['firstName', 'lastName', 'email', 'bvn', 'phoneNumber'],
-      //   user.data,
-      // );
-      const {
-        data: { firstName, lastName, bvn, phoneNumber, email },
-      } = user;
-      if (firstName && lastName && email && bvn && phoneNumber) {
-        if (user?.data && !user.data.virtualAccountNumber) {
-          const fullNameNarration = `${user.data.firstName} ${user.data.lastName}`;
-          const userRef = formatTransactionKey(
-            `Spraay-${fullNameNarration}-${generateUniqueCode(10)}`,
+      const user = await this.userSrv.findOne({ id: userId });
+      if (!user?.id) {
+        throw new NotFoundException();
+      }
+      const { firstName, lastName, gender, dob, phoneNumber, email } = user;
+      if (firstName && lastName && gender && dob && phoneNumber && email) {
+        validateEmailField(email);
+        if (!user.virtualAccountNumber) {
+          // initiate wallet creation
+          const dob = new Date(user.dob);
+          const formatDOB = `${dob.getFullYear()}-${addLeadingZeroes(
+            dob.getMonth() + 1,
+          )}-${addLeadingZeroes(dob.getDate())}`;
+          const url =
+            'https://apiplayground.alat.ng/wallet-creation/api/CustomerAccount/GenerateAccountForPatnerships';
+          await httpPost(
+            url,
+            {
+              gender: user.gender.toLowerCase(),
+              email: user.email,
+              firstName: user.firstName,
+              lastName: user.lastName,
+              dob: formatDOB, // dob: '1994-10-17',
+              phoneNumber: user.phoneNumber,
+            },
+            {
+              'Ocp-Apim-Subscription-Key': this.walletCreationSubKey,
+              'x-api-key': this.xApiKey,
+            },
           );
-          const payload = {
-            bvn: user.data.bvn,
-            email: user.data.email,
-            is_permanent: true,
-            tx_ref: userRef,
-            phonenumber: user.data.phoneNumber,
-            firstname: user.data.firstName,
-            lastname: user.data.lastName,
-            narration: fullNameNarration,
-          };
-          const flutterwaveResponse = await httpPost<
-            CreateFlutterwaveResponseDTO,
-            any
-          >(url, payload, {
-            Authorization: `Bearer ${String(
-              process.env.FLUTTERWAVE_SECRET_KEY,
-            )}`,
-          });
-          this.logger.debug({ virtualAccount: flutterwaveResponse });
-          if (flutterwaveResponse?.status) {
-            const updatedUser: Partial<User> = {
-              bankName: flutterwaveResponse.data.bank_name,
-              virtualAccountName: fullNameNarration,
-              virtualAccountNumber: flutterwaveResponse.data.account_number,
-              flutterwaveNarration: fullNameNarration,
-              flutterwaveUserKey: userRef,
+
+          // Get the records for the accounts every 5 mins
+          setTimeout(async () => {
+            const url = `https://apiplayground.alat.ng/wallet-creation/api/CustomerAccount/GetPartnershipAccountDetails?phoneNumber=${user.phoneNumber}`;
+            const walletData = await httpGet<any>(url, {
+              'Ocp-Apim-Subscription-Key': this.walletCreationSubKey,
+              'x-api-key': this.xApiKey,
+            });
+            this.logger.log({ walletData });
+            const accountCreationPayload = {
+              bankName: 'WEMA BANK',
+              virtualAccountNumber:
+                walletData?.data?.accountNumber ?? generateRandomNumber(),
+              virtualAccountName:
+                user.firstName && user.lastName
+                  ? `${user.firstName} ${user.lastName}`
+                  : generateRandomName(),
             };
-            await this.userSrv.getRepo().update({ id: userId }, updatedUser);
-          }
+            this.logger.log({ accountCreationPayload });
+            // Save account details for user
+            await this.userSrv
+              .getRepo()
+              .update({ id: user.id }, accountCreationPayload);
+          }, 5000);
         }
       }
     } catch (ex) {
@@ -111,13 +121,70 @@ export class WalletService {
     }
   }
 
+  // @OnEvent('create-wallet', { async: true })
+  // async createWallet(userId: string): Promise<void> {
+  //   try {
+  //     checkForRequiredFields(['userId'], { userId });
+  //     validateUUIDField(userId, 'userId');
+  //     const url = 'https://api.flutterwave.com/v3/virtual-account-numbers';
+  //     const user = await this.userSrv.findUserById(userId);
+  //     // checkForRequiredFields(
+  //     //   ['firstName', 'lastName', 'email', 'bvn', 'phoneNumber'],
+  //     //   user.data,
+  //     // );
+  //     const {
+  //       data: { firstName, lastName, bvn, phoneNumber, email },
+  //     } = user;
+  //     if (firstName && lastName && email && bvn && phoneNumber) {
+  //       if (user?.data && !user.data.virtualAccountNumber) {
+  //         const fullNameNarration = `${user.data.firstName} ${user.data.lastName}`;
+  //         const userRef = formatTransactionKey(
+  //           `Spraay-${fullNameNarration}-${generateUniqueCode(10)}`,
+  //         );
+  //         const payload = {
+  //           bvn: user.data.bvn,
+  //           email: user.data.email,
+  //           is_permanent: true,
+  //           tx_ref: userRef,
+  //           phonenumber: user.data.phoneNumber,
+  //           firstname: user.data.firstName,
+  //           lastname: user.data.lastName,
+  //           narration: fullNameNarration,
+  //         };
+  //         const flutterwaveResponse = await httpPost<
+  //           CreateFlutterwaveResponseDTO,
+  //           any
+  //         >(url, payload, {
+  //           Authorization: `Bearer ${String(
+  //             process.env.FLUTTERWAVE_SECRET_KEY,
+  //           )}`,
+  //         });
+  //         this.logger.debug({ virtualAccount: flutterwaveResponse });
+  //         if (flutterwaveResponse?.status) {
+  //           const updatedUser: Partial<User> = {
+  //             bankName: flutterwaveResponse.data.bank_name,
+  //             virtualAccountName: fullNameNarration,
+  //             virtualAccountNumber: flutterwaveResponse.data.account_number,
+  //             flutterwaveNarration: fullNameNarration,
+  //             flutterwaveUserKey: userRef,
+  //           };
+  //           await this.userSrv.getRepo().update({ id: userId }, updatedUser);
+  //         }
+  //       }
+  //     }
+  //   } catch (ex) {
+  //     this.logger.error(ex);
+  //     throw ex;
+  //   }
+  // }
+
   async findBankByName(bankName: string): Promise<BankListPartialDTO> {
     try {
       const banks = await this.getBankLists();
       const bank = banks.data.find(
         (bank) => bank.name?.toUpperCase() === bankName?.toUpperCase(),
       );
-      if (!bank?.code) {
+      if (!bank?.bankCode) {
         throw new NotFoundException(`Bank with name: ${bankName} not found`);
       }
       return bank;
@@ -130,8 +197,8 @@ export class WalletService {
   async findBankByCode(bankCode: string): Promise<BankListPartialDTO> {
     try {
       const banks = await this.getBankLists();
-      const bank = banks.data.find((bank) => bank.code === bankCode);
-      if (!bank?.code) {
+      const bank = banks.data.find((bank) => bank.bankCode === bankCode);
+      if (!bank?.bankCode) {
         throw new NotFoundException(`Bank with code: ${bankCode} not found`);
       }
       return bank;
@@ -152,7 +219,7 @@ export class WalletService {
         message: 'Bank list found',
         data: bankList.map(({ bankName, bankCode }) => ({
           name: bankName,
-          code: bankCode,
+          bankCode: bankCode,
         })),
       };
     } catch (ex) {
@@ -185,32 +252,69 @@ export class WalletService {
     }
   }
 
+  // async verifyExternalAccountNumber(
+  //   userBankCode: string,
+  //   userAccountNumber: string,
+  // ): Promise<VerifiesAccountDetailDTO> {
+  //   try {
+  //     checkForRequiredFields(['userBankCode', 'userAccountNumber'], {
+  //       userBankCode,
+  //       userAccountNumber,
+  //     });
+  //     const url = 'https://api.flutterwave.com/v3/accounts/resolve';
+  //     const payload = {
+  //       account_number: userAccountNumber,
+  //       account_bank: userBankCode,
+  //     };
+  //     const headers = {
+  //       Authorization: `Bearer ${String(process.env.FLUTTERWAVE_SECRET_KEY)}`,
+  //     };
+  //     const resp = await httpPost<any, any>(url, payload, headers);
+  //     if (resp?.status === 'success') {
+  //       return {
+  //         accountName: resp.data.account_name,
+  //         accountNumber: resp.data.account_number,
+  //         bankCode: userBankCode,
+  //         currency: 'NGN',
+  //       };
+  //     }
+  //   } catch (ex) {
+  //     this.logger.error(ex);
+  //     throw ex;
+  //   }
+  // }
+
   async verifyExternalAccountNumber(
     userBankCode: string,
     userAccountNumber: string,
   ): Promise<VerifiesAccountDetailDTO> {
     try {
-      checkForRequiredFields(['userBankCode', 'userAccountNumber'], {
-        userBankCode,
-        userAccountNumber,
-      });
-      const url = 'https://api.flutterwave.com/v3/accounts/resolve';
-      const payload = {
-        account_number: userAccountNumber,
-        account_bank: userBankCode,
-      };
-      const headers = {
-        Authorization: `Bearer ${String(process.env.FLUTTERWAVE_SECRET_KEY)}`,
-      };
-      const resp = await httpPost<any, any>(url, payload, headers);
-      if (resp?.status === 'success') {
-        return {
-          accountName: resp.data.account_name,
-          accountNumber: resp.data.account_number,
-          bankCode: userBankCode,
-          currency: 'NGN',
-        };
+      // Verify destination Account
+      const destinationAccountEnquiryUrl = `https://apiplayground.alat.ng/debit-wallet/api/Shared/AccountNameEnquiry/${userBankCode}/${userAccountNumber}?channelId=${String(
+        process.env.WEMA_ATLAT_X_API_KEY,
+      )}`;
+      const destinationAccount = await httpGet<any>(
+        destinationAccountEnquiryUrl,
+        {
+          'Cache-Control': 'no-cache',
+          access: String(process.env.WEMA_ATLAT_X_API_KEY),
+          'Ocp-Apim-Subscription-Key': String(
+            process.env.WEMA_ATLAT_WALLET_CREATION_SUB_KEY,
+          ),
+        },
+      );
+      if (!destinationAccount?.result) {
+        throw new BadGatewayException('Could not verify account');
       }
+      const {
+        result: { accountName, accountNumber, bankCode, currency },
+      } = destinationAccount;
+      return {
+        accountName,
+        accountNumber,
+        bankCode,
+        currency,
+      };
     } catch (ex) {
       this.logger.error(ex);
       throw ex;
@@ -316,7 +420,7 @@ export class WalletService {
       const extractedData =
         destinationAccount.result as VerifyAccountExistenceResponsePartial;
       const bank = (await this.getBankLists()).data.find(
-        (bank) => bank.code === extractedData.bankCode,
+        (bank) => bank.bankCode === extractedData.bankCode,
       );
       return {
         success: true,
@@ -478,54 +582,85 @@ export class WalletService {
     }
   }
 
-  async webhookHandler(payload: any): Promise<void> {
+  // async webhookHandler(payload: any): Promise<void> {
+  //   try {
+  //     if (payload.event === 'charge.completed') {
+  //       // User funds their wallet
+  //       const data = payload.data;
+  //       if (data?.tx_ref) {
+  //         const userRecord = await this.userSrv.getRepo().findOne({
+  //           where: { flutterwaveUserKey: data.tx_ref },
+  //           select: ['id', 'walletBalance'],
+  //         });
+  //         if (userRecord?.id) {
+  //           const amount = parseFloat(data.amount);
+  //           this.eventEmitterSrv.emit('transaction.log', {
+  //             type: TransactionType.CREDIT,
+  //             userId: userRecord.id,
+  //             narration: data.narration,
+  //             transactionDate: data.created_at,
+  //             currentBalanceBeforeTransaction: userRecord.walletBalance,
+  //             amount,
+  //           });
+  //           this.eventEmitterSrv.emit('wallet.credit', {
+  //             userId: userRecord.id,
+  //             amount,
+  //           });
+  //         }
+  //       }
+  //     }
+  //     if (payload.event === 'transfer.completed') {
+  //       const data = payload.data;
+  //       if (data.status === 'SUCCESSFUL') {
+  //         const userAccount = await this.userAccountSrv.getRepo().findOne({
+  //           where: { accountNumber: String(data.account_number) },
+  //           relations: ['user'],
+  //         });
+  //         if (userAccount?.userId) {
+  //           const userId = userAccount.userId;
+  //           this.eventEmitterSrv.emit('transaction.log', {
+  //             type: TransactionType.DEBIT,
+  //             userId,
+  //             narration: data.narration,
+  //             transactionDate: data.created_at,
+  //             currentBalanceBeforeTransaction: userAccount.user?.walletBalance,
+  //             amount: parseFloat(data.amount),
+  //           });
+  //         }
+  //       }
+  //     }
+  //     // TODO: Handle transfers
+  //   } catch (ex) {
+  //     this.logger.error(ex);
+  //     throw ex;
+  //   }
+  // }
+
+  // URL: https://playground.alat.ng/api-wallet-creation
+  async webhookHandler(payload: WebhookResponseDTO): Promise<void> {
     try {
-      if (payload.event === 'charge.completed') {
-        // User funds their wallet
-        const data = payload.data;
-        if (data?.tx_ref) {
-          const userRecord = await this.userSrv.getRepo().findOne({
-            where: { flutterwaveUserKey: data.tx_ref },
-            select: ['id', 'walletBalance'],
-          });
-          if (userRecord?.id) {
-            const amount = parseFloat(data.amount);
-            this.eventEmitterSrv.emit('transaction.log', {
-              type: TransactionType.CREDIT,
-              userId: userRecord.id,
-              narration: data.narration,
-              transactionDate: data.created_at,
-              currentBalanceBeforeTransaction: userRecord.walletBalance,
-              amount,
-            });
-            this.eventEmitterSrv.emit('wallet.credit', {
-              userId: userRecord.id,
-              amount,
-            });
-          }
+      this.logger.log({ body: payload });
+      const user = await this.userSrv.getRepo().findOne({
+        where: { email: payload.Data.Email?.toUpperCase() },
+      });
+      if (user?.id) {
+        if (
+          !user.virtualAccountNumber &&
+          user.virtualAccountNumber !== payload.Data.Nuban
+        ) {
+          user.virtualAccountNumber = payload.Data.Nuban;
+          user.virtualAccountName = payload.Data.NubanName;
+          user.bankCustomerId = payload.Data.CustomerID;
         }
+        await this.userSrv.getRepo().update(
+          { id: user.id },
+          {
+            virtualAccountNumber: user.virtualAccountNumber,
+            virtualAccountName: user.virtualAccountName,
+            bankCustomerId: user.bankCustomerId,
+          },
+        );
       }
-      if (payload.event === 'transfer.completed') {
-        const data = payload.data;
-        if (data.status === 'SUCCESSFUL') {
-          const userAccount = await this.userAccountSrv.getRepo().findOne({
-            where: { accountNumber: String(data.account_number) },
-            relations: ['user'],
-          });
-          if (userAccount?.userId) {
-            const userId = userAccount.userId;
-            this.eventEmitterSrv.emit('transaction.log', {
-              type: TransactionType.DEBIT,
-              userId,
-              narration: data.narration,
-              transactionDate: data.created_at,
-              currentBalanceBeforeTransaction: userAccount.user?.walletBalance,
-              amount: parseFloat(data.amount),
-            });
-          }
-        }
-      }
-      // TODO: Handle transfers
     } catch (ex) {
       this.logger.error(ex);
       throw ex;

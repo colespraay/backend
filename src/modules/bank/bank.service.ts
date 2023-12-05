@@ -7,23 +7,26 @@ import { httpGet } from '@utils/index';
 @Injectable()
 export class BankService extends GenericService(Bank) implements OnModuleInit {
   async onModuleInit() {
-    const url = 'https://api.flutterwave.com/v3/banks/NG';
-    const headers = {
-      Authorization: `Bearer ${String(process.env.FLUTTERWAVE_SECRET_KEY)}`,
-    };
-    const response = await httpGet<any>(url, headers);
-    const banksFromAPI = response?.data as BankListPartialDTO[];
+    const url =
+      'https://apiplayground.alat.ng/debit-wallet/api/Shared/GetAllBanks';
+    const data = await httpGet<any>(url, {
+      'x-api-key': String(process.env.WEMA_ATLAT_X_API_KEY),
+      'Ocp-Apim-Subscription-Key': String(
+        process.env.WEMA_ATLAT_WALLET_CREATION_SUB_KEY,
+      ),
+    });
+    const banksFromAPI = data.result as BankListPartialDTO[];
     const banksFromDB = await this.getRepo().find({});
 
     // Compare banks from API with banks from the database
     const banksToCreate: Partial<Bank>[] = [];
     for (const apiBank of banksFromAPI) {
       const existingBank = banksFromDB.find(
-        (dbBank) => dbBank.bankCode === apiBank.code,
+        (dbBank) => dbBank.bankCode === apiBank.bankCode,
       );
       if (!existingBank) {
         // Bank does not exist in the database, insert a new record
-        banksToCreate.push({ bankCode: apiBank.code, bankName: apiBank.name });
+        banksToCreate.push(apiBank);
       }
     }
     if (banksToCreate?.length > 0) {

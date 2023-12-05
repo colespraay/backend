@@ -5,17 +5,15 @@ import { TransactionRecord, UserAccount, Withdrawal } from '@entities/index';
 import { GenericService } from '@schematics/index';
 import {
   TransactionType,
+  UserNotificationType,
   checkForRequiredFields,
-  generateUniqueCode,
-  httpGet,
-  httpPost,
   validateUUIDField,
 } from '@utils/index';
+import { UserAccountService, UserService, WalletService } from '../index';
 import {
   WithdrawalResponseDTO,
   CreateWithdrawalDTO,
 } from './dto/withdrawal.dto';
-import { UserAccountService, UserService, WalletService } from '../index';
 
 @Injectable()
 export class WithdrawalService extends GenericService(Withdrawal) {
@@ -75,60 +73,47 @@ export class WithdrawalService extends GenericService(Withdrawal) {
       }
       const user = await this.userSrv.findUserById(userId);
 
-      const headers = {
-        Authorization: `Bearer ${String(process.env.FLUTTERWAVE_SECRET_KEY)}`,
-      };
-      // transfer from wallet
-      const reference = `Spraay-payout-${generateUniqueCode(10)}`;
-      const narration = `Wallet payout of ₦${payload.amount} to ${user.data.firstName} ${user.data.lastName}`;
-      const url = 'https://api.flutterwave.com/v3/transfers';
-      const reqPayload = {
-        reference,
-        account_number: payload.accountNumber,
-        account_bank: payload.bankCode,
-        currency: 'NGN',
-        narration,
-        amount: payload.amount,
-      };
-      const flutterwaveResponse = await httpPost<any, any>(
-        url,
-        reqPayload,
-        headers,
+      // make transfer via wema bank
+      const debitResponse = await this.walletSrv.makeTransferFromWallet(
+        user.data.virtualAccountNumber,
+        {
+          amount: payload.amount,
+          destinationAccountName: destinationAccount.accountName,
+          destinationAccountNumber: payload.accountNumber,
+          destinationBankCode: payload.bankCode,
+          destinationBankName: payload.bankName,
+          narration: `Withdrawal of ${payload.amount.toLocaleString()} sent to ${
+            payload.accountNumber
+          } of ${payload.bankName}`,
+        },
       );
-      if (flutterwaveResponse?.status === 'success') {
-        const data = flutterwaveResponse.data;
-        const reference = `Spraay-payout-${generateUniqueCode(10)}`;
-        const narration = `Wallet payout of ₦${payload.amount} to ${user.data.firstName} ${user.data.lastName}`;
-        // Log the debit to transaction table
+      if (debitResponse.success) {
         const createdTransaction = await this.transactionSrv.create<
           Partial<TransactionRecord>
         >({
-          transactionDate: data.created_at,
+          transactionDate: debitResponse.data.orinalTxnTransactionDate,
           currentBalanceBeforeTransaction: user.data.walletBalance,
-          narration,
+          narration: debitResponse.data.narration,
           type: TransactionType.DEBIT,
-          reference,
+          reference: debitResponse.data.transactionReference,
           amount: payload.amount,
           userId,
         });
         this.logger.log({ createdTransaction });
-
-        // Update user's account balance, after checking to see transaction went through
-        setTimeout(async () => {
-          const fetchTransferUrl = `https://api.flutterwave.com/v3/transfers/${data.id}`;
-          const resp = await httpGet<any>(fetchTransferUrl, headers);
-          if (resp?.data.status === 'SUCCESSFUL') {
-            this.eventEmitterSrv.emit('wallet.debit', {
-              amount: payload.amount,
-              userId: user.data.id,
-            });
-          }
-        }, 5000);
-
         const createdWithdrawal = await this.create<Partial<Withdrawal>>({
           amount: payload.amount,
           transactionId: createdTransaction.id,
           userId,
+        });
+        this.eventEmitterSrv.emit('wallet.debit', {
+          amount: payload.amount,
+          userId: user.data.id,
+        });
+        this.eventEmitterSrv.emit('user-notification.create', {
+          userId,
+          subject: 'Cash withdrawal from wallet',
+          type: UserNotificationType.USER_SPECIFIC,
+          message: `You withdrew ₦${payload.amount} from your wallet`,
         });
         const newWithdrawal = await this.getRepo().findOne({
           where: { id: createdWithdrawal.id },

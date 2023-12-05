@@ -1,19 +1,20 @@
+import { EventEmitter2 } from '@nestjs/event-emitter';
 import {
+  BadGatewayException,
   ConflictException,
   HttpStatus,
   Injectable,
   NotFoundException,
   UnauthorizedException,
 } from '@nestjs/common';
-import { EventEmitter2 } from '@nestjs/event-emitter';
 import { Gifting } from '@entities/index';
 import { GenericService } from '@schematics/index';
+import { WalletService } from '@modules/wallet/wallet.service';
 import { TransactionService } from '@modules/transaction/transaction.service';
 import {
   TransactionType,
   UserNotificationType,
   checkForRequiredFields,
-  generateUniqueCode,
   validateUUIDField,
   verifyPasswordHash,
 } from '@utils/index';
@@ -24,6 +25,7 @@ import { UserService } from '../index';
 export class GiftingService extends GenericService(Gifting) {
   constructor(
     private readonly userSrv: UserService,
+    private readonly walletSrv: WalletService,
     private readonly eventEmitterSrv: EventEmitter2,
     private readonly transactionSrv: TransactionService,
   ) {
@@ -61,56 +63,86 @@ export class GiftingService extends GenericService(Gifting) {
       if (userId === receiver.id) {
         throw new ConflictException('Cannot Gift to yourself');
       }
-      const transactionDate = new Date().toLocaleString();
-      const reference = `Spraay-gift-${generateUniqueCode(10)}`;
-      const narration = `Gift of ₦${payload.amount} to ${receiver.firstName} ${receiver.lastName}`;
-      const createdTransaction = await this.transactionSrv.createTransaction({
-        amount: payload.amount,
-        currentBalanceBeforeTransaction: user.data.walletBalance,
-        narration,
-        transactionDate,
-        type: TransactionType.DEBIT,
-        userId,
-        receiverUserId: receiver.id,
-        reference,
-      });
-      this.logger.log({ createdTransaction });
 
-      const createdGift = await this.create<Partial<Gifting>>({
-        amount: payload.amount,
-        receiverUserId: receiver.id,
-        transactionId: createdTransaction.data.id,
-      });
+      const destinationBank = await this.walletSrv.findBankByName(
+        receiver.bankName,
+      );
+      if (!destinationBank?.bankCode) {
+        throw new BadGatewayException('Could not verify destination bank');
+      }
+      const walletVerified = await this.walletSrv.verifyWalletAccountNumber(
+        receiver.virtualAccountNumber,
+      );
+      this.logger.log({ walletVerified });
 
-      const receiverTransaction = await this.transactionSrv.createTransaction({
-        amount: payload.amount,
-        currentBalanceBeforeTransaction: receiver.walletBalance,
-        narration,
-        transactionDate,
-        type: TransactionType.CREDIT,
-        userId: receiver.id,
-        reference,
-      });
-      this.logger.log({ receiverTransaction });
+      // make transfer via wema bank
+      const debitResponse = await this.walletSrv.makeTransferFromWallet(
+        user.data.virtualAccountNumber,
+        {
+          amount: payload.amount,
+          destinationAccountName: receiver.virtualAccountName,
+          destinationAccountNumber: receiver.virtualAccountNumber,
+          destinationBankCode: destinationBank.bankCode,
+          destinationBankName: destinationBank.name,
+          narration: `Gift of ${payload.amount.toLocaleString()} sent to ${
+            receiver.firstName
+          } ${receiver.lastName}`,
+        },
+      );
+      if (debitResponse.success) {
+        const narration = debitResponse.data.narration;
+        const transactionDate = debitResponse.data.orinalTxnTransactionDate;
+        const reference = debitResponse.data.transactionReference;
+        const createdTransaction = await this.transactionSrv.createTransaction({
+          amount: payload.amount,
+          currentBalanceBeforeTransaction: user.data.walletBalance,
+          narration,
+          transactionDate,
+          type: TransactionType.DEBIT,
+          userId,
+          receiverUserId: receiver.id,
+          reference,
+        });
+        this.logger.log({ createdTransaction });
 
-      this.eventEmitterSrv.emit('user-notification.create', {
-        userId: receiver.id,
-        subject: 'Cash gift received',
-        type: UserNotificationType.USER_SPECIFIC,
-        message: `You were gifted with ₦${payload.amount} by ${user.data.firstName} ${user.data.lastName}`,
-      });
-      this.eventEmitterSrv.emit('user-notification.create', {
-        userId: user.data.id,
-        subject: 'Cash gifting',
-        type: UserNotificationType.USER_SPECIFIC,
-        message: `You gifted ${receiver?.firstName} ${receiver?.lastName} with ₦${payload.amount}`,
-      });
-      return {
-        success: true,
-        code: HttpStatus.CREATED,
-        message: 'Gift sent successfully',
-        data: createdGift,
-      };
+        const createdGift = await this.create<Partial<Gifting>>({
+          amount: payload.amount,
+          receiverUserId: receiver.id,
+          transactionId: createdTransaction.data.id,
+        });
+        const receiverTransaction = await this.transactionSrv.createTransaction(
+          {
+            amount: payload.amount,
+            currentBalanceBeforeTransaction: receiver.walletBalance,
+            narration,
+            transactionDate,
+            type: TransactionType.CREDIT,
+            userId: receiver.id,
+            reference,
+          },
+        );
+        this.logger.log({ receiverTransaction });
+
+        this.eventEmitterSrv.emit('user-notification.create', {
+          userId: receiver.id,
+          subject: 'Cash gift received',
+          type: UserNotificationType.USER_SPECIFIC,
+          message: `You were gifted with ₦${payload.amount} by ${user.data.firstName} ${user.data.lastName}`,
+        });
+        this.eventEmitterSrv.emit('user-notification.create', {
+          userId: user.data.id,
+          subject: 'Cash gifting',
+          type: UserNotificationType.USER_SPECIFIC,
+          message: `You gifted ${receiver?.firstName} ${receiver?.lastName} with ₦${payload.amount}`,
+        });
+        return {
+          success: true,
+          code: HttpStatus.CREATED,
+          message: 'Gift sent successfully',
+          data: createdGift,
+        };
+      }
+      throw new BadGatewayException('Transaction failed');
     } catch (ex) {
       this.logger.error(ex);
       throw ex;

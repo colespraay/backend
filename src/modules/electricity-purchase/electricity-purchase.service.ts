@@ -1,4 +1,11 @@
-import { BadRequestException, HttpStatus, Injectable } from '@nestjs/common';
+import { EventEmitter2 } from '@nestjs/event-emitter';
+import {
+  BadGatewayException,
+  BadRequestException,
+  ConflictException,
+  HttpStatus,
+  Injectable,
+} from '@nestjs/common';
 import { ElectricityPurchase, User } from '@entities/index';
 import { GenericService } from '@schematics/index';
 import {
@@ -6,13 +13,15 @@ import {
   compareEnumValueFields,
   ElectricityPlan,
   ElectricityProvider,
-  generateUniqueCode,
   sendEmail,
   TransactionType,
+  UserNotificationType,
 } from '@utils/index';
 import { TransactionService } from '@modules/transaction/transaction.service';
 import { BillService } from '@modules/bill/bill.service';
 import { UserService } from '@modules/user/user.service';
+import { BankService } from '@modules/bank/bank.service';
+import { WalletService } from '@modules/wallet/wallet.service';
 import {
   CreateElectricityPurchaseDTO,
   ElectricityPurchaseResponseDTO,
@@ -24,9 +33,20 @@ import {
 export class ElectricityPurchaseService extends GenericService(
   ElectricityPurchase,
 ) {
+  private flutterwaveBaseBank = String(process.env.FLUTTERWAVE_BASE_BANK);
+  private flutterwaveBaseAccountName = String(
+    process.env.FLUTTERWAVE_BASE_ACCOUNT_NAME,
+  );
+  private flutterwaveBaseAccountNumber = String(
+    process.env.FLUTTERWAVE_BASE_ACCOUNT_NUMBER,
+  );
+
   constructor(
     private readonly userSrv: UserService,
     private readonly billSrv: BillService,
+    private readonly bankSrv: BankService,
+    private readonly walletSrv: WalletService,
+    private readonly eventEmitterSrv: EventEmitter2,
     private readonly transactionSrv: TransactionService,
   ) {
     super();
@@ -64,9 +84,38 @@ export class ElectricityPurchaseService extends GenericService(
       }
       await this.userSrv.checkAccountBalance(payload.amount, user.id);
 
+      const walletVerified = await this.walletSrv.verifyWalletAccountNumber(
+        user.virtualAccountNumber,
+      );
+      this.logger.log({ walletVerified });
+
+      const bank = await this.bankSrv.findOne({
+        bankName: this.flutterwaveBaseBank?.toUpperCase(),
+      });
+      if (!bank?.id) {
+        throw new ConflictException('Could not validate base account');
+      }
       const narration = `Electricity unit purchase (₦${payload.amount}) for ${payload.meterNumber}`;
-      const transactionDate = new Date().toLocaleString();
-      const reference = `Spraay-power-${generateUniqueCode(10)}`;
+      const walletResponse = await this.walletSrv.makeTransferFromWallet(
+        user.virtualAccountNumber,
+        {
+          narration,
+          amount: payload.amount,
+          destinationBankCode: bank.bankCode,
+          destinationBankName: this.flutterwaveBaseBank,
+          destinationAccountName: this.flutterwaveBaseAccountName,
+          destinationAccountNumber: this.flutterwaveBaseAccountNumber,
+        },
+      );
+      if (!walletResponse.success) {
+        throw new BadGatewayException('Wallet withdrawal failed');
+      }
+      // const transactionDate = new Date().toLocaleString();
+      // const reference = `Spraay-power-${generateUniqueCode(10)}`;
+      const transactionDate = String(
+        walletResponse.data.orinalTxnTransactionDate,
+      );
+      const reference = String(walletResponse.data.transactionReference);
       // Make purchase from flutterwave
       const electricUnitPurchaseResponse =
         await this.billSrv.makeElectricUnitPurchase(
@@ -101,6 +150,12 @@ export class ElectricityPurchaseService extends GenericService(
         transactionId: newTransaction.data.id,
         amount: payload.amount,
         userId: user.id,
+      });
+      this.eventEmitterSrv.emit('user-notification.create', {
+        userId: user.id,
+        subject: 'Electricity Unit Purchase',
+        type: UserNotificationType.USER_SPECIFIC,
+        message: `Your electricity unit purchase of ₦${payload.amount} was successful`,
       });
       await this.sendElectricityUnitToUser(
         user.id,

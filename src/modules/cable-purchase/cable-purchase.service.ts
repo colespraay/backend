@@ -1,4 +1,11 @@
-import { BadRequestException, HttpStatus, Injectable } from '@nestjs/common';
+import { EventEmitter2 } from '@nestjs/event-emitter';
+import {
+  BadGatewayException,
+  BadRequestException,
+  ConflictException,
+  HttpStatus,
+  Injectable,
+} from '@nestjs/common';
 import { CablePurchase, User } from '@entities/index';
 import { GenericService } from '@schematics/index';
 import {
@@ -6,8 +13,10 @@ import {
   compareEnumValueFields,
   CableProvider,
   TransactionType,
-  generateUniqueCode,
+  UserNotificationType,
 } from '@utils/index';
+import { WalletService } from '@modules/wallet/wallet.service';
+import { BankService } from '@modules/bank/bank.service';
 import { TransactionService } from '@modules/transaction/transaction.service';
 import { BillService } from '@modules/bill/bill.service';
 import { UserService } from '@modules/user/user.service';
@@ -18,10 +27,21 @@ import {
 
 @Injectable()
 export class CablePurchaseService extends GenericService(CablePurchase) {
+  private flutterwaveBaseBank = String(process.env.FLUTTERWAVE_BASE_BANK);
+  private flutterwaveBaseAccountName = String(
+    process.env.FLUTTERWAVE_BASE_ACCOUNT_NAME,
+  );
+  private flutterwaveBaseAccountNumber = String(
+    process.env.FLUTTERWAVE_BASE_ACCOUNT_NUMBER,
+  );
+
   constructor(
     private readonly userSrv: UserService,
     private readonly billSrv: BillService,
+    private readonly walletSrv: WalletService,
+    private readonly bankSrv: BankService,
     private readonly transactionSrv: TransactionService,
+    private readonly eventEmitterSrv: EventEmitter2,
   ) {
     super();
   }
@@ -57,10 +77,42 @@ export class CablePurchaseService extends GenericService(CablePurchase) {
         payload.cablePlanId,
       );
       await this.userSrv.checkAccountBalance(payload.amount, user.id);
+
+      const walletVerified = await this.walletSrv.verifyWalletAccountNumber(
+        user.virtualAccountNumber,
+      );
+      this.logger.log({ walletVerified });
+
+      const bank = await this.bankSrv.findOne({
+        bankName: this.flutterwaveBaseBank?.toUpperCase(),
+      });
+      if (!bank?.id) {
+        throw new ConflictException('Could not validate base account');
+      }
+
       // Make purchase from flutterwave
       const narration = `Cable plan purchase (₦${plan.amount}) for ${payload.smartCardNumber}`;
-      const transactionDate = new Date().toLocaleString();
-      const reference = `Spraay-cable-${generateUniqueCode(10)}`;
+      const walletResponse = await this.walletSrv.makeTransferFromWallet(
+        user.virtualAccountNumber,
+        {
+          narration,
+          amount: plan.amount,
+          destinationBankCode: bank.bankCode,
+          destinationBankName: this.flutterwaveBaseBank,
+          destinationAccountName: this.flutterwaveBaseAccountName,
+          destinationAccountNumber: this.flutterwaveBaseAccountNumber,
+        },
+      );
+      if (!walletResponse.success) {
+        throw new BadGatewayException('Wallet withdrawal failed');
+      }
+
+      // const transactionDate = new Date().toLocaleString();
+      // const reference = `Spraay-cable-${generateUniqueCode(10)}`;
+      const transactionDate = String(
+        walletResponse.data.orinalTxnTransactionDate,
+      );
+      const reference = String(walletResponse.data.transactionReference);
       const cablePurchaseResponse = await this.billSrv.makeCablePlanPurchase(
         {
           amount: plan.amount,
@@ -90,6 +142,12 @@ export class CablePurchaseService extends GenericService(CablePurchase) {
         smartCardNumber: payload.smartCardNumber,
         cablePlanId: plan.id,
         transactionId: newTransaction.data.id,
+      });
+      this.eventEmitterSrv.emit('user-notification.create', {
+        userId: user.id,
+        subject: 'Cable TV Purchase',
+        type: UserNotificationType.USER_SPECIFIC,
+        message: `Your cable-tv purchase of ₦${plan.amount} was successful`,
       });
       return {
         success: true,

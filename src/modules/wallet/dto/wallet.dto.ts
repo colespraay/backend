@@ -72,7 +72,7 @@ export class BankListPartialDTO {
   name: string;
 
   @ApiProperty()
-  code: string;
+  bankCode: string;
 }
 
 export class BankListDTO extends BaseResponseTypeDTO {
