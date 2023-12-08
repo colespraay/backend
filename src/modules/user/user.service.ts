@@ -979,7 +979,7 @@ export class UserService extends GenericService(User) {
             record.lastName = bvnValidationResponse.data.lastName;
           }
           if (!record.virtualAccountNumber) {
-            await this.walletSrv.createWallet(record.id);
+            await this.walletSrv.createWallet(record.id, 'PROD');
           }
         }
         record.bvn = payload.bvn;
@@ -1006,7 +1006,7 @@ export class UserService extends GenericService(User) {
         displayWalletBalance: record.displayWalletBalance,
       };
       await this.getRepo().update({ id: record.id }, updatedRecord);
-      await this.walletSrv.createWallet(record.id);
+      await this.walletSrv.createWallet(record.id, 'PROD');
       return {
         success: true,
         code: HttpStatus.OK,

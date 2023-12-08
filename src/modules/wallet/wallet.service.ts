@@ -11,6 +11,8 @@ import { EventEmitter2 } from '@nestjs/event-emitter';
 import {
   TransactionType,
   checkForRequiredFields,
+  generateRandomName,
+  generateRandomNumber,
   generateUniqueCode,
   httpGet,
   httpPost,
@@ -123,7 +125,7 @@ export class WalletService {
   //   }
   // }
 
-  async createWallet(userId: string): Promise<void> {
+  async createWallet(userId: string, env = 'TEST'): Promise<void> {
     try {
       checkForRequiredFields(['userId'], { userId });
       validateUUIDField(userId, 'userId');
@@ -133,21 +135,35 @@ export class WalletService {
         throw new NotFoundException();
       }
       if (user?.email && user?.phoneNumber && !user?.virtualAccountNumber) {
-        const { email, phoneNumber } = user;
-        const url =
-          'https://apiplayground.alat.ng/e-merchant-wallet-create/api/CustomerAccount/GenerateAccountForPatnershipsV2';
-        const walletCreationResponse = await httpPost<any, any>(
-          url,
-          {
-            email,
-            phoneNumber,
-          },
-          {
-            'x-api-key': this.xApiKey,
-            'Ocp-Apim-Subscription-Key': this.eCommerceWalletSubKey,
-          },
-        );
-        this.logger.debug({ walletCreationResponse });
+        if (env === 'TEST') {
+          const accountNumber = generateRandomNumber();
+          const accountName = generateRandomName();
+          const bank = 'WEMA BANK';
+          await this.userSrv.getRepo().update(
+            { id: user.id },
+            {
+              virtualAccountName: accountName,
+              virtualAccountNumber: accountNumber,
+              bankName: bank,
+            },
+          );
+        } else {
+          const { email, phoneNumber } = user;
+          const url =
+            'https://apiplayground.alat.ng/e-merchant-wallet-create/api/CustomerAccount/GenerateAccountForPatnershipsV2';
+          const walletCreationResponse = await httpPost<any, any>(
+            url,
+            {
+              email,
+              phoneNumber,
+            },
+            {
+              'x-api-key': this.xApiKey,
+              'Ocp-Apim-Subscription-Key': this.eCommerceWalletSubKey,
+            },
+          );
+          this.logger.debug({ walletCreationResponse });
+        }
       }
     } catch (ex) {
       this.logger.error(ex);
