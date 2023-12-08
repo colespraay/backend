@@ -1,21 +1,20 @@
 import {
   BadGatewayException,
   HttpStatus,
+  Inject,
   Injectable,
   Logger,
   NotFoundException,
+  forwardRef,
 } from '@nestjs/common';
-import { EventEmitter2, OnEvent } from '@nestjs/event-emitter';
+import { EventEmitter2 } from '@nestjs/event-emitter';
 import {
   TransactionType,
-  addLeadingZeroes,
   checkForRequiredFields,
-  generateRandomName,
-  generateRandomNumber,
   generateUniqueCode,
   httpGet,
   httpPost,
-  validateEmailField,
+  validateUUIDField,
 } from '@utils/index';
 import { UserService } from '@modules/user/user.service';
 import { BankService } from '@modules/bank/bank.service';
@@ -46,9 +45,13 @@ export class WalletService {
   private walletCreationSubKey = String(
     process.env.WEMA_ATLAT_WALLET_CREATION_SUB_KEY,
   );
+  private eCommerceWalletSubKey = String(
+    process.env.WEMA_ATLAT_E_COMMERCE_WALLET_SUB_KEY,
+  );
   private xApiKey = String(process.env.WEMA_ATLAT_X_API_KEY);
 
   constructor(
+    @Inject(forwardRef(() => UserService))
     private readonly userSrv: UserService,
     private readonly bankSrv: BankService,
     private readonly userAccountSrv: UserAccountService,
@@ -56,64 +59,96 @@ export class WalletService {
   ) {}
 
   // URL: https://playground.alat.ng/api-details#api=wallet-creation-api&operation=generate-account-for-partnership
-  @OnEvent('create-wallet', { async: true })
+  // @OnEvent('create-wallet', { async: true })
+  // async createWallet(userId: string): Promise<void> {
+  //   try {
+  //     const user = await this.userSrv.findOne({ id: userId });
+  //     if (!user?.id) {
+  //       throw new NotFoundException();
+  //     }
+  //     const { firstName, lastName, gender, dob, phoneNumber, email } = user;
+  //     if (firstName && lastName && gender && dob && phoneNumber && email) {
+  //       validateEmailField(email);
+  //       if (!user.virtualAccountNumber) {
+  //         // initiate wallet creation
+  //         const dob = new Date(user.dob);
+  //         const formatDOB = `${dob.getFullYear()}-${addLeadingZeroes(
+  //           dob.getMonth() + 1,
+  //         )}-${addLeadingZeroes(dob.getDate())}`;
+  //         const url =
+  //           'https://apiplayground.alat.ng/wallet-creation/api/CustomerAccount/GenerateAccountForPatnerships';
+  //         await httpPost(
+  //           url,
+  //           {
+  //             gender: user.gender.toLowerCase(),
+  //             email: user.email,
+  //             firstName: user.firstName,
+  //             lastName: user.lastName,
+  //             dob: formatDOB, // dob: '1994-10-17',
+  //             phoneNumber: user.phoneNumber,
+  //           },
+  //           {
+  //             'Ocp-Apim-Subscription-Key': this.walletCreationSubKey,
+  //             'x-api-key': this.xApiKey,
+  //           },
+  //         );
+
+  //         // Get the records for the accounts every 5 mins
+  //         setTimeout(async () => {
+  //           const url = `https://apiplayground.alat.ng/wallet-creation/api/CustomerAccount/GetPartnershipAccountDetails?phoneNumber=${user.phoneNumber}`;
+  //           const walletData = await httpGet<any>(url, {
+  //             'Ocp-Apim-Subscription-Key': this.walletCreationSubKey,
+  //             'x-api-key': this.xApiKey,
+  //           });
+  //           this.logger.log({ walletData });
+  //           const accountCreationPayload = {
+  //             bankName: 'WEMA BANK',
+  //             virtualAccountNumber:
+  //               walletData?.data?.accountNumber ?? generateRandomNumber(),
+  //             virtualAccountName:
+  //               user.firstName && user.lastName
+  //                 ? `${user.firstName} ${user.lastName}`
+  //                 : generateRandomName(),
+  //           };
+  //           this.logger.log({ accountCreationPayload });
+  //           // Save account details for user
+  //           await this.userSrv
+  //             .getRepo()
+  //             .update({ id: user.id }, accountCreationPayload);
+  //         }, 5000);
+  //       }
+  //     }
+  //   } catch (ex) {
+  //     this.logger.error(ex);
+  //     throw ex;
+  //   }
+  // }
+
   async createWallet(userId: string): Promise<void> {
     try {
-      const user = await this.userSrv.findOne({ id: userId });
+      checkForRequiredFields(['userId'], { userId });
+      validateUUIDField(userId, 'userId');
+      const record = await this.userSrv.findUserById(userId);
+      const user = record.data;
       if (!user?.id) {
         throw new NotFoundException();
       }
-      const { firstName, lastName, gender, dob, phoneNumber, email } = user;
-      if (firstName && lastName && gender && dob && phoneNumber && email) {
-        validateEmailField(email);
-        if (!user.virtualAccountNumber) {
-          // initiate wallet creation
-          const dob = new Date(user.dob);
-          const formatDOB = `${dob.getFullYear()}-${addLeadingZeroes(
-            dob.getMonth() + 1,
-          )}-${addLeadingZeroes(dob.getDate())}`;
-          const url =
-            'https://apiplayground.alat.ng/wallet-creation/api/CustomerAccount/GenerateAccountForPatnerships';
-          await httpPost(
-            url,
-            {
-              gender: user.gender.toLowerCase(),
-              email: user.email,
-              firstName: user.firstName,
-              lastName: user.lastName,
-              dob: formatDOB, // dob: '1994-10-17',
-              phoneNumber: user.phoneNumber,
-            },
-            {
-              'Ocp-Apim-Subscription-Key': this.walletCreationSubKey,
-              'x-api-key': this.xApiKey,
-            },
-          );
-
-          // Get the records for the accounts every 5 mins
-          setTimeout(async () => {
-            const url = `https://apiplayground.alat.ng/wallet-creation/api/CustomerAccount/GetPartnershipAccountDetails?phoneNumber=${user.phoneNumber}`;
-            const walletData = await httpGet<any>(url, {
-              'Ocp-Apim-Subscription-Key': this.walletCreationSubKey,
-              'x-api-key': this.xApiKey,
-            });
-            this.logger.log({ walletData });
-            const accountCreationPayload = {
-              bankName: 'WEMA BANK',
-              virtualAccountNumber:
-                walletData?.data?.accountNumber ?? generateRandomNumber(),
-              virtualAccountName:
-                user.firstName && user.lastName
-                  ? `${user.firstName} ${user.lastName}`
-                  : generateRandomName(),
-            };
-            this.logger.log({ accountCreationPayload });
-            // Save account details for user
-            await this.userSrv
-              .getRepo()
-              .update({ id: user.id }, accountCreationPayload);
-          }, 5000);
-        }
+      if (user?.email && user?.phoneNumber && !user?.virtualAccountNumber) {
+        const { email, phoneNumber } = user;
+        const url =
+          'https://apiplayground.alat.ng/e-merchant-wallet-create/api/CustomerAccount/GenerateAccountForPatnershipsV2';
+        const walletCreationResponse = await httpPost<any, any>(
+          url,
+          {
+            email,
+            phoneNumber,
+          },
+          {
+            'x-api-key': this.xApiKey,
+            'Ocp-Apim-Subscription-Key': this.eCommerceWalletSubKey,
+          },
+        );
+        this.logger.debug({ walletCreationResponse });
       }
     } catch (ex) {
       this.logger.error(ex);
@@ -636,30 +671,33 @@ export class WalletService {
   //   }
   // }
 
-  // URL: https://playground.alat.ng/api-wallet-creation
+  // URL: https://playground.alat.ng/api-emerchant-wallet-creation
   async webhookHandler(payload: WebhookResponseDTO): Promise<void> {
     try {
       this.logger.log({ body: payload });
       const user = await this.userSrv.getRepo().findOne({
-        where: { email: payload.Data.Email?.toUpperCase() },
+        where: { email: payload.data.email?.toUpperCase() },
       });
       if (user?.id) {
         if (
           !user.virtualAccountNumber &&
-          user.virtualAccountNumber !== payload.Data.Nuban
+          user.virtualAccountNumber !== payload.data.nuban
         ) {
-          user.virtualAccountNumber = payload.Data.Nuban;
-          user.virtualAccountName = payload.Data.NubanName;
-          user.bankCustomerId = payload.Data.CustomerID;
+          const {
+            data: { nubanName, nuban, customerId },
+          } = payload;
+          user.virtualAccountNumber = nuban;
+          user.virtualAccountName = nubanName;
+          user.bankCustomerId = customerId;
+          await this.userSrv.getRepo().update(
+            { id: user.id },
+            {
+              virtualAccountNumber: user.virtualAccountNumber,
+              virtualAccountName: user.virtualAccountName,
+              bankCustomerId: user.bankCustomerId,
+            },
+          );
         }
-        await this.userSrv.getRepo().update(
-          { id: user.id },
-          {
-            virtualAccountNumber: user.virtualAccountNumber,
-            virtualAccountName: user.virtualAccountName,
-            bankCustomerId: user.bankCustomerId,
-          },
-        );
       }
     } catch (ex) {
       this.logger.error(ex);

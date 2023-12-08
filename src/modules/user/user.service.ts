@@ -9,7 +9,6 @@ import {
   forwardRef,
   InternalServerErrorException,
   NotFoundException,
-  OnModuleInit,
 } from '@nestjs/common';
 import { FindManyOptions, ILike, In, Not } from 'typeorm';
 import { User } from '@entities/index';
@@ -45,6 +44,8 @@ import {
   AppRole,
 } from '@utils/index';
 import { AuthResponseDTO } from '@modules/auth/dto/auth.dto';
+import { WalletService } from '@modules/wallet/wallet.service';
+import { AuthService } from '@modules/auth/auth.service';
 import {
   ChangePasswordDTO,
   CreateUserDTO,
@@ -62,23 +63,16 @@ import {
   UserContactsDTO,
   UserContactsQueryDTO,
 } from './dto/user.dto';
-import { AuthService } from '../index';
 
 @Injectable()
-export class UserService extends GenericService(User) implements OnModuleInit {
+export class UserService extends GenericService(User) {
   constructor(
     @Inject(forwardRef(() => AuthService))
     private readonly authSrv: AuthService,
+    private readonly walletSrv: WalletService,
     private readonly eventEmitterSrv: EventEmitter2,
   ) {
     super();
-  }
-
-  async onModuleInit() {
-    // this.sendWelcomeEmail(
-    //   'fb64d86f-5336-4320-a4d2-24e64f029425',
-    //   'abelanico6@gmail.com',
-    // );
   }
 
   async findContactsFilteredByUserContacts(
@@ -985,7 +979,7 @@ export class UserService extends GenericService(User) implements OnModuleInit {
             record.lastName = bvnValidationResponse.data.lastName;
           }
           if (!record.virtualAccountNumber) {
-            this.eventEmitterSrv.emit('create-wallet', record.id);
+            await this.walletSrv.createWallet(record.id);
           }
         }
         record.bvn = payload.bvn;
@@ -1012,7 +1006,7 @@ export class UserService extends GenericService(User) implements OnModuleInit {
         displayWalletBalance: record.displayWalletBalance,
       };
       await this.getRepo().update({ id: record.id }, updatedRecord);
-      this.eventEmitterSrv.emit('create-wallet', record.id);
+      await this.walletSrv.createWallet(record.id);
       return {
         success: true,
         code: HttpStatus.OK,

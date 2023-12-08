@@ -5,7 +5,11 @@ import { UserAccountModule } from '@modules/user-account/user-account.module';
 import { BankModule, UserModule } from '../index';
 
 @Module({
-  imports: [UserModule, forwardRef(() => BankModule), UserAccountModule],
+  imports: [
+    forwardRef(() => UserModule),
+    forwardRef(() => BankModule),
+    UserAccountModule,
+  ],
   controllers: [WalletController],
   providers: [WalletService],
   exports: [WalletService],
