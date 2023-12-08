@@ -59,7 +59,6 @@ export class WalletService {
   ) {}
 
   // URL: https://playground.alat.ng/api-details#api=wallet-creation-api&operation=generate-account-for-partnership
-  // @OnEvent('create-wallet', { async: true })
   // async createWallet(userId: string): Promise<void> {
   //   try {
   //     const user = await this.userSrv.findOne({ id: userId });
@@ -156,7 +155,6 @@ export class WalletService {
     }
   }
 
-  // @OnEvent('create-wallet', { async: true })
   // async createWallet(userId: string): Promise<void> {
   //   try {
   //     checkForRequiredFields(['userId'], { userId });
