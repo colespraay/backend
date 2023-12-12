@@ -50,6 +50,7 @@ export class NotificationService extends GenericService(Notification) {
           where: { id: payload.userId },
         });
         if (user?.id && user.allowPushNotifications) {
+          this.logger.log({ msg: 'Push notifications can be sent' });
           const pushNotifications = await sendPushNotification(
             payload.message,
             user.deviceId,
