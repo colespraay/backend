@@ -526,7 +526,7 @@ export const sendPushNotification = async (
         'Content-Type': 'application/json',
       },
     );
-    // logger.log({ response, res_result: response.results });
+    logger.debug({ response, res_result: response.results });
     if (response.success === 1 && response.failure === 0) {
       return {
         success: true,

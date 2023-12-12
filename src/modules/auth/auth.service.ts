@@ -77,13 +77,6 @@ export class AuthService {
             .update({ id: user.data.id }, { deviceId: payload.deviceId });
         }
         this.eventEmitterSrv.emit('login.notification', id);
-        // TODO: Remove after testing
-        this.eventEmitterSrv.emit('user-notification.create', {
-          userId: id,
-          subject: 'Successful login',
-          type: UserNotificationType.USER_SPECIFIC,
-          message: 'You logged-in successfully',
-        });
         return {
           success: true,
           code: HttpStatus.OK,

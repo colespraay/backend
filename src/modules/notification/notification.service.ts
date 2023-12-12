@@ -38,33 +38,26 @@ export class NotificationService extends GenericService(Notification) {
       );
       validateUUIDField(payload.userId, 'userId');
       payload.subject = payload.subject.toUpperCase();
-      const record = await this.getRepo().findOne({
-        where: { subject: payload.subject, userId: payload.userId },
-        select: ['id'],
+      const createdNotification = await this.create<Partial<Notification>>(
+        payload,
+      );
+      const user = await this.userSrv.getRepo().findOne({
+        where: { id: payload.userId },
       });
-      if (!record?.id) {
-        const createdNotification = await this.create<Partial<Notification>>(
-          payload,
+      if (user?.id && user.allowPushNotifications) {
+        const pushNotifications = await sendPushNotification(
+          payload.message,
+          user.deviceId,
+          payload.subject,
         );
-        const user = await this.userSrv.getRepo().findOne({
-          where: { id: payload.userId },
-        });
-        if (user?.id && user.allowPushNotifications) {
-          this.logger.log({ msg: 'Push notifications can be sent' });
-          const pushNotifications = await sendPushNotification(
-            payload.message,
-            user.deviceId,
-            payload.subject,
-          );
-          this.logger.log({ pushNotifications });
-        }
-        return {
-          success: true,
-          message: 'Created',
-          code: HttpStatus.CREATED,
-          data: createdNotification,
-        };
+        this.logger.log({ pushNotifications });
       }
+      return {
+        success: true,
+        message: 'Created',
+        code: HttpStatus.CREATED,
+        data: createdNotification,
+      };
     } catch (ex) {
       this.logger.error(ex);
       throw ex;
