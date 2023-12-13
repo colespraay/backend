@@ -14,7 +14,6 @@ import {
   checkForRequiredFields,
   compareEnumValueFields,
   sendEmail,
-  UserNotificationType,
 } from '@utils/index';
 import { User } from '@entities/index';
 import { sign } from 'jsonwebtoken';
