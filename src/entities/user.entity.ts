@@ -55,7 +55,7 @@ export class User extends Base {
   password: string;
 
   @ApiProperty({ type: Number })
-  @Column({ type: 'bigint', default: 10000 })
+  @Column({ type: 'bigint', default: 0 })
   walletBalance: number;
 
   @ApiProperty()

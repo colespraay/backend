@@ -18,7 +18,6 @@ import {
   VerifyAccountExistenceDTO,
   VerifyAccountExistenceResponseDTO,
   MakeWalletDebitTypeDTO,
-  TransactionNotificationResponseDTO,
 } from './dto/wallet.dto';
 
 @ApiTags('wallet')
