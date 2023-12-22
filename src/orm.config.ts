@@ -27,7 +27,7 @@ switch (NODE_ENV) {
       // Run migrations automatically,
       // you can disable this if you prefer running migration manually.
       migrationsRun: false,
-      ssl: false,
+      ssl: { rejectUnauthorized: false },
     };
     break;
   case NODE_ENVIRONMENT.PRODUCTION:
@@ -38,7 +38,8 @@ switch (NODE_ENV) {
       dropSchema: false,
       logging: ['error', 'query'],
       logger: 'file',
-      ssl: false,
+      // ssl: false,
+      ssl: { rejectUnauthorized: false },
       cache: { duration: 20000 },
       entities: ['dist/**/*.entity.js'],
       migrations: [`${__dirname}/migrations/**/*{.ts,.js}`],
