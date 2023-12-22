@@ -525,7 +525,6 @@ export class WalletService {
           }
         }
       }
-      // TODO: Handle transfers
     } catch (ex) {
       this.logger.error(ex);
       throw ex;
