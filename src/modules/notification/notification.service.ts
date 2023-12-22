@@ -38,56 +38,25 @@ export class NotificationService extends GenericService(Notification) {
       );
       validateUUIDField(payload.userId, 'userId');
       payload.subject = payload.subject.toUpperCase();
-      const record = await this.getRepo().findOne({
-        where: { subject: payload.subject, userId: payload.userId },
-        select: ['id'],
+      const createdNotification = await this.create<Partial<Notification>>(
+        payload,
+      );
+      const user = await this.userSrv.getRepo().findOne({
+        where: { id: payload.userId },
       });
-      if (!record?.id) {
-        const createdNotification = await this.create<Partial<Notification>>(
-          payload,
+      if (user?.id && user.allowPushNotifications) {
+        const pushNotifications = await sendPushNotification(
+          payload.message,
+          user.deviceId,
+          payload.subject,
         );
-        const user = await this.userSrv.getRepo().findOne({
-          where: { id: payload.userId },
-        });
-        if (user?.id && user.allowPushNotifications) {
-          const pushNotifications = await sendPushNotification(
-            payload.message,
-            user.deviceId,
-            payload.subject,
-          );
-          this.logger.log({ pushNotifications });
-        }
-        return {
-          success: true,
-          message: 'Created',
-          code: HttpStatus.CREATED,
-          data: createdNotification,
-        };
-      }
-    } catch (ex) {
-      this.logger.error(ex);
-      throw ex;
-    }
-  }
-
-  async findNotificationById(
-    notificationId: string,
-  ): Promise<NotificationResponseDTO> {
-    try {
-      checkForRequiredFields(['notificationId'], { notificationId });
-      validateUUIDField(notificationId, 'notificationId');
-      const record = await this.getRepo().findOne({
-        where: { id: notificationId },
-        relations: ['user'],
-      });
-      if (!record?.id) {
-        throw new NotFoundException('Notification not found');
+        this.logger.log({ pushNotifications });
       }
       return {
         success: true,
-        code: HttpStatus.OK,
-        message: 'Record found',
-        data: record,
+        message: 'Created',
+        code: HttpStatus.CREATED,
+        data: createdNotification,
       };
     } catch (ex) {
       this.logger.error(ex);
@@ -152,6 +121,31 @@ export class NotificationService extends GenericService(Notification) {
         message: 'Records found',
         code: HttpStatus.OK,
         data: users,
+      };
+    } catch (ex) {
+      this.logger.error(ex);
+      throw ex;
+    }
+  }
+
+  async findNotificationById(
+    notificationId: string,
+  ): Promise<NotificationResponseDTO> {
+    try {
+      checkForRequiredFields(['notificationId'], { notificationId });
+      validateUUIDField(notificationId, 'notificationId');
+      const record = await this.getRepo().findOne({
+        where: { id: notificationId },
+        relations: ['user'],
+      });
+      if (!record?.id) {
+        throw new NotFoundException('Notification not found');
+      }
+      return {
+        success: true,
+        code: HttpStatus.OK,
+        message: 'Record found',
+        data: record,
       };
     } catch (ex) {
       this.logger.error(ex);
