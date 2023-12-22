@@ -103,11 +103,6 @@ export class WalletController {
     return await this.walletSrv.getStatementOfAccounts(accountNumber, payload);
   }
 
-  @Post('/webhook')
-  async flutterwaveWebhook(@Body() body: any): Promise<void> {
-    await this.walletSrv.webhookHandler(body);
-  }
-
   // @Post('/webhook')
   // async wemaBankWebhook(@Body() body: WebhookResponseDTO): Promise<void> {
   //   await this.walletSrv.webhookHandler(body);
@@ -120,4 +115,9 @@ export class WalletController {
   // ): Promise<void> {
   //   await this.walletSrv.transactionNotificationWebhookHandler(body);
   // }
+
+  @Post('/webhook')
+  async flutterwaveWebhook(@Body() body: any): Promise<void> {
+    await this.walletSrv.webhookHandler(body);
+  }
 }
