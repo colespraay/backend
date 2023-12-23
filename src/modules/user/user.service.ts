@@ -1,4 +1,7 @@
-import { EventEmitter2, OnEvent } from '@nestjs/event-emitter';
+import {
+  EventEmitter2,
+  OnEvent
+} from '@nestjs/event-emitter';
 import {
   BadRequestException,
   ConflictException,
@@ -11,9 +14,14 @@ import {
   NotFoundException,
   OnModuleInit,
 } from '@nestjs/common';
-import { FindManyOptions, ILike, In, Not } from 'typeorm';
-import { User } from '@entities/index';
+import {
+  FindManyOptions,
+  ILike,
+  In,
+  Not
+} from 'typeorm';
 import { GenericService } from '@schematics/index';
+import { User } from '@entities/index';
 import {
   compareEnumValueFields,
   validateEmailField,
@@ -36,8 +44,6 @@ import {
   validateUUIDField,
   sendSMS,
   groupBy,
-  addLeadingZeroes,
-  base64ToPNG,
   uploadFileToImageKit,
   base64ToJPEG,
   validateArrayField,
@@ -133,69 +139,6 @@ export class UserService extends GenericService(User) implements OnModuleInit {
         code: HttpStatus.OK,
         data: users,
       };
-    } catch (ex) {
-      this.logger.error(ex);
-      throw ex;
-    }
-  }
-
-  async afterSignup(user: User): Promise<void> {
-    try {
-      if (user.email) {
-        const instagramUrl = String(process.env.INSTAGRAM_URL);
-        const twitterUrl = String(process.env.TWITTER_URL);
-        const facebookUrl = String(process.env.FACEBOOK_URL);
-        const today = new Date();
-        const htmlEmailTemplate = `
-        <section style="background: white; color: black; font-size: 15px; font-family: 'Gill Sans', 'Gill Sans MT', Calibri, 'Trebuchet MS', sans-serif; display: flex; justify-content: center; margin: 0;">
-        <div style="padding: 2rem; width: 80%;">
-            <section style="text-align: center;">
-                <div style="width: fit-content; margin: 20px 0px;display: inline-block;">
-                    <img src="https://ik.imagekit.io/un0omayok/Logo%20animaion.png?updatedAt=1701281040423" alt="">
-                </div>
-            </section>
-    
-            <section style="width: 100%; height: auto; font-size: 18px; text-align: justify;">
-                <p style="font-weight:300">Hi ${user.firstName},</p>
-                <p style="font-weight:300">
-                  Thank you for joining Spraay!
-                </p>
-                <p style="font-weight:300">
-                    To complete your registration, please use the following OTP code within 
-                    the next 5 minutes.
-                </p>
-                <h1 style="text-align: center; font-size: 50px;">
-                  ${user.uniqueVerificationCode}
-                </h1>
-                <p style="font-weight:300">
-                  Welcome to Spraay App!
-                </p>
-            </section>
-    
-            <section style="text-align: center; height: 8rem; background-color: #5B45FF; border-radius: 10px; margin-top: 2rem; margin-bottom: 2rem;">
-              <a href="${instagramUrl}" style="margin-right: 30px;display: inline-block;padding-top:40px;"><img src="https://ik.imagekit.io/un0omayok/mdi_instagram.png?updatedAt=1701281040417" alt=""></a>
-              <a href="${twitterUrl}" style="margin-right: 30px;display: inline-block;padding-top:40px;"><img src="https://ik.imagekit.io/un0omayok/simple-icons_x.png?updatedAt=1701281040408" alt=""></a>
-              <a href="${facebookUrl}" style="display: inline-block;padding-top:40px;"><img src="https://ik.imagekit.io/un0omayok/ic_baseline-facebook.png?updatedAt=1701281040525" alt=""></a>
-            </section>
-    
-            <section style="padding: 20px; border-bottom: 2px solid #000; text-align: center; font-size: 20px;">
-                <p style="font-weight:300">Spraay software limited</p>
-            </section>
-    
-            <section style="text-align: center; font-size: 18px;">
-                <p style="font-weight: 400;">Spraay &copy;${today.getFullYear()}</p>
-                <p style="font-weight: 400;">Click here to <a href="#" style="color: #5B45FF;">Unsubscribe</a></p>
-            </section>
-        </div>
-        </section>
-      `;
-        await sendEmail(htmlEmailTemplate, 'Verify Account', [user.email]);
-      }
-      if (user.phoneNumber) {
-        const code = user.uniqueVerificationCode;
-        const message = `Please use this OTP to validate your Spraay account: ${code}`;
-        await sendSMS(message, [user.phoneNumber], 'Verify Account');
-      }
     } catch (ex) {
       this.logger.error(ex);
       throw ex;
@@ -1211,62 +1154,125 @@ export class UserService extends GenericService(User) implements OnModuleInit {
     }
   }
 
-  private async resolveUserBvn2(
-    bvn: string,
-    userId: string,
-  ): Promise<FincraBVNValidationResponseDTO> {
+  private async afterSignup(user: User): Promise<void> {
     try {
-      checkForRequiredFields(['bvn', 'userId'], { bvn, userId });
-      validateBvn(bvn, 'bvn');
-      validateUUIDField(userId, 'userId');
-      const user = await this.getRepo().findOne({
-        where: { id: userId },
-        select: ['id', 'firstName', 'lastName', 'dob'],
-      });
-      if (user?.id) {
-        const dobDate = user.dob ? new Date(user.dob) : new Date();
-        const dob = `${addLeadingZeroes(dobDate.getDate())}-${addLeadingZeroes(
-          dobDate.getMonth() + 1,
-        )}-${dobDate.getFullYear()}`;
-        const url = `https://vapi.verifyme.ng/v1/verifications/identities/bvn/${bvn}`;
-        const verifyMeResponse = await httpPost<any, any>(
-          url,
-          {
-            firstname: user.firstName ?? 'String',
-            lastname: user.lastName ?? 'String',
-            dob,
-          },
-          {
-            Authorization: `Bearer ${String(process.env.VERIFY_ME_SECRET_KEY)}`,
-          },
-        );
-        if (verifyMeResponse?.status === 'success') {
-          const photo = `data:image/png;base64,${verifyMeResponse.data.photo}`;
-          const localUrl = base64ToPNG(photo);
-          const url = await uploadFileToImageKit(localUrl);
-          return {
-            success: true,
-            message: verifyMeResponse.status,
-            data: {
-              gender: verifyMeResponse.data.gender,
-              phoneNo: verifyMeResponse.data.phone,
-              dateOfBirth: verifyMeResponse.data.birthdate,
-              middleName: verifyMeResponse.data.middlename,
-              firstName: verifyMeResponse.data.firstname,
-              lastName: verifyMeResponse.data.lastname,
-              pixBase64: url,
-            },
-          };
-        }
+      if (user.email) {
+        const instagramUrl = String(process.env.INSTAGRAM_URL);
+        const twitterUrl = String(process.env.TWITTER_URL);
+        const facebookUrl = String(process.env.FACEBOOK_URL);
+        const today = new Date();
+        const htmlEmailTemplate = `
+        <section style="background: white; color: black; font-size: 15px; font-family: 'Gill Sans', 'Gill Sans MT', Calibri, 'Trebuchet MS', sans-serif; display: flex; justify-content: center; margin: 0;">
+        <div style="padding: 2rem; width: 80%;">
+            <section style="text-align: center;">
+                <div style="width: fit-content; margin: 20px 0px;display: inline-block;">
+                    <img src="https://ik.imagekit.io/un0omayok/Logo%20animaion.png?updatedAt=1701281040423" alt="">
+                </div>
+            </section>
+    
+            <section style="width: 100%; height: auto; font-size: 18px; text-align: justify;">
+                <p style="font-weight:300">Hi ${user.firstName},</p>
+                <p style="font-weight:300">
+                  Thank you for joining Spraay!
+                </p>
+                <p style="font-weight:300">
+                    To complete your registration, please use the following OTP code within 
+                    the next 5 minutes.
+                </p>
+                <h1 style="text-align: center; font-size: 50px;">
+                  ${user.uniqueVerificationCode}
+                </h1>
+                <p style="font-weight:300">
+                  Welcome to Spraay App!
+                </p>
+            </section>
+    
+            <section style="text-align: center; height: 8rem; background-color: #5B45FF; border-radius: 10px; margin-top: 2rem; margin-bottom: 2rem;">
+              <a href="${instagramUrl}" style="margin-right: 30px;display: inline-block;padding-top:40px;"><img src="https://ik.imagekit.io/un0omayok/mdi_instagram.png?updatedAt=1701281040417" alt=""></a>
+              <a href="${twitterUrl}" style="margin-right: 30px;display: inline-block;padding-top:40px;"><img src="https://ik.imagekit.io/un0omayok/simple-icons_x.png?updatedAt=1701281040408" alt=""></a>
+              <a href="${facebookUrl}" style="display: inline-block;padding-top:40px;"><img src="https://ik.imagekit.io/un0omayok/ic_baseline-facebook.png?updatedAt=1701281040525" alt=""></a>
+            </section>
+    
+            <section style="padding: 20px; border-bottom: 2px solid #000; text-align: center; font-size: 20px;">
+                <p style="font-weight:300">Spraay software limited</p>
+            </section>
+    
+            <section style="text-align: center; font-size: 18px;">
+                <p style="font-weight: 400;">Spraay &copy;${today.getFullYear()}</p>
+                <p style="font-weight: 400;">Click here to <a href="#" style="color: #5B45FF;">Unsubscribe</a></p>
+            </section>
+        </div>
+        </section>
+      `;
+        await sendEmail(htmlEmailTemplate, 'Verify Account', [user.email]);
+      }
+      if (user.phoneNumber) {
+        const code = user.uniqueVerificationCode;
+        const message = `Please use this OTP to validate your Spraay account: ${code}`;
+        await sendSMS(message, [user.phoneNumber], 'Verify Account');
       }
     } catch (ex) {
       this.logger.error(ex);
-      if (String(ex).includes('status code 404')) {
-        throw new NotFoundException('BVN not found');
-      }
       throw ex;
     }
   }
+
+  // private async resolveUserBvn(
+  //   bvn: string,
+  //   userId: string,
+  // ): Promise<FincraBVNValidationResponseDTO> {
+  //   try {
+  //     checkForRequiredFields(['bvn', 'userId'], { bvn, userId });
+  //     validateBvn(bvn, 'bvn');
+  //     validateUUIDField(userId, 'userId');
+  //     const user = await this.getRepo().findOne({
+  //       where: { id: userId },
+  //       select: ['id', 'firstName', 'lastName', 'dob'],
+  //     });
+  //     if (user?.id) {
+  //       const dobDate = user.dob ? new Date(user.dob) : new Date();
+  //       const dob = `${addLeadingZeroes(dobDate.getDate())}-${addLeadingZeroes(
+  //         dobDate.getMonth() + 1,
+  //       )}-${dobDate.getFullYear()}`;
+  //       const url = `https://vapi.verifyme.ng/v1/verifications/identities/bvn/${bvn}`;
+  //       const verifyMeResponse = await httpPost<any, any>(
+  //         url,
+  //         {
+  //           firstname: user.firstName ?? 'String',
+  //           lastname: user.lastName ?? 'String',
+  //           dob,
+  //         },
+  //         {
+  //           Authorization: `Bearer ${String(process.env.VERIFY_ME_SECRET_KEY)}`,
+  //         },
+  //       );
+  //       if (verifyMeResponse?.status === 'success') {
+  //         const photo = `data:image/png;base64,${verifyMeResponse.data.photo}`;
+  //         const localUrl = base64ToPNG(photo);
+  //         const url = await uploadFileToImageKit(localUrl);
+  //         return {
+  //           success: true,
+  //           message: verifyMeResponse.status,
+  //           data: {
+  //             gender: verifyMeResponse.data.gender,
+  //             phoneNo: verifyMeResponse.data.phone,
+  //             dateOfBirth: verifyMeResponse.data.birthdate,
+  //             middleName: verifyMeResponse.data.middlename,
+  //             firstName: verifyMeResponse.data.firstname,
+  //             lastName: verifyMeResponse.data.lastname,
+  //             pixBase64: url,
+  //           },
+  //         };
+  //       }
+  //     }
+  //   } catch (ex) {
+  //     this.logger.error(ex);
+  //     if (String(ex).includes('status code 404')) {
+  //       throw new NotFoundException('BVN not found');
+  //     }
+  //     throw ex;
+  //   }
+  // }
 
   private async resolveUserBvn(
     bvn: string,
