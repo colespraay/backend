@@ -12,7 +12,6 @@ import {
   forwardRef,
   InternalServerErrorException,
   NotFoundException,
-  OnModuleInit,
 } from '@nestjs/common';
 import {
   FindManyOptions,
@@ -71,20 +70,13 @@ import {
 import { AuthService } from '../index';
 
 @Injectable()
-export class UserService extends GenericService(User) implements OnModuleInit {
+export class UserService extends GenericService(User) {
   constructor(
     @Inject(forwardRef(() => AuthService))
     private readonly authSrv: AuthService,
     private readonly eventEmitterSrv: EventEmitter2,
   ) {
     super();
-  }
-
-  async onModuleInit() {
-    // this.sendWelcomeEmail(
-    //   'fb64d86f-5336-4320-a4d2-24e64f029425',
-    //   'abelanico6@gmail.com',
-    // );
   }
 
   async findContactsFilteredByUserContacts(
