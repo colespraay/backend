@@ -139,8 +139,7 @@ export class UserService extends GenericService(User) implements OnModuleInit {
     }
   }
 
-  @OnEvent('after.sign-up', { async: true })
-  async onSignup(user: User): Promise<void> {
+  async afterSignup(user: User): Promise<void> {
     try {
       if (user.email) {
         const instagramUrl = String(process.env.INSTAGRAM_URL);
@@ -244,13 +243,13 @@ export class UserService extends GenericService(User) implements OnModuleInit {
           email: payload.email,
           password: payload.password,
         });
-        this.eventEmitterSrv.emit('after.sign-up', newUser);
       } else {
         response = await this.authSrv.loginWithPhone({
           phoneNumber: payload.phoneNumber,
           password: payload.password,
         });
       }
+      await this.afterSignup(newUser);
       return {
         ...response,
         code: HttpStatus.CREATED,
