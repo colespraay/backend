@@ -520,18 +520,17 @@ export class WalletService {
               await this.userSrv.getCurrentWalletBalance(userAccount.userId);
             const newTransactionRecord = await this.transactionSrv.createTransaction({
               userId,
+              reference,
               narration: data.narration,
               type: TransactionType.DEBIT,
               transactionDate: data.created_at,
               currentBalanceBeforeTransaction,
               amount: parseFloat(data.amount),
-              reference,
             });
           const withdrawalRecord = await this.withdrawalSrv.findOne({ reference });
           if (withdrawalRecord?.id) {
             await this.withdrawalSrv.getRepo().update(
-              { id: withdrawalRecord.id 
-              },
+              { id: withdrawalRecord.id },
               {
                 paymentStatus: PaymentStatus.SUCCESSFUL,
                 transactionId: newTransactionRecord.data.id
