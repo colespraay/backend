@@ -1094,7 +1094,6 @@ export class UserService extends GenericService(User) {
     }
   }
 
-  @OnEvent('wallet.credit', { async: true })
   async creditUserWallet(
     payload: CreditUserWalletDTO,
   ): Promise<BaseResponseTypeDTO> {
@@ -1119,7 +1118,6 @@ export class UserService extends GenericService(User) {
     }
   }
 
-  @OnEvent('wallet.debit', { async: true })
   async debitUserWallet(
     payload: CreditUserWalletDTO,
   ): Promise<BaseResponseTypeDTO> {

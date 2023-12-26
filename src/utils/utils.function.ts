@@ -915,3 +915,31 @@ export const differenceInDays = (date1: Date, date2: Date): number => {
   // Round to get the absolute difference in days
   return Math.abs(Math.round(daysDiff));
 };
+
+export const formatAmount = (amount: number, currency = 'AED'): string => new Intl.NumberFormat('en-US', {
+  style: 'currency',
+  currency,
+  minimumFractionDigits: 2
+}).format(Number(amount));
+
+// Sample result: 17th April, 2023 - 2:30pm
+export const formatDate = (date: Date): string => {
+  const months = [
+    "January", "February", "March", "April", "May", "June",
+    "July", "August", "September", "October", "November", "December"
+  ];
+  const suffixes = ["st", "nd", "rd", "th"];
+
+  const day = date.getDate();
+  const month = date.getMonth();
+  const year = date.getFullYear();
+  const hour = date.getHours();
+  const minute = date.getMinutes();
+
+  const suffix = day <= 3 ? suffixes[day - 1] : suffixes[3];
+
+  const formattedDate = `${day}${suffix} ${months[month]}, ${year} - ${hour % 12 === 0 ? 12 : hour % 12}:${minute < 10 ? '0' + minute : minute}${hour >= 12 ? 'pm' : 'am'}`;
+
+  return formattedDate;
+};
+

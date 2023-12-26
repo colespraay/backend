@@ -1,9 +1,9 @@
 import { HttpStatus, Inject, Injectable, forwardRef } from '@nestjs/common';
-import { EventEmitter2 } from '@nestjs/event-emitter';
-import { TransactionService } from '@modules/transaction/transaction.service';
-import { TransactionRecord, UserAccount, Withdrawal } from '@entities/index';
+import { Not } from 'typeorm';
+import { UserAccount, Withdrawal } from '@entities/index';
 import { GenericService } from '@schematics/index';
 import {
+  PaymentStatus,
   TransactionType,
   checkForRequiredFields,
   generateUniqueCode,
@@ -11,11 +11,16 @@ import {
   httpPost,
   validateUUIDField,
 } from '@utils/index';
+import { TransactionService } from '@modules/transaction/transaction.service';
 import {
   WithdrawalResponseDTO,
   CreateWithdrawalDTO,
 } from './dto/withdrawal.dto';
-import { UserAccountService, UserService, WalletService } from '../index';
+import {
+  UserAccountService,
+  UserService,
+  WalletService
+} from '../index';
 
 @Injectable()
 export class WithdrawalService extends GenericService(Withdrawal) {
@@ -23,7 +28,7 @@ export class WithdrawalService extends GenericService(Withdrawal) {
     @Inject(forwardRef(() => UserAccountService))
     private readonly userAccountSrv: UserAccountService,
     private readonly transactionSrv: TransactionService,
-    private readonly eventEmitterSrv: EventEmitter2,
+    @Inject(forwardRef(() => WalletService))
     private readonly walletSrv: WalletService,
     private readonly userSrv: UserService,
   ) {
@@ -78,57 +83,29 @@ export class WithdrawalService extends GenericService(Withdrawal) {
       const headers = {
         Authorization: `Bearer ${String(process.env.FLUTTERWAVE_SECRET_KEY)}`,
       };
-      // transfer from wallet
       const reference = `Spraay-payout-${generateUniqueCode(10)}`;
       const narration = `Wallet payout of ₦${payload.amount} to ${user.data.firstName} ${user.data.lastName}`;
       const url = 'https://api.flutterwave.com/v3/transfers';
-      const reqPayload = {
+      const requestPayload = {
+        narration,
         reference,
+        currency: 'NGN',
+        amount: payload.amount,
         account_number: payload.accountNumber,
         account_bank: payload.bankCode,
-        currency: 'NGN',
-        narration,
-        amount: payload.amount,
       };
       const flutterwaveResponse = await httpPost<any, any>(
         url,
-        reqPayload,
+        requestPayload,
         headers,
       );
+      this.logger.debug({ wtFlutterwaveResponse: flutterwaveResponse });
       if (flutterwaveResponse?.status === 'success') {
-        const data = flutterwaveResponse.data;
-        const reference = `Spraay-payout-${generateUniqueCode(10)}`;
-        const narration = `Wallet payout of ₦${payload.amount} to ${user.data.firstName} ${user.data.lastName}`;
-        // Log the debit to transaction table
-        const createdTransaction = await this.transactionSrv.create<
-          Partial<TransactionRecord>
-        >({
-          transactionDate: data.created_at,
-          currentBalanceBeforeTransaction: user.data.walletBalance,
-          narration,
-          type: TransactionType.DEBIT,
+        const createdWithdrawal = await this.create<Partial<Withdrawal>>({
+          userId,
           reference,
           amount: payload.amount,
-          userId,
-        });
-        this.logger.log({ createdTransaction });
-
-        // Update user's account balance, after checking to see transaction went through
-        setTimeout(async () => {
-          const fetchTransferUrl = `https://api.flutterwave.com/v3/transfers/${data.id}`;
-          const resp = await httpGet<any>(fetchTransferUrl, headers);
-          if (resp?.data.status === 'SUCCESSFUL') {
-            this.eventEmitterSrv.emit('wallet.debit', {
-              amount: payload.amount,
-              userId: user.data.id,
-            });
-          }
-        }, 5000);
-
-        const createdWithdrawal = await this.create<Partial<Withdrawal>>({
-          amount: payload.amount,
-          transactionId: createdTransaction.id,
-          userId,
+          transferId: Number(flutterwaveResponse.data.id),
         });
         const newWithdrawal = await this.getRepo().findOne({
           where: { id: createdWithdrawal.id },
@@ -140,6 +117,49 @@ export class WithdrawalService extends GenericService(Withdrawal) {
           data: newWithdrawal,
           message: 'Withdrawal successful',
         };
+      }
+    } catch (ex) {
+      this.logger.error(ex);
+      throw ex;
+    }
+  }
+
+  async confirmWithdrawals(): Promise<void> {
+    try {
+      const headers = {
+        Authorization: `Bearer ${String(process.env.FLUTTERWAVE_SECRET_KEY)}`,
+      };
+      const withdrawals = await this.getRepo().find({ 
+        where: { paymentStatus: PaymentStatus.PENDING, transferId: Not(0) },
+        take: 5,
+      });
+      console.log({ withdrawals });
+      if (withdrawals?.length > 0) {
+        for (const withdrawal of withdrawals) {
+          const transferId = withdrawal.transferId;
+          const url = `https://api.flutterwave.com/v3/transfers/${transferId}`;
+          const response = await httpGet<any>(url, headers);
+          if (response?.data.status === 'SUCCESSFUL') {
+            await this.getRepo().update(
+              { id: withdrawal.id },
+              { paymentStatus: PaymentStatus.SUCCESSFUL }
+            );
+            const currentBalanceBeforeTransaction = await this.userSrv.getCurrentWalletBalance(withdrawal.userId);
+            const transactionRecord = await this.transactionSrv.findOne({ reference: withdrawal.reference });
+            const data = response.data;
+            if (!transactionRecord?.id) {
+              await this.transactionSrv.createTransaction({
+                userId: withdrawal.userId,
+                narration: data.narration,
+                type: TransactionType.DEBIT,
+                amount: parseFloat(data.amount),
+                reference: String(data.reference),
+                currentBalanceBeforeTransaction,
+                transactionDate: data.created_at
+              });
+            }
+          }
+        }
       }
     } catch (ex) {
       this.logger.error(ex);

@@ -16,9 +16,12 @@ import {
   PaginationRequestType,
   sendEmail,
   BaseResponseTypeDTO,
+  formatAmount,
+  formatDate,
 } from '@utils/index';
 import { FindStatementOfAccountDTO } from '@modules/wallet/dto/wallet.dto';
 import { UsersResponseDTO } from '@modules/user/dto/user.dto';
+import { UserService } from '@modules/user/user.service';
 import {
   TransactionResponseDTO,
   CreateTransactionDTO,
@@ -32,7 +35,6 @@ import {
   TransactionListHistoryGraphPartial,
   Month,
 } from './dto/transaction.dto';
-import { UserService } from '../index';
 
 @Injectable()
 export class TransactionService extends GenericService(TransactionRecord) {
@@ -216,7 +218,6 @@ export class TransactionService extends GenericService(TransactionRecord) {
     }
   }
 
-  @OnEvent('transaction.log', { async: true })
   async createTransaction(
     payload: CreateTransactionDTO,
   ): Promise<TransactionResponseDTO> {
@@ -251,14 +252,15 @@ export class TransactionService extends GenericService(TransactionRecord) {
               amount: payload.amount,
               userId: payload.userId,
             });
-            break;
+          break;
           case TransactionType.DEBIT:
             await this.userSrv.debitUserWallet({
               amount: payload.amount,
               userId: payload.userId,
             });
-            break;
+          break;
         }
+        await this.sendEmailForTransactionNotification(createdRecord);
         return {
           success: true,
           code: HttpStatus.CREATED,
@@ -590,6 +592,159 @@ export class TransactionService extends GenericService(TransactionRecord) {
         message: 'Statement of account sent to your mailbox',
         code: HttpStatus.OK,
       };
+    } catch (ex) {
+      this.logger.error(ex);
+      throw ex;
+    }
+  }
+
+  private async sendEmailForTransactionNotification(transaction: TransactionRecord): Promise<void> {
+    try {
+      const today = new Date();
+      const user = await this.userSrv.findUserById(transaction.userId);
+      const instagramUrl = String(process.env.INSTAGRAM_URL);
+      const twitterUrl = String(process.env.TWITTER_URL);
+      const facebookUrl = String(process.env.FACEBOOK_URL);
+      const transactionDate = formatDate(new Date(transaction.transactionDate));
+      const transactionAmount = formatAmount(transaction.amount);
+      let html: string;
+      switch (transaction.type) {
+        case TransactionType.CREDIT:
+          html = `<section style="background: white; color: black; font-size: 15px; font-family: 'Gill Sans', 'Gill Sans MT', Calibri, 'Trebuchet MS', sans-serif; display: flex; justify-content: center; margin: 0;">
+            <div style="padding: 2rem; width: 80%;">
+            <section style="text-align: center;">
+                <div style="width: fit-content; margin: 20px 0px;display: inline-block;">
+                    <img src="https://ik.imagekit.io/un0omayok/Logo%20animaion.png?updatedAt=1701281040423" alt="">
+                </div>
+            </section>
+    
+            <section style="width: 100%; height: auto; font-size: 18px; text-align: justify;">
+                <p style="font-weight:300">Hi ${user.data.firstName},</p>
+                <p style="font-weight:300">
+                  A transaction has occurred on your account. Here is the transaction details:
+                </p>
+                <p style="font-weight:300; text-align: center;margin:0">
+                    <b>Transaction Amount</b>
+                </p>
+                <h1 style="font-size: 50px;text-align: center; margin:0; color: rgb(38, 87, 38)">
+                  <sup><span style="font-size: 30px;">+</span></sup>₦${transactionAmount}
+                </h1>
+    
+                <table style="width:100%;border-collapse:collapse;">
+                    <tr>
+                        <td style="padding: 20px 5px; border-bottom: 1px solid #ddd;color:#555555">Transaction Type</td>
+                        <td style="text-align: right;padding: 20px 5px;border-bottom: 1px solid #ddd;color:#555555">Electricity bill</td>
+                    </tr>
+                    <tr>
+                        <td style="padding: 20px 5px; border-bottom: 1px solid #ddd;color:#555555">Transaction Date</td>
+                        <td style="text-align: right;padding: 20px 5px;border-bottom: 1px solid #ddd;color:#555555">
+                          ${transactionDate}
+                        </td>
+                    </tr>
+                    <tr>
+                        <td style="padding: 20px 5px; border-bottom: 1px solid #ddd;color:#555555">Transaction Reference</td>
+                        <td style="text-align: right;padding: 20px 5px;border-bottom: 1px solid #ddd;color:#555555">
+                          ${transaction.reference}
+                        </td>
+                    </tr>
+                </table>
+    
+                <p style="font-weight:300">
+                    If you have any issues with payment, kindly reply to this email or send an email to 
+                    <span style="font-weight: 400;">
+                        <a style="color: inherit;" href="mailto:hello@spraay.ng?subject=Problem with transaction: '${transaction.reference}'">hi@spraay.ng</a>
+                    </span>
+                </p>
+            </section>
+    
+            <section style="text-align: center; height: 8rem; background-color: #5B45FF; border-radius: 10px; margin-top: 2rem; margin-bottom: 2rem;">
+            <a href="${instagramUrl}" style="margin-right: 30px;display: inline-block;padding-top:40px;"><img src="https://ik.imagekit.io/un0omayok/mdi_instagram.png?updatedAt=1701281040417" alt=""></a>
+            <a href="${twitterUrl}" style="margin-right: 30px;display: inline-block;padding-top:40px;"><img src="https://ik.imagekit.io/un0omayok/simple-icons_x.png?updatedAt=1701281040408" alt=""></a>
+            <a href="${facebookUrl}" style="display: inline-block;padding-top:40px;"><img src="https://ik.imagekit.io/un0omayok/ic_baseline-facebook.png?updatedAt=1701281040525" alt=""></a>
+          </section>
+    
+            <section style="padding: 20px; border-bottom: 2px solid #000; text-align: center; font-size: 20px;">
+                <p style="font-weight:300">Spraay software limited</p>
+            </section>
+    
+            <section style="text-align: center; font-size: 18px;">
+                <p style="font-weight: 400;">Spraay &copy;${today.getFullYear()}</p>
+                <p style="font-weight: 400;">Click here to <a href="#" style="color: #5B45FF;">Unsubscribe</a></p>
+            </section>
+          </div>
+          </section>`;
+        break;
+        case TransactionType.DEBIT:
+          html = `
+          <section style="background: white; color: black; font-size: 15px; font-family: 'Gill Sans', 'Gill Sans MT', Calibri, 'Trebuchet MS', sans-serif; display: flex; justify-content: center; margin: 0;">
+          <div style="padding: 2rem; width: 80%;">
+            <section style="text-align: center;">
+                <div style="width: fit-content; margin: 20px 0px;display: inline-block;">
+                    <img src="https://ik.imagekit.io/un0omayok/Logo%20animaion.png?updatedAt=1701281040423" alt="">
+                </div>
+            </section>
+    
+            <section style="width: 100%; height: auto; font-size: 18px; text-align: justify;">
+                <p style="font-weight:300">Hi ${user.data.firstName},</p>
+                <p style="font-weight:300">
+                  A transaction has occurred on your account. Here is the transaction details:
+                </p>
+                <p style="font-weight:300; text-align: center;margin:0">
+                    <b>Transaction Amount</b>
+                </p>
+                <h1 style="font-size: 50px;text-align: center; margin:0; color: rgb(228, 67, 67)">
+                  <sup><span style="font-size: 30px;">-</span></sup>₦${transactionAmount}
+                </h1>
+    
+                <table style="width:100%;border-collapse:collapse;">
+                    <tr>
+                        <td style="padding: 20px 5px; border-bottom: 1px solid #ddd;color:#555555">Transaction Type</td>
+                        <td style="text-align: right;padding: 20px 5px;border-bottom: 1px solid #ddd;color:#555555">Electricity bill</td>
+                    </tr>
+                    <tr>
+                        <td style="padding: 20px 5px; border-bottom: 1px solid #ddd;color:#555555">Transaction Date</td>
+                        <td style="text-align: right;padding: 20px 5px;border-bottom: 1px solid #ddd;color:#555555">
+                          ${transactionDate}
+                        </td>
+                    </tr>
+                    <tr>
+                        <td style="padding: 20px 5px; border-bottom: 1px solid #ddd;color:#555555">Transaction Reference</td>
+                        <td style="text-align: right;padding: 20px 5px;border-bottom: 1px solid #ddd;color:#555555">
+                          ${transaction.reference}
+                        </td>
+                    </tr>
+                </table>
+    
+                <p style="font-weight:300">
+                    If you have any issues with payment, kindly reply to this email or send an email to 
+                    <span style="font-weight: 400;">
+                        <a style="color: inherit;" href="mailto:hello@spraay.ng?subject=Problem with transaction: '${transaction.reference}'">hi@spraay.ng</a>
+                    </span>
+                </p>
+            </section>
+    
+            <section style="text-align: center; height: 8rem; background-color: #5B45FF; border-radius: 10px; margin-top: 2rem; margin-bottom: 2rem;">
+            <a href="${instagramUrl}" style="margin-right: 30px;display: inline-block;padding-top:40px;"><img src="https://ik.imagekit.io/un0omayok/mdi_instagram.png?updatedAt=1701281040417" alt=""></a>
+            <a href="${twitterUrl}" style="margin-right: 30px;display: inline-block;padding-top:40px;"><img src="https://ik.imagekit.io/un0omayok/simple-icons_x.png?updatedAt=1701281040408" alt=""></a>
+            <a href="${facebookUrl}" style="display: inline-block;padding-top:40px;"><img src="https://ik.imagekit.io/un0omayok/ic_baseline-facebook.png?updatedAt=1701281040525" alt=""></a>
+          </section>
+    
+            <section style="padding: 20px; border-bottom: 2px solid #000; text-align: center; font-size: 20px;">
+                <p style="font-weight:300">Spraay software limited</p>
+            </section>
+    
+            <section style="text-align: center; font-size: 18px;">
+                <p style="font-weight: 400;">Spraay &copy;${today.getFullYear()}</p>
+                <p style="font-weight: 400;">Click here to <a href="#" style="color: #5B45FF;">Unsubscribe</a></p>
+            </section>
+            </div>
+          </section>`;
+        break;
+      }
+      if (html) {
+        const subject = `Spraay Receipt for: ${transaction.reference}`;
+        await sendEmail(html, subject, [user.data.email]);
+      }
     } catch (ex) {
       this.logger.error(ex);
       throw ex;

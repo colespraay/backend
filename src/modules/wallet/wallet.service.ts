@@ -7,6 +7,7 @@ import {
 } from '@nestjs/common';
 import { EventEmitter2, OnEvent } from '@nestjs/event-emitter';
 import {
+  PaymentStatus,
   TransactionType,
   checkForRequiredFields,
   formatTransactionKey,
@@ -18,6 +19,8 @@ import {
 import { User } from '@entities/index';
 import { UserService } from '@modules/user/user.service';
 import { BankService } from '@modules/bank/bank.service';
+import { WithdrawalService } from '@modules/withdrawal/withdrawal.service';
+import { TransactionService } from '@modules/transaction/transaction.service';
 import { UserAccountService } from '@modules/user-account/user-account.service';
 import {
   BankAccountStatementDTO,
@@ -51,6 +54,8 @@ export class WalletService {
     private readonly userSrv: UserService,
     private readonly bankSrv: BankService,
     private readonly userAccountSrv: UserAccountService,
+    private readonly transactionSrv: TransactionService,
+    private readonly withdrawalSrv: WithdrawalService,
     private readonly eventEmitterSrv: EventEmitter2,
   ) {}
 
@@ -219,7 +224,7 @@ export class WalletService {
 
   async verifyWalletAccountNumber(
     userAccountNumber: string,
-    env = 'TEST',
+    env = 'PROD',
   ): Promise<VerifiesAccountDetailDTO> {
     try {
       if (env === 'TEST') {
@@ -334,7 +339,7 @@ export class WalletService {
   async makeTransferFromWallet(
     sourceAccountNumber: string,
     payload: MakeWalletDebitTypeDTO,
-    env = 'TEST',
+    env = 'PROD',
   ): Promise<TransferResponseDTO> {
     try {
       checkForRequiredFields(
@@ -489,18 +494,15 @@ export class WalletService {
             select: ['id', 'walletBalance'],
           });
           if (userRecord?.id) {
-            const amount = parseFloat(data.amount);
-            this.eventEmitterSrv.emit('transaction.log', {
+            const currentBalanceBeforeTransaction =
+              await this.userSrv.getCurrentWalletBalance(userRecord.id);
+            await this.transactionSrv.createTransaction({
               type: TransactionType.CREDIT,
               userId: userRecord.id,
               narration: data.narration,
               transactionDate: data.created_at,
-              currentBalanceBeforeTransaction: userRecord.walletBalance,
-              amount,
-            });
-            this.eventEmitterSrv.emit('wallet.credit', {
-              userId: userRecord.id,
-              amount,
+              currentBalanceBeforeTransaction,
+              amount: parseFloat(data.amount),
             });
           }
         }
@@ -510,18 +512,32 @@ export class WalletService {
         if (data.status === 'SUCCESSFUL') {
           const userAccount = await this.userAccountSrv.getRepo().findOne({
             where: { accountNumber: String(data.account_number) },
-            relations: ['user'],
           });
           if (userAccount?.userId) {
             const userId = userAccount.userId;
-            this.eventEmitterSrv.emit('transaction.log', {
-              type: TransactionType.DEBIT,
+            const reference = String(data.reference);
+            const currentBalanceBeforeTransaction =
+              await this.userSrv.getCurrentWalletBalance(userAccount.userId);
+            const newTransactionRecord = await this.transactionSrv.createTransaction({
               userId,
               narration: data.narration,
+              type: TransactionType.DEBIT,
               transactionDate: data.created_at,
-              currentBalanceBeforeTransaction: userAccount.user?.walletBalance,
+              currentBalanceBeforeTransaction,
               amount: parseFloat(data.amount),
+              reference,
             });
+          const withdrawalRecord = await this.withdrawalSrv.findOne({ reference });
+          if (withdrawalRecord?.id) {
+            await this.withdrawalSrv.getRepo().update(
+              { id: withdrawalRecord.id 
+              },
+              {
+                paymentStatus: PaymentStatus.SUCCESSFUL,
+                transactionId: newTransactionRecord.data.id
+              }
+            );
+          }
           }
         }
       }
@@ -541,24 +557,25 @@ export class WalletService {
         virtualAccountNumber: payload.accountNumber,
       });
       if (user?.id) {
+        const transactionDate = new Date(payload.transactionDate).toLocaleString();
         switch (payload.transactionType) {
           case TransactionType.CREDIT:
-            this.eventEmitterSrv.emit('transaction.log', {
+            await this.transactionSrv.createTransaction({ 
               type: TransactionType.CREDIT,
               userId: user.id,
               narration: payload.narration,
               amount: payload.amount,
-              transactionDate: payload.transactionDate,
+              transactionDate,
               currentBalanceBeforeTransaction: user.walletBalance,
             });
             break;
           case TransactionType.DEBIT:
-            this.eventEmitterSrv.emit('transaction.log', {
+            await this.transactionSrv.createTransaction({
               type: TransactionType.DEBIT,
               userId: user.id,
               narration: payload.narration,
               amount: payload.amount,
-              transactionDate: payload.transactionDate,
+              transactionDate,
               currentBalanceBeforeTransaction: user.walletBalance,
             });
             break;

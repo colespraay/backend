@@ -16,6 +16,7 @@ import {
   UserNotificationType,
   calculatePaginationControls,
   checkForRequiredFields,
+  formatAmount,
   generateUniqueCode,
   sendEmail,
   validateUUIDField,
@@ -90,10 +91,11 @@ export class EventSpraayService extends GenericService(EventSpraay) {
       transactionId: newTransaction.data.id,
     });
 
+    const formattedAmount = formatAmount(payload.amount);
     const recipientCurrentBalance = await this.userSrv.getCurrentWalletBalance(
       event.data.userId,
     );
-    const recipientNarration = `₦${payload.amount} was 'spraayed' on you by ${user.firstName} ${user.lastName}`;
+    const recipientNarration = `₦${formattedAmount} was 'spraayed' on you by ${user.firstName} ${user.lastName}`;
     const creditTransaction = await this.transactionSrv.createTransaction({
       reference,
       transactionDate,
@@ -105,20 +107,33 @@ export class EventSpraayService extends GenericService(EventSpraay) {
     });
     this.logger.debug({ creditTransaction });
 
+    const senderNarration = `You 'spraayed' ₦${payload.amount} at '${event.data.eventName}'`;
+    const debitTransaction = await this.transactionSrv.createTransaction({
+      reference,
+      transactionDate,
+      userId: user.id,
+      amount: payload.amount,
+      type: TransactionType.DEBIT,
+      narration: senderNarration,
+      // receiverUserId: event.data.userId,
+      currentBalanceBeforeTransaction: currentWalletBalance,
+    });
+    this.logger.debug({ debitTransaction });
+
     await this.sendNotificationAfterSpraying(newSpraay.id);
 
     this.eventEmitterSrv.emit('user-notification.create', {
       userId: event.data.userId,
       subject: 'Cash sprayed',
       type: UserNotificationType.USER_SPECIFIC,
-      message: `You were sprayed with ₦${payload.amount} by ${user.firstName} ${user.lastName}`,
+      message: `You were sprayed with ₦${formattedAmount} by ${user.firstName} ${user.lastName}`,
     });
 
     this.eventEmitterSrv.emit('user-notification.create', {
       userId: user.id,
       subject: 'Cash sprayed',
       type: UserNotificationType.USER_SPECIFIC,
-      message: `You sprayed ₦${payload.amount} on ${event.data?.user?.firstName} ${event.data?.user?.lastName}`,
+      message: `You sprayed ₦${formattedAmount} on ${event.data?.user?.firstName} ${event.data?.user?.lastName}`,
     });
 
     return {

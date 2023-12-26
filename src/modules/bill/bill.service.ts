@@ -161,7 +161,7 @@ export class BillService implements OnModuleInit {
   async makeElectricUnitPurchase(
     payload: CreateElectricityPurchaseDTO,
     reference: string,
-    env = 'TEST',
+    env = 'PROD',
   ): Promise<FlutterwaveBillPaymentResponseDTO> {
     try {
       const url = 'https://api.flutterwave.com/v3/bills';
@@ -223,7 +223,7 @@ export class BillService implements OnModuleInit {
   async makeDataPurchase(
     payload: CreateFlutterwaveDataPurchaseDTO,
     reference: string,
-    env = 'TEST',
+    env = 'PROD',
   ): Promise<FlutterwaveBillPaymentResponseDTO> {
     try {
       const url = 'https://api.flutterwave.com/v3/bills';
@@ -272,7 +272,7 @@ export class BillService implements OnModuleInit {
     payload: CreateFlutterwaveCablePlanPurchaseDTO,
     reference: string,
     plan: FlutterwaveCableBillingOptionPartial,
-    env = 'TEST',
+    env = 'PROD',
   ): Promise<FlutterwaveBillPaymentResponseDTO> {
     try {
       const url = 'https://api.flutterwave.com/v3/bills';
@@ -320,7 +320,7 @@ export class BillService implements OnModuleInit {
   async makeAirtimePurchase(
     payload: CreateAirtimePurchaseDTO,
     reference: string,
-    env = 'TEST',
+    env = 'PROD',
   ): Promise<FlutterwaveBillPaymentResponseDTO> {
     try {
       const url = 'https://api.flutterwave.com/v3/bills';
@@ -476,7 +476,7 @@ export class BillService implements OnModuleInit {
   // If you cannot find prepaid plan, throw a 404 error
   async verifyElectricityPlan(
     payload: VerifyElectricityPurchaseDTO,
-    env = 'TEST',
+    env = 'PROD',
   ): Promise<FlutterwaveBillItemVerificationResponseDTO> {
     try {
       const headers = { Authorization: `Bearer ${this.flutterwaveSecretKey}` };
