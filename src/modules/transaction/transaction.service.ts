@@ -633,7 +633,7 @@ export class TransactionService extends GenericService(TransactionRecord) {
                 <table style="width:100%;border-collapse:collapse;">
                     <tr>
                         <td style="padding: 20px 5px; border-bottom: 1px solid #ddd;color:#555555">Transaction Type</td>
-                        <td style="text-align: right;padding: 20px 5px;border-bottom: 1px solid #ddd;color:#555555">Electricity bill</td>
+                        <td style="text-align: right;padding: 20px 5px;border-bottom: 1px solid #ddd;color:#555555">${transaction.type}</td>
                     </tr>
                     <tr>
                         <td style="padding: 20px 5px; border-bottom: 1px solid #ddd;color:#555555">Transaction Date</td>
@@ -699,7 +699,7 @@ export class TransactionService extends GenericService(TransactionRecord) {
                 <table style="width:100%;border-collapse:collapse;">
                     <tr>
                         <td style="padding: 20px 5px; border-bottom: 1px solid #ddd;color:#555555">Transaction Type</td>
-                        <td style="text-align: right;padding: 20px 5px;border-bottom: 1px solid #ddd;color:#555555">Electricity bill</td>
+                        <td style="text-align: right;padding: 20px 5px;border-bottom: 1px solid #ddd;color:#555555">${transaction.type}</td>
                     </tr>
                     <tr>
                         <td style="padding: 20px 5px; border-bottom: 1px solid #ddd;color:#555555">Transaction Date</td>

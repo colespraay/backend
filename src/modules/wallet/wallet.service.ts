@@ -503,15 +503,7 @@ export class WalletService {
               currentBalanceBeforeTransaction,
               amount: parseFloat(data.amount),
             });
-            this.logger.debug({ event: 'charge.completed', currentBalanceBeforeTransaction, transactionPayload: {
-              reference,
-              type: TransactionType.CREDIT,
-              userId: userRecord.id,
-              narration: data.narration,
-              transactionDate: data.created_at,
-              currentBalanceBeforeTransaction,
-              amount: parseFloat(data.amount),
-            }, newTransaction });
+          this.logger.debug({ newTransaction });
           }
         }
       }
@@ -535,6 +527,7 @@ export class WalletService {
               currentBalanceBeforeTransaction,
               amount: parseFloat(data.amount),
             });
+          this.logger.debug({ newTransaction });
           this.logger.debug({ event: 'transfer.completed', currentBalanceBeforeTransaction, transactionPayload:
           {
             userId,
