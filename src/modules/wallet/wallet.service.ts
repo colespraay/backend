@@ -493,7 +493,7 @@ export class WalletService {
           if (userRecord?.id) {
             const currentBalanceBeforeTransaction =
               await this.userSrv.getCurrentWalletBalance(userRecord.id);
-            const reference = String(data.tx_ref);
+            const reference = String(data.flw_ref);
             const narration = `${data.narration} - Wallet Funded`;
             const newTransaction = await this.transactionSrv.createTransaction({
               reference,
@@ -504,7 +504,7 @@ export class WalletService {
               currentBalanceBeforeTransaction,
               amount: parseFloat(data.amount),
             });
-          this.logger.debug({ newTransaction });
+          this.logger.debug({ newTransaction, narration, reference });
           }
         }
       }
@@ -516,7 +516,7 @@ export class WalletService {
           });
           if (userAccount?.userId) {
             const userId = userAccount.userId;
-            const reference = String(data.tx_ref);
+            const reference = String(data.flw_ref);
             const currentBalanceBeforeTransaction =
               await this.userSrv.getCurrentWalletBalance(userAccount.userId);
             const newTransaction = await this.transactionSrv.createTransaction({
