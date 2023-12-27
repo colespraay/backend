@@ -77,20 +77,6 @@ export class UserService extends GenericService(User) {
     super();
   }
 
-  // async onModuleInit() {
-  //   try {
-  //     // const users = await this.findAll();
-  //     // console.log({ users });
-  //     const userId = 'a036de16-6c95-404c-a3e6-3050ccfc1adf';
-  //     const bvn = '22373523502';
-  //     const tl = await this.resolveUserBvn(bvn, userId);
-  //     console.log({ tl });
-  //   } catch (ex) {
-  //     this.logger.error(ex);
-  //     throw ex;
-  //   }
-  // }
-
   async findContactsFilteredByUserContacts(
     payload: UserContactsDTO,
     pagination?: UserContactsQueryDTO,
