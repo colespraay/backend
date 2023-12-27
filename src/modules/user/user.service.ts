@@ -1,7 +1,4 @@
-import {
-  EventEmitter2,
-  OnEvent
-} from '@nestjs/event-emitter';
+import { EventEmitter2 } from '@nestjs/event-emitter';
 import {
   BadRequestException,
   ConflictException,
@@ -12,6 +9,7 @@ import {
   forwardRef,
   InternalServerErrorException,
   NotFoundException,
+  HttpException,
 } from '@nestjs/common';
 import {
   FindManyOptions,
@@ -19,6 +17,7 @@ import {
   In,
   Not
 } from 'typeorm';
+import axios, { AxiosError } from 'axios';
 import { GenericService } from '@schematics/index';
 import { User } from '@entities/index';
 import {
@@ -36,7 +35,6 @@ import {
   hashPassword,
   sendEmail,
   Gender,
-  httpPost,
   validateBvn,
   DefaultPassportLink,
   validatePastDate,
@@ -50,6 +48,7 @@ import {
   AppRole,
 } from '@utils/index';
 import { AuthResponseDTO } from '@modules/auth/dto/auth.dto';
+import { AuthService } from '@modules/auth/auth.service';
 import {
   ChangePasswordDTO,
   CreateUserDTO,
@@ -67,7 +66,6 @@ import {
   UserContactsDTO,
   UserContactsQueryDTO,
 } from './dto/user.dto';
-import { AuthService } from '../index';
 
 @Injectable()
 export class UserService extends GenericService(User) {
@@ -78,6 +76,20 @@ export class UserService extends GenericService(User) {
   ) {
     super();
   }
+
+  // async onModuleInit() {
+  //   try {
+  //     // const users = await this.findAll();
+  //     // console.log({ users });
+  //     const userId = 'a036de16-6c95-404c-a3e6-3050ccfc1adf';
+  //     const bvn = '22373523502';
+  //     const tl = await this.resolveUserBvn(bvn, userId);
+  //     console.log({ tl });
+  //   } catch (ex) {
+  //     this.logger.error(ex);
+  //     throw ex;
+  //   }
+  // }
 
   async findContactsFilteredByUserContacts(
     payload: UserContactsDTO,
@@ -1282,17 +1294,14 @@ export class UserService extends GenericService(User) {
           env === 'TEST'
             ? 'http://api.sandbox.youverify.co/v2/api/identity/ng/bvn'
             : 'http://api.youverify.co/v2/api/identity/ng/bvn';
-        const youVerifyResponse = await httpPost<any, any>(
-          url,
-          {
-            id: bvn,
-            isSubjectConsent: true,
-          },
-          {
-            token: String(process.env.YOU_VERIFY_SECRET_KEY),
-          },
-        );
-        if (youVerifyResponse?.success) {
+        const axiosResponse = await axios.post(url, {
+          id: bvn,
+          isSubjectConsent: true,
+          }, 
+          { headers: { token: String(process.env.YOU_VERIFY_SECRET_KEY) },
+        });
+        const youVerifyResponse = axiosResponse.data;
+        if (youVerifyResponse.success) {
           const photo = String(youVerifyResponse.data.image);
           const localUrl = base64ToJPEG(photo);
           const url = await uploadFileToImageKit(localUrl);
@@ -1312,13 +1321,18 @@ export class UserService extends GenericService(User) {
         }
         throw new NotFoundException('Invalid, Could not validate bvn');
       }
-    } catch (ex) {
-      this.logger.error(ex);
-      if (
-        String(ex).includes('status code 403') ||
-        String(ex).includes('status code 404')
-      ) {
-        throw new NotFoundException('BVN not found');
+    } catch (ex: any) {
+      if (ex instanceof AxiosError) {
+        const errorObject = ex.response?.data;
+        this.logger.error(errorObject.message);
+        throw new HttpException(errorObject.message, errorObject.statusCode);
+      } else {
+        if (
+          String(ex).includes('status code 403') ||
+          String(ex).includes('status code 404')
+        ) {
+          throw new NotFoundException('BVN not found');
+        }
       }
       throw ex;
     }
