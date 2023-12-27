@@ -494,11 +494,12 @@ export class WalletService {
             const currentBalanceBeforeTransaction =
               await this.userSrv.getCurrentWalletBalance(userRecord.id);
             const reference = String(data.tx_ref);
+            const narration = `${data.narration} - Wallet Funded`;
             const newTransaction = await this.transactionSrv.createTransaction({
               reference,
+              narration,
               type: TransactionType.CREDIT,
               userId: userRecord.id,
-              narration: data.narration,
               transactionDate: data.created_at,
               currentBalanceBeforeTransaction,
               amount: parseFloat(data.amount),
