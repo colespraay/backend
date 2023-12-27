@@ -750,7 +750,7 @@ export class TransactionService extends GenericService(TransactionRecord) {
       throw ex;
     }
   }
-
+  
   @OnEvent('export.soa', { async: true })
   private async exportSOA(payload: ExportSOADTO): Promise<void> {
     try {

@@ -485,6 +485,7 @@ export class WalletService {
 
   async webhookHandler(payload: any): Promise<void> {
     try {
+      this.logger.debug({ webhookPayload: payload });
       if (payload.event === 'charge.completed') {
         // User funds their wallet
         const data = payload.data;
@@ -496,7 +497,7 @@ export class WalletService {
           if (userRecord?.id) {
             const currentBalanceBeforeTransaction =
               await this.userSrv.getCurrentWalletBalance(userRecord.id);
-            await this.transactionSrv.createTransaction({
+            const newTransaction = await this.transactionSrv.createTransaction({
               type: TransactionType.CREDIT,
               userId: userRecord.id,
               narration: data.narration,
@@ -504,6 +505,7 @@ export class WalletService {
               currentBalanceBeforeTransaction,
               amount: parseFloat(data.amount),
             });
+            this.logger.debug({ event: 'charge.completed', currentBalanceBeforeTransaction, newTransaction });
           }
         }
       }
@@ -518,7 +520,7 @@ export class WalletService {
             const reference = String(data.reference);
             const currentBalanceBeforeTransaction =
               await this.userSrv.getCurrentWalletBalance(userAccount.userId);
-            const newTransactionRecord = await this.transactionSrv.createTransaction({
+            const newTransaction = await this.transactionSrv.createTransaction({
               userId,
               reference,
               narration: data.narration,
@@ -527,13 +529,14 @@ export class WalletService {
               currentBalanceBeforeTransaction,
               amount: parseFloat(data.amount),
             });
+          this.logger.debug({ event: 'transfer.completed', currentBalanceBeforeTransaction, newTransaction });
           const withdrawalRecord = await this.withdrawalSrv.findOne({ reference });
           if (withdrawalRecord?.id) {
             await this.withdrawalSrv.getRepo().update(
               { id: withdrawalRecord.id },
               {
                 paymentStatus: PaymentStatus.SUCCESSFUL,
-                transactionId: newTransactionRecord.data.id
+                transactionId: newTransaction.data.id
               }
             );
           }
