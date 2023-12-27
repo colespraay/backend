@@ -66,10 +66,6 @@ export class WalletService {
       validateUUIDField(userId, 'userId');
       const url = 'https://api.flutterwave.com/v3/virtual-account-numbers';
       const user = await this.userSrv.findUserById(userId);
-      // checkForRequiredFields(
-      //   ['firstName', 'lastName', 'email', 'bvn', 'phoneNumber'],
-      //   user.data,
-      // );
       const {
         data: { firstName, lastName, bvn, phoneNumber, email },
       } = user;
@@ -497,7 +493,9 @@ export class WalletService {
           if (userRecord?.id) {
             const currentBalanceBeforeTransaction =
               await this.userSrv.getCurrentWalletBalance(userRecord.id);
+            const reference = String(data.tx_ref);
             const newTransaction = await this.transactionSrv.createTransaction({
+              reference,
               type: TransactionType.CREDIT,
               userId: userRecord.id,
               narration: data.narration,
@@ -505,7 +503,15 @@ export class WalletService {
               currentBalanceBeforeTransaction,
               amount: parseFloat(data.amount),
             });
-            this.logger.debug({ event: 'charge.completed', currentBalanceBeforeTransaction, newTransaction });
+            this.logger.debug({ event: 'charge.completed', currentBalanceBeforeTransaction, transactionPayload: {
+              reference,
+              type: TransactionType.CREDIT,
+              userId: userRecord.id,
+              narration: data.narration,
+              transactionDate: data.created_at,
+              currentBalanceBeforeTransaction,
+              amount: parseFloat(data.amount),
+            }, newTransaction });
           }
         }
       }
@@ -517,7 +523,7 @@ export class WalletService {
           });
           if (userAccount?.userId) {
             const userId = userAccount.userId;
-            const reference = String(data.reference);
+            const reference = String(data.tx_ref);
             const currentBalanceBeforeTransaction =
               await this.userSrv.getCurrentWalletBalance(userAccount.userId);
             const newTransaction = await this.transactionSrv.createTransaction({
@@ -529,7 +535,16 @@ export class WalletService {
               currentBalanceBeforeTransaction,
               amount: parseFloat(data.amount),
             });
-          this.logger.debug({ event: 'transfer.completed', currentBalanceBeforeTransaction, newTransaction });
+          this.logger.debug({ event: 'transfer.completed', currentBalanceBeforeTransaction, transactionPayload:
+          {
+            userId,
+            reference,
+            narration: data.narration,
+            type: TransactionType.DEBIT,
+            transactionDate: data.created_at,
+            currentBalanceBeforeTransaction,
+            amount: parseFloat(data.amount)
+          }, newTransaction });
           const withdrawalRecord = await this.withdrawalSrv.findOne({ reference });
           if (withdrawalRecord?.id) {
             await this.withdrawalSrv.getRepo().update(
