@@ -142,11 +142,14 @@ export class WalletService {
     }
   }
 
-  async getBankLists(): Promise<BankListDTO> {
+  async getBankLists(searchTerm?: string): Promise<BankListDTO> {
     try {
-      const bankList = await this.bankSrv.getRepo().find({
+      let bankList = await this.bankSrv.getRepo().find({
         where: { status: true },
       });
+      if (searchTerm) {
+        bankList = bankList.filter(({ bankName }) => bankName.includes(searchTerm));
+      }
       return {
         success: true,
         code: HttpStatus.OK,
@@ -483,7 +486,6 @@ export class WalletService {
     try {
       this.logger.debug({ webhookPayload: payload });
       if (payload.event === 'charge.completed') {
-        // Buhari userKey: Spraay-BUHARI-JEMILU-7ce09534-1
         // User funds their wallet
         const data = payload.data;
         // Reconfirm Charge

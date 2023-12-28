@@ -39,8 +39,10 @@ export class WalletController {
   @ApiConsumes('application/json')
   @ApiResponse({ type: BankListDTO })
   @Get('/list-of-banks')
-  async getBankLists(): Promise<BankListDTO> {
-    return await this.walletSrv.getBankLists();
+  async getBankLists(
+    @Query('searchTerm') searchTerm?: string
+  ): Promise<BankListDTO> {
+    return await this.walletSrv.getBankLists(searchTerm);
   }
 
   @UseGuards(RolesGuard)
