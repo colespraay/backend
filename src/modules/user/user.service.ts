@@ -76,12 +76,7 @@ export class UserService extends GenericService(User) {
   ) {
     super();
   }
-
-  async onModuleInit() {
-    const records = await this.findAll();
-    console.log({ records });
-  }
-
+  
   async findContactsFilteredByUserContacts(
     payload: UserContactsDTO,
     pagination?: UserContactsQueryDTO,

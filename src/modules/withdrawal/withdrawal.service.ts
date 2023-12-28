@@ -1,4 +1,4 @@
-import { HttpStatus, Inject, Injectable, forwardRef } from '@nestjs/common';
+import { HttpException, HttpStatus, Inject, Injectable, forwardRef } from '@nestjs/common';
 import { Not } from 'typeorm';
 import { UserAccount, Withdrawal } from '@entities/index';
 import { GenericService } from '@schematics/index';
@@ -21,6 +21,7 @@ import {
   UserService,
   WalletService
 } from '../index';
+import { AxiosError } from 'axios';
 
 @Injectable()
 export class WithdrawalService extends GenericService(Withdrawal) {
@@ -90,9 +91,11 @@ export class WithdrawalService extends GenericService(Withdrawal) {
         narration,
         reference,
         currency: 'NGN',
+        debit_currency: 'NGN',
         amount: payload.amount,
         account_number: payload.accountNumber,
         account_bank: payload.bankCode,
+        // callback_url: 'https://spraay-api-577f3dc0a0fe.herokuapp.com/wallet/webhook',
       };
       const flutterwaveResponse = await httpPost<any, any>(
         url,
@@ -119,8 +122,14 @@ export class WithdrawalService extends GenericService(Withdrawal) {
         };
       }
     } catch (ex) {
-      this.logger.error(ex);
-      throw ex;
+      if (ex instanceof AxiosError) {
+        const errorObject = ex.response?.data;
+        this.logger.error(errorObject.message);
+        throw new HttpException(errorObject.message, ex.response.status);
+      } else {
+        this.logger.error(ex);
+        throw ex;
+      }
     }
   }
 
