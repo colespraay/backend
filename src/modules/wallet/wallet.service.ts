@@ -149,7 +149,9 @@ export class WalletService {
       });
       if (searchTerm) {
         searchTerm = searchTerm.toLowerCase();
-        bankList = bankList.filter(({ bankName }) => bankName.toLowerCase().includes(searchTerm));
+        bankList = bankList.filter(({ bankName }) =>
+          bankName.toLowerCase().includes(searchTerm),
+        );
       }
       return {
         success: true,
@@ -490,8 +492,10 @@ export class WalletService {
         // User funds their wallet
         const data = payload.data;
         // Reconfirm Charge
-        const moneyChargeRecord = await this.fetchPaymentRecord(Number(data.id));
-        this.logger.debug({ moneyChargeRecord })
+        const moneyChargeRecord = await this.fetchPaymentRecord(
+          Number(data.id),
+        );
+        this.logger.debug({ moneyChargeRecord });
         if (moneyChargeRecord?.data.status === 'successful') {
           if (data?.tx_ref) {
             const userRecord = await this.userSrv.getRepo().findOne({
@@ -503,16 +507,17 @@ export class WalletService {
                 await this.userSrv.getCurrentWalletBalance(userRecord.id);
               const reference = String(data.flw_ref);
               const narration = `${data.narration} - Wallet Funded`;
-              const newTransaction = await this.transactionSrv.createTransaction({
-                reference,
-                narration,
-                type: TransactionType.CREDIT,
-                userId: userRecord.id,
-                transactionDate: data.created_at,
-                currentBalanceBeforeTransaction,
-                amount: parseFloat(data.amount),
-              });
-            this.logger.debug({ newTransaction, narration, reference });
+              const newTransaction =
+                await this.transactionSrv.createTransaction({
+                  reference,
+                  narration,
+                  type: TransactionType.CREDIT,
+                  userId: userRecord.id,
+                  transactionDate: data.created_at,
+                  currentBalanceBeforeTransaction,
+                  amount: parseFloat(data.amount),
+                });
+              this.logger.debug({ newTransaction, narration, reference });
             }
           }
         }
@@ -527,64 +532,71 @@ export class WalletService {
           await this.userSrv.getCurrentWalletBalance(userAccount.userId);
         if (data.status === 'SUCCESSFUL') {
           // Reconfirm transfer
-          const transferRecord = await this.fetchTransferRecord(Number(data.id));
+          const transferRecord = await this.fetchTransferRecord(
+            Number(data.id),
+          );
           if (transferRecord.data.status === 'SUCCESSFUL') {
             if (userAccount?.userId) {
               const userId = userAccount.userId;
-              const newTransaction = await this.transactionSrv.createTransaction({
-                userId,
-                reference,
-                narration: data.narration,
-                type: TransactionType.DEBIT,
-                transactionDate: data.created_at,
-                currentBalanceBeforeTransaction,
-                amount: parseFloat(data.amount),
-              });
-            this.logger.debug({
-              event: 'transfer.completed',
-              currentBalanceBeforeTransaction,
-              newTransaction
-            });
-            const withdrawalRecord = await this.withdrawalSrv.findOne({ reference });
-            if (withdrawalRecord?.id) {
-              await this.withdrawalSrv.getRepo().update(
-                { id: withdrawalRecord.id },
-                {
-                  paymentStatus: PaymentStatus.SUCCESSFUL,
-                  transactionId: newTransaction.data.id
-                }
-              );
-            }
-            }
-          }
-        } 
-        if (data.status === 'FAILED') {
-          const withdrawalRecord = await this.withdrawalSrv.findOne({ reference });
-            if (withdrawalRecord?.id) {
-              const newTransaction = await this.transactionSrv.createTransaction({
-                reference,
-                userId: userAccount.userId,
-                narration: data.narration,
-                transactionStatus: PaymentStatus.FAILED,
-                type: TransactionType.DEBIT,
-                transactionDate: data.created_at,
-                currentBalanceBeforeTransaction,
-                amount: parseFloat(data.amount),
-              });
+              const newTransaction =
+                await this.transactionSrv.createTransaction({
+                  userId,
+                  reference,
+                  narration: data.narration,
+                  type: TransactionType.DEBIT,
+                  transactionDate: data.created_at,
+                  currentBalanceBeforeTransaction,
+                  amount: parseFloat(data.amount),
+                });
               this.logger.debug({
                 event: 'transfer.completed',
                 currentBalanceBeforeTransaction,
                 newTransaction,
-                status: 'Failed',
               });
-              await this.withdrawalSrv.getRepo().update(
-                { id: withdrawalRecord.id },
-                {
-                  paymentStatus: PaymentStatus.FAILED,
-                  transactionId: newTransaction.data.id
-                }
-              );
+              const withdrawalRecord = await this.withdrawalSrv.findOne({
+                reference,
+              });
+              if (withdrawalRecord?.id) {
+                await this.withdrawalSrv.getRepo().update(
+                  { id: withdrawalRecord.id },
+                  {
+                    paymentStatus: PaymentStatus.SUCCESSFUL,
+                    transactionId: newTransaction.data.id,
+                  },
+                );
+              }
             }
+          }
+        }
+        if (data.status === 'FAILED') {
+          const withdrawalRecord = await this.withdrawalSrv.findOne({
+            reference,
+          });
+          if (withdrawalRecord?.id) {
+            const newTransaction = await this.transactionSrv.createTransaction({
+              reference,
+              userId: userAccount.userId,
+              narration: data.narration,
+              transactionStatus: PaymentStatus.FAILED,
+              type: TransactionType.DEBIT,
+              transactionDate: data.created_at,
+              currentBalanceBeforeTransaction,
+              amount: parseFloat(data.amount),
+            });
+            this.logger.debug({
+              event: 'transfer.completed',
+              currentBalanceBeforeTransaction,
+              newTransaction,
+              status: 'Failed',
+            });
+            await this.withdrawalSrv.getRepo().update(
+              { id: withdrawalRecord.id },
+              {
+                paymentStatus: PaymentStatus.FAILED,
+                transactionId: newTransaction.data.id,
+              },
+            );
+          }
         }
       }
     } catch (ex) {
@@ -627,10 +639,12 @@ export class WalletService {
         virtualAccountNumber: payload.accountNumber,
       });
       if (user?.id) {
-        const transactionDate = new Date(payload.transactionDate).toLocaleString();
+        const transactionDate = new Date(
+          payload.transactionDate,
+        ).toLocaleString();
         switch (payload.transactionType) {
           case TransactionType.CREDIT:
-            await this.transactionSrv.createTransaction({ 
+            await this.transactionSrv.createTransaction({
               type: TransactionType.CREDIT,
               userId: user.id,
               narration: payload.narration,
