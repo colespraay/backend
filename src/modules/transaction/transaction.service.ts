@@ -18,6 +18,7 @@ import {
   BaseResponseTypeDTO,
   formatAmount,
   formatDate,
+  PaymentStatus,
 } from '@utils/index';
 import { FindStatementOfAccountDTO } from '@modules/wallet/dto/wallet.dto';
 import { UsersResponseDTO } from '@modules/user/dto/user.dto';
@@ -246,21 +247,23 @@ export class TransactionService extends GenericService(TransactionRecord) {
         const createdRecord = await this.create<Partial<TransactionRecord>>(
           payload,
         );
-        switch (createdRecord.type) {
-          case TransactionType.CREDIT:
-            await this.userSrv.creditUserWallet({
-              amount: payload.amount,
-              userId: payload.userId,
-            });
-          break;
-          case TransactionType.DEBIT:
-            await this.userSrv.debitUserWallet({
-              amount: payload.amount,
-              userId: payload.userId,
-            });
-          break;
+        if (recordFound.transactionStatus === PaymentStatus.SUCCESSFUL) {
+          switch (createdRecord.type) {
+            case TransactionType.CREDIT:
+              await this.userSrv.creditUserWallet({
+                amount: payload.amount,
+                userId: payload.userId,
+              });
+            break;
+            case TransactionType.DEBIT:
+              await this.userSrv.debitUserWallet({
+                amount: payload.amount,
+                userId: payload.userId,
+              });
+            break;
+          }
+          await this.sendEmailForTransactionNotification(createdRecord);
         }
-        await this.sendEmailForTransactionNotification(createdRecord);
         return {
           success: true,
           code: HttpStatus.CREATED,
