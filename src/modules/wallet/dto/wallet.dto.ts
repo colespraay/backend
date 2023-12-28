@@ -69,11 +69,12 @@ export class BankAccountStatementDTO {
 
 export class BankListPartialDTO {
   @ApiProperty()
-  name: string;
+  bankName: string;
 
   @ApiProperty()
-  code: string;
+  bankCode: string;
 }
+
 
 export class BankListDTO extends BaseResponseTypeDTO {
   @ApiProperty({ type: () => [BankListPartialDTO] })

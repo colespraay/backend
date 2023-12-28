@@ -116,9 +116,9 @@ export class WalletService {
     try {
       const banks = await this.getBankLists();
       const bank = banks.data.find(
-        (bank) => bank.name?.toUpperCase() === bankName?.toUpperCase(),
+        (bank) => bank.bankName?.toUpperCase() === bankName?.toUpperCase(),
       );
-      if (!bank?.code) {
+      if (!bank?.bankCode) {
         throw new NotFoundException(`Bank with name: ${bankName} not found`);
       }
       return bank;
@@ -131,8 +131,8 @@ export class WalletService {
   async findBankByCode(bankCode: string): Promise<BankListPartialDTO> {
     try {
       const banks = await this.getBankLists();
-      const bank = banks.data.find((bank) => bank.code === bankCode);
-      if (!bank?.code) {
+      const bank = banks.data.find((bank) => bank.bankCode === bankCode);
+      if (!bank?.bankCode) {
         throw new NotFoundException(`Bank with code: ${bankCode} not found`);
       }
       return bank;
@@ -157,10 +157,7 @@ export class WalletService {
         success: true,
         code: HttpStatus.OK,
         message: 'Bank list found',
-        data: bankList.map(({ bankName, bankCode }) => ({
-          name: bankName,
-          code: bankCode,
-        })),
+        data: bankList.map(({ bankName, bankCode }) => ({ bankName, bankCode })),
       };
     } catch (ex) {
       this.logger.error(ex);
@@ -323,13 +320,13 @@ export class WalletService {
       const extractedData =
         destinationAccount.result as VerifyAccountExistenceResponsePartial;
       const bank = (await this.getBankLists()).data.find(
-        (bank) => bank.code === extractedData.bankCode,
+        (bank) => bank.bankCode === extractedData.bankCode,
       );
       return {
         success: true,
         code: HttpStatus.OK,
         message: 'Accounts verified',
-        data: { ...extractedData, bankName: bank?.name },
+        data: { ...extractedData, bankName: bank?.bankName },
       };
     } catch (ex) {
       this.logger.error(ex);

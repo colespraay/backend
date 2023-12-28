@@ -52,7 +52,7 @@ export class UserAccountService extends GenericService(UserAccount) {
         accountName: bankDetails.accountName,
         accountNumber: payload.accountNumber,
         bankCode: payload.bankCode,
-        bankName: bank.name,
+        bankName: bank.bankName,
       });
       return {
         success: true,

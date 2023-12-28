@@ -1,5 +1,4 @@
 import { Injectable, OnModuleInit } from '@nestjs/common';
-import { BankListPartialDTO } from '@modules/wallet/dto/wallet.dto';
 import { GenericService } from '@schematics/index';
 import { Bank } from '@entities/index';
 import { httpGet } from '@utils/index';
@@ -12,7 +11,7 @@ export class BankService extends GenericService(Bank) implements OnModuleInit {
       Authorization: `Bearer ${String(process.env.FLUTTERWAVE_SECRET_KEY)}`,
     };
     const response = await httpGet<any>(url, headers);
-    const banksFromAPI = response?.data as BankListPartialDTO[];
+    const banksFromAPI: { id: number, code: string, name: string }[] = response?.data;
     const banksFromDB = await this.getRepo().find({});
 
     // Compare banks from API with banks from the database
