@@ -148,7 +148,8 @@ export class WalletService {
         where: { status: true },
       });
       if (searchTerm) {
-        bankList = bankList.filter(({ bankName }) => bankName.includes(searchTerm));
+        searchTerm = searchTerm.toLowerCase();
+        bankList = bankList.filter(({ bankName }) => bankName.toLowerCase().includes(searchTerm));
       }
       return {
         success: true,

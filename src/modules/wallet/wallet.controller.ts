@@ -11,6 +11,7 @@ import {
   ApiConsumes,
   ApiOperation,
   ApiProduces,
+  ApiQuery,
   ApiResponse,
   ApiTags,
 } from '@nestjs/swagger';
@@ -33,6 +34,7 @@ export class WalletController {
   constructor(private readonly walletSrv: WalletService) {}
 
   @UseGuards(RolesGuard)
+  @ApiQuery({ name: 'searchTerm', required: false })
   @ApiBearerAuth('JWT')
   @ApiOperation({ description: 'Get list of banks' })
   @ApiProduces('json')
