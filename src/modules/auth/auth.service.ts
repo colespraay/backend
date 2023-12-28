@@ -1,4 +1,3 @@
-import { OnEvent, EventEmitter2 } from '@nestjs/event-emitter';
 import {
   Injectable,
   HttpStatus,
@@ -29,10 +28,7 @@ import {
 export class AuthService {
   private readonly logger: Logger = new Logger(AuthService.name);
 
-  constructor(
-    private readonly userSrv: UserService,
-    private readonly eventEmitterSrv: EventEmitter2,
-  ) {}
+  constructor(private readonly userSrv: UserService) {}
 
   async login(payload: LoginUserDTO): Promise<AuthResponseDTO> {
     try {
@@ -75,7 +71,7 @@ export class AuthService {
             .getRepo()
             .update({ id: user.data.id }, { deviceId: payload.deviceId });
         }
-        this.eventEmitterSrv.emit('login.notification', id);
+        await this.sendEmailAfterLogin(id);
         return {
           success: true,
           code: HttpStatus.OK,
@@ -135,7 +131,7 @@ export class AuthService {
             .getRepo()
             .update({ id: user.data.id }, { deviceId: payload.deviceId });
         }
-        this.eventEmitterSrv.emit('login.notification', id);
+        await this.sendEmailAfterLogin(id);
         return {
           success: true,
           code: HttpStatus.OK,
@@ -279,7 +275,6 @@ export class AuthService {
     return sign(payload, process.env.JWT_SECRET, { expiresIn: '1d' });
   }
 
-  @OnEvent('login.notification', { async: true })
   private async sendEmailAfterLogin(userId: string): Promise<void> {
     try {
       const user = await this.userSrv.findUserById(userId);
