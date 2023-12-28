@@ -492,13 +492,13 @@ export class WalletService {
         if (moneyChargeRecord?.data.status === 'successful') {
           if (data?.tx_ref) {
             const userRecord = await this.userSrv.getRepo().findOne({
-              where: { flutterwaveUserKey: data.flw_ref },
+              where: { flutterwaveUserKey: data.tx_ref },
               select: ['id', 'walletBalance'],
             });
             if (userRecord?.id) {
               const currentBalanceBeforeTransaction =
                 await this.userSrv.getCurrentWalletBalance(userRecord.id);
-              const reference = String(data.tx_ref);
+              const reference = String(data.flw_ref);
               const narration = `${data.narration} - Wallet Funded`;
               const newTransaction = await this.transactionSrv.createTransaction({
                 reference,
