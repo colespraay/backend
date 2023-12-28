@@ -1,7 +1,7 @@
 import { ApiProperty } from '@nestjs/swagger';
 import { Entity, Column, BeforeInsert, JoinColumn, ManyToOne } from 'typeorm';
 import { PaymentStatus } from '@utils/index';
-import { Base, TransactionRecord, User, uuidV4 } from './index';
+import { Base, TransactionRecord, User, UserAccount, uuidV4 } from './index';
 
 @Entity({ name: 'withdrawal' })
 export class Withdrawal extends Base {
@@ -38,6 +38,17 @@ export class Withdrawal extends Base {
   @ApiProperty()
   @Column({ type: 'float', default: 0 })
   amount: number;
+
+  @Column({ type: 'uuid', nullable: true })
+  userAccountId: string;
+
+  @ApiProperty({ type: () => UserAccount })
+  @JoinColumn({ name: 'userAccountId' })
+  @ManyToOne(() => UserAccount, ({ withdrawals }) => withdrawals, {
+    onDelete: 'CASCADE',
+    onUpdate: 'CASCADE',
+  })
+  userAccount: UserAccount;
 
   @ApiProperty({ enum: PaymentStatus })
   @Column({ enum: PaymentStatus, default: PaymentStatus.PENDING })

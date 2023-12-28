@@ -5,6 +5,7 @@ import {
   FileExportDataResponseDTO,
   PaginationRequestType,
   PaginationResponseType,
+  PaymentStatus,
   TransactionType,
 } from '@utils/index';
 
@@ -39,6 +40,9 @@ export class CreateTransactionDTO {
 
   @ApiProperty()
   transactionDate: string;
+
+  @ApiProperty({ enum: PaymentStatus, nullable: true })
+  transactionStatus?: PaymentStatus;
 
   @ApiProperty({ nullable: true })
   receiverUserId?: string;

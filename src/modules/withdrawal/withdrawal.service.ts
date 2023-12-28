@@ -6,6 +6,7 @@ import {
   PaymentStatus,
   TransactionType,
   checkForRequiredFields,
+  formatAmount,
   generateUniqueCode,
   httpGet,
   httpPost,
@@ -64,14 +65,14 @@ export class WithdrawalService extends GenericService(Withdrawal) {
       this.logger.log({ destinationAccount });
       await this.userSrv.verifyTransactionPin(userId, payload.transactionPin);
 
-      const bank = await this.userAccountSrv.findOne({
+      let bank = await this.userAccountSrv.findOne({
         bankCode: payload.bankCode,
         bankName: payload.bankName,
         accountNumber: payload.accountNumber,
         userId,
       });
       if (!bank?.id) {
-        await this.userAccountSrv.create<Partial<UserAccount>>({
+        bank = await this.userAccountSrv.create<Partial<UserAccount>>({
           bankCode: payload.bankCode,
           bankName: payload.bankName,
           accountName: destinationAccount.accountName,
@@ -85,7 +86,7 @@ export class WithdrawalService extends GenericService(Withdrawal) {
         Authorization: `Bearer ${String(process.env.FLUTTERWAVE_SECRET_KEY)}`,
       };
       const reference = `Spraay-payout-${generateUniqueCode(10)}`;
-      const narration = `Wallet payout of ₦${payload.amount} to ${user.data.firstName} ${user.data.lastName}`;
+      const narration = `Wallet payout of ₦${formatAmount(payload.amount)} to ${user.data.firstName} ${user.data.lastName}`;
       const url = 'https://api.flutterwave.com/v3/transfers';
       const requestPayload = {
         narration,
@@ -108,6 +109,7 @@ export class WithdrawalService extends GenericService(Withdrawal) {
           userId,
           reference,
           amount: payload.amount,
+          userAccountId: bank.id,
           transferId: Number(flutterwaveResponse.data.id),
         });
         const newWithdrawal = await this.getRepo().findOne({
@@ -142,7 +144,7 @@ export class WithdrawalService extends GenericService(Withdrawal) {
         where: { paymentStatus: PaymentStatus.PENDING, transferId: Not(0) },
         take: 5,
       });
-      console.log({ withdrawals });
+      this.logger.debug({ withdrawals });
       if (withdrawals?.length > 0) {
         for (const withdrawal of withdrawals) {
           const transferId = withdrawal.transferId;

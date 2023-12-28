@@ -7,7 +7,7 @@ import {
   ManyToOne,
   BeforeInsert,
 } from 'typeorm';
-import { TransactionType, generateUniqueCode } from '@utils/index';
+import { PaymentStatus, TransactionType, generateUniqueCode } from '@utils/index';
 import {
   Base,
   User,
@@ -98,6 +98,10 @@ export class TransactionRecord extends Base {
     cascade: true,
   })
   withdrawals: Withdrawal[];
+
+  @ApiProperty({ enum: PaymentStatus })
+  @Column({ enum: PaymentStatus, default: PaymentStatus.SUCCESSFUL })
+  transactionStatus: PaymentStatus;
 
   @ApiProperty({ type: () => [ElectricityPurchase] })
   @OneToMany(() => ElectricityPurchase, ({ transaction }) => transaction, {

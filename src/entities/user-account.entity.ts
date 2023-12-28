@@ -1,6 +1,6 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { Column, Entity, JoinColumn, ManyToOne } from 'typeorm';
-import { Base, User } from './index';
+import { BeforeInsert, Column, Entity, JoinColumn, ManyToOne, OneToMany } from 'typeorm';
+import { Base, User, Withdrawal, uuidV4 } from './index';
 
 @Entity({ name: 'user_account' })
 export class UserAccount extends Base {
@@ -30,4 +30,13 @@ export class UserAccount extends Base {
     onUpdate: 'CASCADE',
   })
   user: User;
+
+  @ApiProperty({ type: () => [Withdrawal] })
+  @OneToMany(() => Withdrawal, ({ userAccount }) => userAccount, { cascade: true })
+  withdrawals: Withdrawal[];
+
+  @BeforeInsert()
+  beforeInsertHandler(): void {
+    this.id = uuidV4();
+  }
 }

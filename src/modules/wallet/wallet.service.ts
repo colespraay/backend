@@ -519,18 +519,18 @@ export class WalletService {
       }
       if (payload.event === 'transfer.completed') {
         const data = payload.data;
+        const reference = String(data.reference);
+        const userAccount = await this.userAccountSrv.getRepo().findOne({
+          where: { accountNumber: String(data.account_number) },
+        });
+        const currentBalanceBeforeTransaction =
+          await this.userSrv.getCurrentWalletBalance(userAccount.userId);
         if (data.status === 'SUCCESSFUL') {
           // Reconfirm transfer
           const transferRecord = await this.fetchTransferRecord(Number(data.id));
           if (transferRecord.data.status === 'SUCCESSFUL') {
-            const userAccount = await this.userAccountSrv.getRepo().findOne({
-              where: { accountNumber: String(data.account_number) },
-            });
             if (userAccount?.userId) {
               const userId = userAccount.userId;
-              const reference = String(data.flw_ref);
-              const currentBalanceBeforeTransaction =
-                await this.userSrv.getCurrentWalletBalance(userAccount.userId);
               const newTransaction = await this.transactionSrv.createTransaction({
                 userId,
                 reference,
@@ -540,17 +540,11 @@ export class WalletService {
                 currentBalanceBeforeTransaction,
                 amount: parseFloat(data.amount),
               });
-            this.logger.debug({ newTransaction });
-            this.logger.debug({ event: 'transfer.completed', currentBalanceBeforeTransaction, transactionPayload:
-            {
-              userId,
-              reference,
-              narration: data.narration,
-              type: TransactionType.DEBIT,
-              transactionDate: data.created_at,
+            this.logger.debug({
+              event: 'transfer.completed',
               currentBalanceBeforeTransaction,
-              amount: parseFloat(data.amount)
-            }, newTransaction });
+              newTransaction
+            });
             const withdrawalRecord = await this.withdrawalSrv.findOne({ reference });
             if (withdrawalRecord?.id) {
               await this.withdrawalSrv.getRepo().update(
@@ -563,6 +557,28 @@ export class WalletService {
             }
             }
           }
+        } 
+        if (data.status === 'FAILED') {
+          const withdrawalRecord = await this.withdrawalSrv.findOne({ reference });
+            if (withdrawalRecord?.id) {
+              const newTransaction = await this.transactionSrv.createTransaction({
+                reference,
+                userId: userAccount.userId,
+                narration: data.narration,
+                transactionStatus: PaymentStatus.FAILED,
+                type: TransactionType.DEBIT,
+                transactionDate: data.created_at,
+                currentBalanceBeforeTransaction,
+                amount: parseFloat(data.amount),
+              });
+              await this.withdrawalSrv.getRepo().update(
+                { id: withdrawalRecord.id },
+                {
+                  paymentStatus: PaymentStatus.FAILED,
+                  transactionId: newTransaction.data.id
+                }
+              );
+            }
         }
       }
     } catch (ex) {
