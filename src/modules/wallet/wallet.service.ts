@@ -571,6 +571,12 @@ export class WalletService {
                 currentBalanceBeforeTransaction,
                 amount: parseFloat(data.amount),
               });
+              this.logger.debug({
+                event: 'transfer.completed',
+                currentBalanceBeforeTransaction,
+                newTransaction,
+                status: 'Failed',
+              });
               await this.withdrawalSrv.getRepo().update(
                 { id: withdrawalRecord.id },
                 {
