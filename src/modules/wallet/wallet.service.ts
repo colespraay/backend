@@ -62,7 +62,7 @@ export class WalletService {
   async onModuleInit(): Promise<void> {
     const flutterwaveUserKey = 'Spraay-GODSWILL-CHIORI-e4ea3007-8';
     const user = await this.userSrv.findOne({ flutterwaveUserKey });
-    // console.log({ user });
+    this.logger.log({ user });
     // const reference = '100004231228230108110041167300';
     // await this.transactionSrv.delete({ reference });
   }
@@ -100,7 +100,7 @@ export class WalletService {
             Authorization: `Bearer ${String(
               process.env.FLUTTERWAVE_SECRET_KEY,
             )}`,
-          });
+          }); // "walletBalance": 9810,
           this.logger.debug({ virtualAccount: flutterwaveResponse });
           if (flutterwaveResponse?.status) {
             const updatedUser: Partial<User> = {
