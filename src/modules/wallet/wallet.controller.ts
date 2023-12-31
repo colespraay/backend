@@ -1,3 +1,4 @@
+import { Cron, CronExpression } from '@nestjs/schedule';
 import {
   Controller,
   Get,
@@ -113,6 +114,16 @@ export class WalletController {
     return await this.walletSrv.getStatementOfAccounts(accountNumber, payload);
   }
 
+  @Post('/webhook')
+  async flutterwaveWebhook(@Body() body: any): Promise<void> {
+    await this.walletSrv.webhookHandler(body);
+  }
+
+  @Cron(CronExpression.EVERY_MINUTE)
+  async checkTransactions(): Promise<void> { 
+    await this.walletSrv.checkTransactions();
+  }
+
   // @Post('/webhook')
   // async wemaBankWebhook(@Body() body: WebhookResponseDTO): Promise<void> {
   //   await this.walletSrv.webhookHandler(body);
@@ -125,9 +136,4 @@ export class WalletController {
   // ): Promise<void> {
   //   await this.walletSrv.transactionNotificationWebhookHandler(body);
   // }
-
-  @Post('/webhook')
-  async flutterwaveWebhook(@Body() body: any): Promise<void> {
-    await this.walletSrv.webhookHandler(body);
-  }
 }

@@ -1,3 +1,4 @@
+import { OnEvent } from '@nestjs/event-emitter';
 import {
   BadGatewayException,
   HttpStatus,
@@ -5,7 +6,6 @@ import {
   Logger,
   NotFoundException,
 } from '@nestjs/common';
-import { EventEmitter2, OnEvent } from '@nestjs/event-emitter';
 import {
   PaymentStatus,
   TransactionType,
@@ -22,6 +22,7 @@ import { BankService } from '@modules/bank/bank.service';
 import { WithdrawalService } from '@modules/withdrawal/withdrawal.service';
 import { TransactionService } from '@modules/transaction/transaction.service';
 import { UserAccountService } from '@modules/user-account/user-account.service';
+import { CreateTransactionDTO } from '@modules/transaction/dto/transaction.dto';
 import {
   BankAccountStatementDTO,
   BankListDTO,
@@ -56,8 +57,15 @@ export class WalletService {
     private readonly userAccountSrv: UserAccountService,
     private readonly transactionSrv: TransactionService,
     private readonly withdrawalSrv: WithdrawalService,
-    private readonly eventEmitterSrv: EventEmitter2,
   ) {}
+
+  async onModuleInit(): Promise<void> {
+    // const flutterwaveUserKey = 'Spraay-GODSWILL-CHIORI-e4ea3007-8';
+    // const user = await this.userSrv.findOne({ flutterwaveUserKey });
+    // console.log({ user });
+    // const reference = '100004231228230108110041167300';
+    // await this.transactionSrv.delete({ reference });
+  }
 
   @OnEvent('create-wallet', { async: true })
   async createWallet(userId: string): Promise<void> {
@@ -509,6 +517,7 @@ export class WalletService {
                   reference,
                   narration,
                   type: TransactionType.CREDIT,
+                  transactionStatus: PaymentStatus.SUCCESSFUL,
                   userId: userRecord.id,
                   transactionDate: data.created_at,
                   currentBalanceBeforeTransaction,
@@ -541,6 +550,7 @@ export class WalletService {
                   reference,
                   narration: data.narration,
                   type: TransactionType.DEBIT,
+                  transactionStatus: PaymentStatus.SUCCESSFUL,
                   transactionDate: data.created_at,
                   currentBalanceBeforeTransaction,
                   amount: parseFloat(data.amount),
@@ -593,6 +603,81 @@ export class WalletService {
                 transactionId: newTransaction.data.id,
               },
             );
+          }
+        }
+      }
+    } catch (ex) {
+      this.logger.error(ex);
+      throw ex;
+    }
+  }
+
+  async checkTransactions(): Promise<void> {
+    try {
+      // Get the current timestamp
+      const currentTime = new Date();
+
+      // Calculate the timestamp for 12 hours ago
+      const fromDate = new Date(currentTime);
+      // fromDate.setDate(currentTime.getDate() - 2);
+      fromDate.setHours(currentTime.getHours() - 12);
+
+      // Format the dates as YYYY-MM-DD
+      const formattedFromDate = fromDate.toISOString().split('T')[0];
+      const formattedCurrentDate = currentTime.toISOString().split('T')[0];
+
+      const url = `https://api.flutterwave.com/v3/transactions?from=${formattedFromDate}&to=${formattedCurrentDate}&status=successful`;
+      const list = await httpGet<any>(url, {
+        Authorization: `Bearer ${String(process.env.FLUTTERWAVE_SECRET_KEY)}`,
+      });
+      for (const transaction of list.data) {
+        if (transaction.status === 'successful') {
+          const user = await this.userSrv.getRepo().findOne({
+            where: { flutterwaveUserKey: transaction.tx_ref },
+            select: ['id', 'flutterwaveUserKey', 'walletBalance'],
+          });
+          if (user?.id) {
+            const userId = user.id;
+            const amount = parseFloat(transaction.amount_settled);
+            const reference = String(transaction.flw_ref);
+            const narration = `${transaction.narration} - Wallet Funded`;
+            const existingTransaction =
+              await this.transactionSrv.getRepo().findOne({
+                where: { userId, reference },
+                select: [
+                  'id',
+                  'type',
+                  'amount',
+                  'narration',
+                  'reference',
+                  'createdTime',
+                  'createdDate',
+                  'transactionDate',
+                  'currentBalanceBeforeTransaction',
+                ],
+              });
+            this.logger.log({ user, amount, reference, narration, existingTransaction });
+            if (!existingTransaction?.id) {
+              const currentBalanceBeforeTransaction =
+                await this.userSrv.getCurrentWalletBalance(user.id);
+              this.logger.debug({ amount, currentBalanceBeforeTransaction });
+              const newTransactionPayload: CreateTransactionDTO = {
+                userId,
+                amount,
+                reference,
+                narration,
+                type: TransactionType.CREDIT,
+                currentBalanceBeforeTransaction,
+                transactionDate: transaction.created_at,
+                transactionStatus: PaymentStatus.SUCCESSFUL,
+              };
+              this.logger.debug({ newTransactionPayload });
+              const newTransaction =
+                await this.transactionSrv.createTransaction(newTransactionPayload);
+              const currentBalanceBeforeTransaction2 =
+                await this.userSrv.getCurrentWalletBalance(user.id);
+              this.logger.debug({ currentBalanceBeforeTransaction2, newTransaction: newTransaction.data, narration, reference });
+            }
           }
         }
       }

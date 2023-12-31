@@ -227,9 +227,9 @@ export class TransactionService extends GenericService(TransactionRecord) {
         [
           'type',
           'userId',
+          'amount',
           'narration',
           'transactionDate',
-          'amount',
           'currentBalanceBeforeTransaction',
         ],
         payload,
@@ -247,7 +247,7 @@ export class TransactionService extends GenericService(TransactionRecord) {
         const createdRecord = await this.create<Partial<TransactionRecord>>(
           payload,
         );
-        if (recordFound.transactionStatus === PaymentStatus.SUCCESSFUL) {
+        if (createdRecord.transactionStatus === PaymentStatus.SUCCESSFUL) {
           switch (createdRecord.type) {
             case TransactionType.CREDIT:
               await this.userSrv.creditUserWallet({
