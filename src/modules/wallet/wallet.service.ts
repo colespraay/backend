@@ -60,8 +60,8 @@ export class WalletService {
   ) {}
 
   async onModuleInit(): Promise<void> {
-    // const flutterwaveUserKey = 'Spraay-GODSWILL-CHIORI-e4ea3007-8';
-    // const user = await this.userSrv.findOne({ flutterwaveUserKey });
+    const flutterwaveUserKey = 'Spraay-GODSWILL-CHIORI-e4ea3007-8';
+    const user = await this.userSrv.findOne({ flutterwaveUserKey });
     // console.log({ user });
     // const reference = '100004231228230108110041167300';
     // await this.transactionSrv.delete({ reference });
@@ -630,6 +630,7 @@ export class WalletService {
       const list = await httpGet<any>(url, {
         Authorization: `Bearer ${String(process.env.FLUTTERWAVE_SECRET_KEY)}`,
       });
+      this.logger.debug({ list: list.data });
       for (const transaction of list.data) {
         if (transaction.status === 'successful') {
           const user = await this.userSrv.getRepo().findOne({
