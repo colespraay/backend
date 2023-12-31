@@ -521,7 +521,7 @@ export class WalletService {
                   userId: userRecord.id,
                   transactionDate: data.created_at,
                   currentBalanceBeforeTransaction,
-                  amount: parseFloat(data.amount),
+                  amount: parseFloat(moneyChargeRecord.data.amount_settled),
                 });
               this.logger.debug({ newTransaction, narration, reference });
             }
@@ -542,6 +542,7 @@ export class WalletService {
             Number(data.id),
           );
           if (transferRecord.data.status === 'SUCCESSFUL') {
+            const amount = Number(transferRecord.data.amount) - Number(transferRecord.data.fee);
             if (userAccount?.userId) {
               const userId = userAccount.userId;
               const newTransaction =
@@ -553,7 +554,7 @@ export class WalletService {
                   transactionStatus: PaymentStatus.SUCCESSFUL,
                   transactionDate: data.created_at,
                   currentBalanceBeforeTransaction,
-                  amount: parseFloat(data.amount),
+                  amount,
                 });
               this.logger.debug({
                 event: 'transfer.completed',
@@ -630,7 +631,6 @@ export class WalletService {
       const list = await httpGet<any>(url, {
         Authorization: `Bearer ${String(process.env.FLUTTERWAVE_SECRET_KEY)}`,
       });
-      this.logger.debug({ list: list.data });
       for (const transaction of list.data) {
         if (transaction.status === 'successful') {
           const user = await this.userSrv.getRepo().findOne({
@@ -675,9 +675,13 @@ export class WalletService {
               this.logger.debug({ newTransactionPayload });
               const newTransaction =
                 await this.transactionSrv.createTransaction(newTransactionPayload);
-              const currentBalanceBeforeTransaction2 =
-                await this.userSrv.getCurrentWalletBalance(user.id);
-              this.logger.debug({ currentBalanceBeforeTransaction2, newTransaction: newTransaction.data, narration, reference });
+              const newBalance = await this.userSrv.getCurrentWalletBalance(user.id);
+              this.logger.debug({
+                newBalance,
+                narration,
+                reference,
+                newTransaction: newTransaction.data
+              });
             }
           }
         }
