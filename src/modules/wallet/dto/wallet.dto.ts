@@ -283,3 +283,19 @@ export class CreateFlutterwaveResponseDTO {
     amount?: number;
   };
 }
+
+export enum TransactionFeeType {
+  TOP_UP = 'top_up',
+  WITHDRAWAL = 'withdrawal',
+}
+
+export class TransactionFeeBreakdownDTO {
+  @ApiProperty()
+  spraayCharge: number;
+
+  @ApiProperty()
+  flutterwaveCharge: number;
+
+  @ApiProperty()
+  amountDeductible: number;
+}

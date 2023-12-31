@@ -1,14 +1,17 @@
 import { OnEvent } from '@nestjs/event-emitter';
 import {
   BadGatewayException,
+  HttpException,
   HttpStatus,
   Injectable,
   Logger,
   NotFoundException,
 } from '@nestjs/common';
+import { AxiosError } from 'axios';
 import {
   PaymentStatus,
   TransactionType,
+  calculateAppCut,
   checkForRequiredFields,
   formatTransactionKey,
   generateUniqueCode,
@@ -32,6 +35,8 @@ import {
   FindTransferChargeDTO,
   InterbankTransferChargeDTO,
   MakeWalletDebitTypeDTO,
+  TransactionFeeBreakdownDTO,
+  TransactionFeeType,
   TransactionNotificationResponseDTO,
   TransferResponseDTO,
   VerifiesAccountDetailDTO,
@@ -50,6 +55,7 @@ export class WalletService {
     process.env.WEMA_ATLAT_WALLET_CREATION_SUB_KEY,
   );
   private xApiKey = String(process.env.WEMA_ATLAT_X_API_KEY);
+  private percentageAppFee = Number(process.env.APP_TRANSACTION_FEE) ?? 0;
 
   constructor(
     private readonly userSrv: UserService,
@@ -59,13 +65,13 @@ export class WalletService {
     private readonly withdrawalSrv: WithdrawalService,
   ) {}
 
-  async onModuleInit(): Promise<void> {
-    const flutterwaveUserKey = 'Spraay-GODSWILL-CHIORI-e4ea3007-8';
-    const user = await this.userSrv.findOne({ flutterwaveUserKey });
-    this.logger.log({ user });
-    // const reference = '100004231228230108110041167300';
-    // await this.transactionSrv.delete({ reference });
-  }
+  // async onModuleInit(): Promise<void> {
+  //   const flutterwaveUserKey = 'Spraay-GODSWILL-CHIORI-e4ea3007-8';
+  //   const user = await this.userSrv.findOne({ flutterwaveUserKey });
+  //   this.logger.log({ user });
+  //   // const reference = '100004231228230108110041167300';
+  //   // await this.transactionSrv.delete({ reference });
+  // }
 
   @OnEvent('create-wallet', { async: true })
   async createWallet(userId: string): Promise<void> {
@@ -170,6 +176,71 @@ export class WalletService {
     } catch (ex) {
       this.logger.error(ex);
       throw ex;
+    }
+  }
+
+  async calculateTransactionFee(
+    amount: number,
+    type: TransactionFeeType = TransactionFeeType.WITHDRAWAL,
+  ): Promise<TransactionFeeBreakdownDTO> {
+    try {
+      const response = new TransactionFeeBreakdownDTO();
+      let total = amount;
+      const headers = {
+        Authorization: `Bearer ${String(process.env.FLUTTERWAVE_SECRET_KEY)}`,
+      };
+      if (type === TransactionFeeType.WITHDRAWAL) {
+        type ResponseType = {
+          status: string,
+          message: string,
+          data: {
+            fee_type: string,
+            currency: string,
+            fee: number
+          }[]
+        };
+        const url = `https://api.flutterwave.com/v3/transfers/fee?amount=${amount}&currency=NGN`;
+        const result = await httpGet<ResponseType>(url, headers);
+        if (result?.data) {
+          const flutterwaveFee = Number(result.data.find(({ currency }) => currency === 'NGN')?.fee);
+          response.flutterwaveCharge = flutterwaveFee;
+          total -= flutterwaveFee;
+        }
+      }
+      if (type === TransactionFeeType.TOP_UP) {
+        type ResponseType = {
+          status: string,
+          message: string,
+          data: {
+            charge_amount: number,
+            fee: number,
+            merchant_fee: number,
+            flutterwave_fee: number,
+            stamp_duty_fee: number,
+            currency: string
+          },
+        };
+        const url = `https://api.flutterwave.com/v3/transactions/fee?amount=${amount}&currency=NGN`;
+        const result = await httpGet<ResponseType>(url, headers);
+        if (result?.data) {
+          const charge = Number(result.data.flutterwave_fee) + Number(result.data.stamp_duty_fee);
+          response.flutterwaveCharge = charge;
+          total -= charge;
+        }
+      }
+      const amountDeductible = calculateAppCut(this.percentageAppFee, total);
+      response.amountDeductible = amountDeductible;
+      response.spraayCharge = (amount - (amountDeductible + response.flutterwaveCharge)) ?? 0;
+      return response;
+    } catch (ex) {
+      if (ex instanceof AxiosError) {
+        const errorObject = ex.response.data;
+        throw new HttpException(errorObject.message, ex.response.status);
+      }
+      else {
+        this.logger.error(ex);
+        throw ex;
+      }
     }
   }
 
@@ -500,7 +571,6 @@ export class WalletService {
         const moneyChargeRecord = await this.fetchPaymentRecord(
           Number(data.id),
         );
-        this.logger.debug({ moneyChargeRecord });
         if (moneyChargeRecord?.data.status === 'successful') {
           if (data?.tx_ref) {
             const userRecord = await this.userSrv.getRepo().findOne({
@@ -512,8 +582,11 @@ export class WalletService {
                 await this.userSrv.getCurrentWalletBalance(userRecord.id);
               const reference = String(data.flw_ref);
               const narration = `${data.narration} - Wallet Funded`;
+              const amountSettled = parseFloat(moneyChargeRecord.data.amount_settled);
+              const amount = calculateAppCut(this.percentageAppFee, amountSettled);
               const newTransaction =
                 await this.transactionSrv.createTransaction({
+                  amount,
                   reference,
                   narration,
                   type: TransactionType.CREDIT,
@@ -521,7 +594,6 @@ export class WalletService {
                   userId: userRecord.id,
                   transactionDate: data.created_at,
                   currentBalanceBeforeTransaction,
-                  amount: parseFloat(moneyChargeRecord.data.amount_settled),
                 });
               this.logger.debug({ newTransaction, narration, reference });
             }
@@ -542,19 +614,22 @@ export class WalletService {
             Number(data.id),
           );
           if (transferRecord.data.status === 'SUCCESSFUL') {
-            const amount = Number(transferRecord.data.amount) - Number(transferRecord.data.fee);
+            const amountSettled = Number(transferRecord.data.amount);
+            const amount = calculateAppCut(this.percentageAppFee, amountSettled);
+            const appCut = amountSettled - amount;
+            // const amount = Number(transferRecord.data.amount) - Number(transferRecord.data.fee);
             if (userAccount?.userId) {
               const userId = userAccount.userId;
               const newTransaction =
                 await this.transactionSrv.createTransaction({
                   userId,
+                  amount,
                   reference,
                   narration: data.narration,
                   type: TransactionType.DEBIT,
                   transactionStatus: PaymentStatus.SUCCESSFUL,
                   transactionDate: data.created_at,
                   currentBalanceBeforeTransaction,
-                  amount,
                 });
               this.logger.debug({
                 event: 'transfer.completed',
@@ -657,7 +732,6 @@ export class WalletService {
                   'currentBalanceBeforeTransaction',
                 ],
               });
-            this.logger.log({ user, amount, reference, narration, existingTransaction });
             if (!existingTransaction?.id) {
               const currentBalanceBeforeTransaction =
                 await this.userSrv.getCurrentWalletBalance(user.id);

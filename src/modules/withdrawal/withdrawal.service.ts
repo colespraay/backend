@@ -1,6 +1,16 @@
-import { HttpException, HttpStatus, Inject, Injectable, forwardRef } from '@nestjs/common';
+import {
+  HttpException,
+  HttpStatus,
+  Inject,
+  Injectable,
+  forwardRef
+} from '@nestjs/common';
+import { AxiosError } from 'axios';
 import { Not } from 'typeorm';
-import { UserAccount, Withdrawal } from '@entities/index';
+import {
+  UserAccount,
+  Withdrawal
+} from '@entities/index';
 import { GenericService } from '@schematics/index';
 import {
   PaymentStatus,
@@ -22,7 +32,6 @@ import {
   UserService,
   WalletService
 } from '../index';
-import { AxiosError } from 'axios';
 
 @Injectable()
 export class WithdrawalService extends GenericService(Withdrawal) {

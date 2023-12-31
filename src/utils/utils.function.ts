@@ -916,6 +916,11 @@ export const differenceInDays = (date1: Date, date2: Date): number => {
   return Math.abs(Math.round(daysDiff));
 };
 
+export const calculateAppCut = (percentage: number, amount: number): number => {
+  const deduction = (percentage / 100) * amount;
+  return amount - deduction;
+};
+
 export const formatAmount = (amount: number, currency = 'NGN'): string => new Intl.NumberFormat('en-US', {
   // style: 'currency',
   // currency,

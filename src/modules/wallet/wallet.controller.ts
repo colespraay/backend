@@ -5,7 +5,8 @@ import {
   Post,
   Query,
   UseGuards,
-  Body
+  Body,
+  ParseFloatPipe
 } from '@nestjs/common';
 import {
   ApiBearerAuth,
@@ -27,6 +28,8 @@ import {
   VerifyAccountExistenceDTO,
   VerifyAccountExistenceResponseDTO,
   MakeWalletDebitTypeDTO,
+  TransactionFeeType,
+  TransactionFeeBreakdownDTO,
 } from './dto/wallet.dto';
 
 @ApiTags('wallet')
@@ -112,6 +115,19 @@ export class WalletController {
     @Query() payload: FindStatementOfAccountDTO,
   ): Promise<BankAccountStatementDTO> {
     return await this.walletSrv.getStatementOfAccounts(accountNumber, payload);
+  }
+
+  @ApiQuery({ name: 'amount' })
+  @ApiQuery({ name: 'type', enum: TransactionFeeType, required: false })
+  @Get('/fees/find-transaction-fees')
+  @ApiProduces('json')
+  @ApiConsumes('application/json')
+  @ApiResponse({ type: () => TransactionFeeBreakdownDTO })
+  async calculateTransactionFee(
+    @Query('amount', ParseFloatPipe) amount: number,
+    @Query('type') type: TransactionFeeType
+  ): Promise<TransactionFeeBreakdownDTO> { 
+    return await this.walletSrv.calculateTransactionFee(amount, type);
   }
 
   @Post('/webhook')
