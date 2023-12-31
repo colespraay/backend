@@ -13,6 +13,7 @@ import {
   TransactionType,
   calculateAppCut,
   checkForRequiredFields,
+  compareEnumValueFields,
   formatTransactionKey,
   generateUniqueCode,
   httpGet,
@@ -184,6 +185,8 @@ export class WalletService {
     type: TransactionFeeType = TransactionFeeType.WITHDRAWAL,
   ): Promise<TransactionFeeBreakdownDTO> {
     try {
+      checkForRequiredFields(['amount', 'type'], { amount, type });
+      compareEnumValueFields(type, Object.values(TransactionFeeType), 'type');
       const response = new TransactionFeeBreakdownDTO();
       let total = amount;
       const headers = {
@@ -203,8 +206,8 @@ export class WalletService {
         const result = await httpGet<ResponseType>(url, headers);
         if (result?.data) {
           const flutterwaveFee = Number(result.data.find(({ currency }) => currency === 'NGN')?.fee);
-          response.flutterwaveCharge = flutterwaveFee;
           total -= flutterwaveFee;
+          response.flutterwaveCharge = parseFloat(flutterwaveFee.toFixed(2));
         }
       }
       if (type === TransactionFeeType.TOP_UP) {
@@ -224,13 +227,14 @@ export class WalletService {
         const result = await httpGet<ResponseType>(url, headers);
         if (result?.data) {
           const charge = Number(result.data.flutterwave_fee) + Number(result.data.stamp_duty_fee);
-          response.flutterwaveCharge = charge;
           total -= charge;
+          response.flutterwaveCharge = parseFloat(charge.toFixed(2));
         }
       }
       const amountDeductible = calculateAppCut(this.percentageAppFee, total);
-      response.amountDeductible = amountDeductible;
-      response.spraayCharge = (amount - (amountDeductible + response.flutterwaveCharge)) ?? 0;
+      response.amountDeductible = parseFloat(amountDeductible.toFixed(2));
+      const spraayCharge = (amount - (amountDeductible + response.flutterwaveCharge)) ?? 0;
+      response.spraayCharge = parseFloat(spraayCharge.toFixed(2));
       return response;
     } catch (ex) {
       if (ex instanceof AxiosError) {
