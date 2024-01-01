@@ -37,6 +37,7 @@ import {
   DataPurchaseModule,
 } from '@modules/index';
 import { AppService } from './app.service';
+import { AppProfitModule } from './modules/app-profit/app-profit.module';
 import ormConfig from './orm.config';
 
 @Module({
@@ -67,6 +68,7 @@ import ormConfig from './orm.config';
     ElectricityPurchaseModule,
     CablePurchaseModule,
     NotificationModule,
+    AppProfitModule,
   ],
   controllers: [AppController],
   providers: [

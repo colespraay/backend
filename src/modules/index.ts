@@ -77,3 +77,7 @@ export * from './electricity-purchase/electricity-purchase.controller';
 export * from './cable-purchase/cable-purchase.module';
 export * from './cable-purchase/cable-purchase.service';
 export * from './cable-purchase/cable-purchase.controller';
+// [AppProfit]
+export * from './app-profit/app-profit.controller';
+export * from './app-profit/app-profit.service';
+export * from './app-profit/app-profit.module';

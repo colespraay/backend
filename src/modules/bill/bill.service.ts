@@ -6,6 +6,7 @@ import {
   NotFoundException,
   OnModuleInit,
 } from '@nestjs/common';
+import { AxiosError } from 'axios';
 import {
   AirtimeProvider,
   CableProvider,
@@ -50,8 +51,15 @@ export class BillService implements OnModuleInit {
         Authorization: `Bearer ${String(process.env.FLUTTERWAVE_SECRET_KEY)}`,
       });
     } catch (ex) {
-      this.logger.error(ex);
-      throw ex;
+      if (ex instanceof AxiosError) {
+        const errorObject = ex.response.data;
+        const message = typeof errorObject === 'string' ? errorObject : errorObject.message;
+        this.logger.error(message);
+        // throw new HttpException(message, ex.response.status);
+      } else {
+        this.logger.error(ex);
+        // throw ex;
+      }
     }
   }
 
