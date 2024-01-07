@@ -70,15 +70,7 @@ Public key: FLWPUBK-295bd18c4796c5997b1ef166303b60f2-X
 Secret key: FLWSECK-9b55207040eea9a421eb3be84fe7a210-18c867d27e0vt-X
 Encryption key: 9b55207040ee252b91a41765
 
-- make sure agent performance query on mastech returns default values [Done]
-
-- Add vehicle data in custom Service details [Done]
-
-- read Godfrey's article [Done]
-
 - review cheta's app proposal for real estate app.
-
-- Add HMOs, hospitals, and plans data to himp dB. [Done]
 
 - spray app
 1. Fix issue with wallet funding not showing up

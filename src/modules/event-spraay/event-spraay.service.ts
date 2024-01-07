@@ -14,6 +14,7 @@ import { GenericService } from '@schematics/index';
 import {
   TransactionType,
   UserNotificationType,
+  calculateAppCut,
   calculatePaginationControls,
   checkForRequiredFields,
   formatAmount,
@@ -55,6 +56,7 @@ export class EventSpraayService extends GenericService(EventSpraay) {
       userId: user.id,
     });
     validateUUIDField(payload.eventId, 'eventId');
+    payload.amount = Number(payload.amount);
     const isPinValid = await this.userSrv.verifyTransactionPin(
       user.id,
       payload.transactionPin,
@@ -91,21 +93,28 @@ export class EventSpraayService extends GenericService(EventSpraay) {
       transactionId: newTransaction.data.id,
     });
 
-    const formattedAmount = formatAmount(payload.amount);
     const recipientCurrentBalance = await this.userSrv.getCurrentWalletBalance(
       event.data.userId,
     );
-    const recipientNarration = `₦${formattedAmount} was 'spraayed' on you by ${user.firstName} ${user.lastName}`;
+    const amountWithoutAppCut = calculateAppCut(5, payload.amount);
+    const appCut = payload.amount - amountWithoutAppCut;
+    const formattedAmount = formatAmount(payload.amount);
+    const recipientNarration = `₦${formatAmount(amountWithoutAppCut)} was 'spraayed' on you by ${user.firstName} ${user.lastName}`;
     const creditTransaction = await this.transactionSrv.createTransaction({
       reference,
       transactionDate,
       currentBalanceBeforeTransaction: recipientCurrentBalance,
-      amount: payload.amount,
+      amount: amountWithoutAppCut,
       narration: recipientNarration,
       type: TransactionType.CREDIT,
       userId: event.data.userId,
     });
     this.logger.debug({ creditTransaction });
+    // Log amount app earns from the transaction
+    this.eventEmitterSrv.emit('app.-profit.log', {
+      amount: appCut,
+      transactionId: creditTransaction.data.id,
+    });
 
     const senderNarration = `You 'spraayed' ₦${payload.amount} at '${event.data.eventName}'`;
     const debitTransaction = await this.transactionSrv.createTransaction({
