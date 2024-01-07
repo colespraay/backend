@@ -111,7 +111,7 @@ export class EventSpraayService extends GenericService(EventSpraay) {
     });
     this.logger.debug({ creditTransaction });
     // Log amount app earns from the transaction
-    this.eventEmitterSrv.emit('app.-profit.log', {
+    this.eventEmitterSrv.emit('app-profit.log', {
       amount: appCut,
       transactionId: creditTransaction.data.id,
     });

@@ -1,6 +1,9 @@
-import { AppProfit } from '@entities/app-profit.entity';
 import { ApiProperty } from '@nestjs/swagger';
-import { BaseResponseTypeDTO, PaginationResponseType } from '@utils/index';
+import { AppProfit } from '@entities/index';
+import {
+    BaseResponseTypeDTO,
+    PaginationResponseType
+} from '@utils/index';
 
 export class CurrentAppProfitDTO extends BaseResponseTypeDTO {
     @ApiProperty()

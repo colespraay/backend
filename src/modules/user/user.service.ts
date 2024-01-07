@@ -77,14 +77,14 @@ export class UserService extends GenericService(User) {
     super();
   }
 
-  async onModuleInit(): Promise<void> {
-    const bvn = '22373523502';
-    const userId = 'a036de16-6c95-404c-a3e6-3050ccfc1adf';
-    const tl = await this.findAll();
-    console.log({ tl });
-    const userData = await this.resolveUserBvn(bvn, userId);
-    console.log({ userData });
-  }
+  // async onModuleInit(): Promise<void> {
+  //   const bvn = '22373523502';
+  //   const userId = 'a036de16-6c95-404c-a3e6-3050ccfc1adf';
+  //   const tl = await this.findAll();
+  //   console.log({ tl });
+  //   const userData = await this.resolveUserBvn(bvn, userId);
+  //   console.log({ userData });
+  // }
   
   async findContactsFilteredByUserContacts(
     payload: UserContactsDTO,

@@ -5,6 +5,7 @@ import {
   Injectable,
   forwardRef
 } from '@nestjs/common';
+import { EventEmitter2 } from '@nestjs/event-emitter';
 import { AxiosError } from 'axios';
 import { Not } from 'typeorm';
 import {
@@ -15,6 +16,7 @@ import { GenericService } from '@schematics/index';
 import {
   PaymentStatus,
   TransactionType,
+  calculateAppCut,
   checkForRequiredFields,
   formatAmount,
   generateUniqueCode,
@@ -35,12 +37,15 @@ import {
 
 @Injectable()
 export class WithdrawalService extends GenericService(Withdrawal) {
+  private percentageAppFee = Number(process.env.APP_TRANSACTION_FEE) ?? 0;
+
   constructor(
     @Inject(forwardRef(() => UserAccountService))
     private readonly userAccountSrv: UserAccountService,
     private readonly transactionSrv: TransactionService,
     @Inject(forwardRef(() => WalletService))
     private readonly walletSrv: WalletService,
+    private readonly eventEmitterSrv: EventEmitter2,
     private readonly userSrv: UserService,
   ) {
     super();
@@ -91,6 +96,9 @@ export class WithdrawalService extends GenericService(Withdrawal) {
       }
       const user = await this.userSrv.findUserById(userId);
 
+      const amountSettled = calculateAppCut(this.percentageAppFee, payload.amount);
+      const appCut = Number(payload.amount) - amountSettled;
+
       const headers = {
         Authorization: `Bearer ${String(process.env.FLUTTERWAVE_SECRET_KEY)}`,
       };
@@ -102,7 +110,7 @@ export class WithdrawalService extends GenericService(Withdrawal) {
         reference,
         currency: 'NGN',
         debit_currency: 'NGN',
-        amount: payload.amount,
+        amount: amountSettled,
         account_number: payload.accountNumber,
         account_bank: payload.bankCode,
         // callback_url: 'https://spraay-api-577f3dc0a0fe.herokuapp.com/wallet/webhook',
@@ -168,7 +176,7 @@ export class WithdrawalService extends GenericService(Withdrawal) {
             const transactionRecord = await this.transactionSrv.findOne({ reference: withdrawal.reference });
             const data = response.data;
             if (!transactionRecord?.id) {
-              await this.transactionSrv.createTransaction({
+              const newTransaction = await this.transactionSrv.createTransaction({
                 userId: withdrawal.userId,
                 narration: data.narration,
                 type: TransactionType.DEBIT,
@@ -176,6 +184,13 @@ export class WithdrawalService extends GenericService(Withdrawal) {
                 reference: String(data.reference),
                 currentBalanceBeforeTransaction,
                 transactionDate: data.created_at
+              });
+              const amountSettled = calculateAppCut(this.percentageAppFee, withdrawal.amount);
+              const appCut = Number(withdrawal.amount) - amountSettled;
+              // Log amount app earns from the transaction
+              this.eventEmitterSrv.emit('app-profit.log', {
+                amount: appCut,
+                transactionId: newTransaction.data.id,
               });
             }
           }

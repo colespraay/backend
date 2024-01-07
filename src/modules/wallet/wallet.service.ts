@@ -1,4 +1,4 @@
-import { OnEvent } from '@nestjs/event-emitter';
+import { OnEvent, EventEmitter2 } from '@nestjs/event-emitter';
 import {
   BadGatewayException,
   HttpException,
@@ -61,9 +61,10 @@ export class WalletService {
   constructor(
     private readonly userSrv: UserService,
     private readonly bankSrv: BankService,
+    private readonly eventEmitterSrv: EventEmitter2,
+    private readonly withdrawalSrv: WithdrawalService,
     private readonly userAccountSrv: UserAccountService,
     private readonly transactionSrv: TransactionService,
-    private readonly withdrawalSrv: WithdrawalService,
   ) {}
 
   // async onModuleInit(): Promise<void> {
@@ -586,8 +587,7 @@ export class WalletService {
                 await this.userSrv.getCurrentWalletBalance(userRecord.id);
               const reference = String(data.flw_ref);
               const narration = `${data.narration} - Wallet Funded`;
-              const amountSettled = parseFloat(moneyChargeRecord.data.amount_settled);
-              const amount = calculateAppCut(this.percentageAppFee, amountSettled);
+              const amount = parseFloat(moneyChargeRecord.data.amount_settled);
               const newTransaction =
                 await this.transactionSrv.createTransaction({
                   amount,
@@ -651,6 +651,11 @@ export class WalletService {
                     transactionId: newTransaction.data.id,
                   },
                 );
+                // Log amount app earns from the transaction
+                this.eventEmitterSrv.emit('app-profit.log', {
+                  amount: appCut,
+                  transactionId: newTransaction.data.id,
+                });
               }
             }
           }

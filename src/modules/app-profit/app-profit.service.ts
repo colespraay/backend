@@ -15,7 +15,7 @@ import {
 
 @Injectable()
 export class AppProfitService extends GenericService(AppProfit) {
-    @OnEvent('app.-profit.log', { async: true })
+    @OnEvent('app-profit.log', { async: true })
     async createAppProfits(payload: CreateAppProfitDTO): Promise<AppProfitResponseDTO> {
         try {
             checkForRequiredFields(['amount', 'transactionId'], payload);
