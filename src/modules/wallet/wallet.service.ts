@@ -162,6 +162,7 @@ export class WalletService {
     try {
       let bankList = await this.bankSrv.getRepo().find({
         where: { status: true },
+        order: { bankName: 'ASC' },
       });
       if (searchTerm) {
         searchTerm = searchTerm.toLowerCase();
