@@ -166,15 +166,20 @@ export class WalletService {
       });
       if (searchTerm) {
         searchTerm = searchTerm.toLowerCase();
-        bankList = bankList.filter(({ bankName }) =>
-          bankName.toLowerCase().includes(searchTerm),
+        bankList = bankList.filter(
+          ({ bankName, bankCode }) =>
+            bankName.toLowerCase().includes(searchTerm) ||
+            bankCode.toLowerCase().includes(searchTerm),
         );
       }
       return {
         success: true,
         code: HttpStatus.OK,
         message: 'Bank list found',
-        data: bankList.map(({ bankName, bankCode }) => ({ bankName, bankCode })),
+        data: bankList.map(({ bankName, bankCode }) => ({
+          bankName,
+          bankCode,
+        })),
       };
     } catch (ex) {
       this.logger.error(ex);
@@ -196,54 +201,58 @@ export class WalletService {
       };
       if (type === TransactionFeeType.WITHDRAWAL) {
         type ResponseType = {
-          status: string,
-          message: string,
+          status: string;
+          message: string;
           data: {
-            fee_type: string,
-            currency: string,
-            fee: number
-          }[]
+            fee_type: string;
+            currency: string;
+            fee: number;
+          }[];
         };
         const url = `https://api.flutterwave.com/v3/transfers/fee?amount=${amount}&currency=NGN`;
         const result = await httpGet<ResponseType>(url, headers);
         if (result?.data) {
-          const flutterwaveFee = Number(result.data.find(({ currency }) => currency === 'NGN')?.fee);
+          const flutterwaveFee = Number(
+            result.data.find(({ currency }) => currency === 'NGN')?.fee,
+          );
           total -= flutterwaveFee;
           response.flutterwaveCharge = parseFloat(flutterwaveFee.toFixed(2));
         }
       }
       if (type === TransactionFeeType.TOP_UP) {
         type ResponseType = {
-          status: string,
-          message: string,
+          status: string;
+          message: string;
           data: {
-            charge_amount: number,
-            fee: number,
-            merchant_fee: number,
-            flutterwave_fee: number,
-            stamp_duty_fee: number,
-            currency: string
-          },
+            charge_amount: number;
+            fee: number;
+            merchant_fee: number;
+            flutterwave_fee: number;
+            stamp_duty_fee: number;
+            currency: string;
+          };
         };
         const url = `https://api.flutterwave.com/v3/transactions/fee?amount=${amount}&currency=NGN`;
         const result = await httpGet<ResponseType>(url, headers);
         if (result?.data) {
-          const charge = Number(result.data.flutterwave_fee) + Number(result.data.stamp_duty_fee);
+          const charge =
+            Number(result.data.flutterwave_fee) +
+            Number(result.data.stamp_duty_fee);
           total -= charge;
           response.flutterwaveCharge = parseFloat(charge.toFixed(2));
         }
       }
       const amountDeductible = calculateAppCut(this.percentageAppFee, total);
       response.amountDeductible = parseFloat(amountDeductible.toFixed(2));
-      const spraayCharge = (amount - (amountDeductible + response.flutterwaveCharge)) ?? 0;
+      const spraayCharge =
+        amount - (amountDeductible + response.flutterwaveCharge) ?? 0;
       response.spraayCharge = parseFloat(spraayCharge.toFixed(2));
       return response;
     } catch (ex) {
       if (ex instanceof AxiosError) {
         const errorObject = ex.response.data;
         throw new HttpException(errorObject.message, ex.response.status);
-      }
-      else {
+      } else {
         this.logger.error(ex);
         throw ex;
       }
@@ -301,6 +310,13 @@ export class WalletService {
         };
       }
     } catch (ex) {
+      if (ex instanceof AxiosError) {
+        const errorObject = ex.response;
+        console.log({ errorObject, code: errorObject.status });
+        const message = errorObject.data.message ?? 'Request failed';
+        const code = errorObject.status ?? HttpStatus.BAD_GATEWAY;
+        throw new HttpException(message, code);
+      }
       this.logger.error(ex);
       throw ex;
     }
@@ -620,7 +636,10 @@ export class WalletService {
           );
           if (transferRecord.data.status === 'SUCCESSFUL') {
             const amountSettled = Number(transferRecord.data.amount);
-            const amount = calculateAppCut(this.percentageAppFee, amountSettled);
+            const amount = calculateAppCut(
+              this.percentageAppFee,
+              amountSettled,
+            );
             const appCut = amountSettled - amount;
             // const amount = Number(transferRecord.data.amount) - Number(transferRecord.data.fee);
             if (userAccount?.userId) {
@@ -727,8 +746,9 @@ export class WalletService {
             const amount = parseFloat(transaction.amount_settled);
             const reference = String(transaction.flw_ref);
             const narration = `${transaction.narration} - Wallet Funded`;
-            const existingTransaction =
-              await this.transactionSrv.getRepo().findOne({
+            const existingTransaction = await this.transactionSrv
+              .getRepo()
+              .findOne({
                 where: { userId, reference },
                 select: [
                   'id',
@@ -758,14 +778,18 @@ export class WalletService {
               };
               this.logger.debug({ newTransactionPayload });
               const newTransaction =
-                await this.transactionSrv.createTransaction(newTransactionPayload);
-                this.logger.debug({ newTransaction })
-              const newBalance = await this.userSrv.getCurrentWalletBalance(user.id);
+                await this.transactionSrv.createTransaction(
+                  newTransactionPayload,
+                );
+              this.logger.debug({ newTransaction });
+              const newBalance = await this.userSrv.getCurrentWalletBalance(
+                user.id,
+              );
               this.logger.debug({
                 newBalance,
                 narration,
                 reference,
-                newTransaction: newTransaction.data
+                newTransaction: newTransaction.data,
               });
             }
           }
