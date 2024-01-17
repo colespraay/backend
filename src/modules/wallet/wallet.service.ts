@@ -758,6 +758,7 @@ export class WalletService {
               this.logger.debug({ newTransactionPayload });
               const newTransaction =
                 await this.transactionSrv.createTransaction(newTransactionPayload);
+                this.logger.debug({ newTransaction })
               const newBalance = await this.userSrv.getCurrentWalletBalance(user.id);
               this.logger.debug({
                 newBalance,

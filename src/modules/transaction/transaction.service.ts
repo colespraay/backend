@@ -1,4 +1,9 @@
-import { HttpStatus, Injectable, NotFoundException } from '@nestjs/common';
+import {
+  BadRequestException,
+  HttpStatus,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { OnEvent, EventEmitter2 } from '@nestjs/event-emitter';
 import { FindManyOptions, ILike, In, IsNull, Not } from 'typeorm';
 import { createReadStream, unlinkSync } from 'fs';
@@ -224,16 +229,17 @@ export class TransactionService extends GenericService(TransactionRecord) {
   ): Promise<TransactionResponseDTO> {
     try {
       checkForRequiredFields(
-        [
-          'type',
-          'userId',
-          'amount',
-          'narration',
-          'transactionDate',
-          'currentBalanceBeforeTransaction',
-        ],
+        ['type', 'userId', 'amount', 'narration', 'transactionDate'],
         payload,
       );
+      if (
+        payload.currentBalanceBeforeTransaction < 0 &&
+        !payload.currentBalanceBeforeTransaction
+      ) {
+        throw new BadRequestException(
+          'Field currentBalanceBeforeTransaction is required',
+        );
+      }
       compareEnumValueFields(
         payload.type,
         Object.values(TransactionType),
@@ -254,13 +260,13 @@ export class TransactionService extends GenericService(TransactionRecord) {
                 amount: payload.amount,
                 userId: payload.userId,
               });
-            break;
+              break;
             case TransactionType.DEBIT:
               await this.userSrv.debitUserWallet({
                 amount: payload.amount,
                 userId: payload.userId,
               });
-            break;
+              break;
           }
           await this.sendEmailForTransactionNotification(createdRecord);
         }
@@ -601,7 +607,9 @@ export class TransactionService extends GenericService(TransactionRecord) {
     }
   }
 
-  private async sendEmailForTransactionNotification(transaction: TransactionRecord): Promise<void> {
+  private async sendEmailForTransactionNotification(
+    transaction: TransactionRecord,
+  ): Promise<void> {
     try {
       const today = new Date();
       const user = await this.userSrv.findUserById(transaction.userId);
@@ -636,7 +644,9 @@ export class TransactionService extends GenericService(TransactionRecord) {
                 <table style="width:100%;border-collapse:collapse;">
                     <tr>
                         <td style="padding: 20px 5px; border-bottom: 1px solid #ddd;color:#555555">Transaction Type</td>
-                        <td style="text-align: right;padding: 20px 5px;border-bottom: 1px solid #ddd;color:#555555">${transaction.type}</td>
+                        <td style="text-align: right;padding: 20px 5px;border-bottom: 1px solid #ddd;color:#555555">${
+                          transaction.type
+                        }</td>
                     </tr>
                     <tr>
                         <td style="padding: 20px 5px; border-bottom: 1px solid #ddd;color:#555555">Transaction Date</td>
@@ -655,7 +665,9 @@ export class TransactionService extends GenericService(TransactionRecord) {
                 <p style="font-weight:300">
                     If you have any issues with payment, kindly reply to this email or send an email to 
                     <span style="font-weight: 400;">
-                        <a style="color: inherit;" href="mailto:hello@spraay.ng?subject=Problem with transaction: '${transaction.reference}'">hi@spraay.ng</a>
+                        <a style="color: inherit;" href="mailto:hello@spraay.ng?subject=Problem with transaction: '${
+                          transaction.reference
+                        }'">hi@spraay.ng</a>
                     </span>
                 </p>
             </section>
@@ -676,7 +688,7 @@ export class TransactionService extends GenericService(TransactionRecord) {
             </section>
           </div>
           </section>`;
-        break;
+          break;
         case TransactionType.DEBIT:
           html = `
           <section style="background: white; color: black; font-size: 15px; font-family: 'Gill Sans', 'Gill Sans MT', Calibri, 'Trebuchet MS', sans-serif; display: flex; justify-content: center; margin: 0;">
@@ -702,7 +714,9 @@ export class TransactionService extends GenericService(TransactionRecord) {
                 <table style="width:100%;border-collapse:collapse;">
                     <tr>
                         <td style="padding: 20px 5px; border-bottom: 1px solid #ddd;color:#555555">Transaction Type</td>
-                        <td style="text-align: right;padding: 20px 5px;border-bottom: 1px solid #ddd;color:#555555">${transaction.type}</td>
+                        <td style="text-align: right;padding: 20px 5px;border-bottom: 1px solid #ddd;color:#555555">${
+                          transaction.type
+                        }</td>
                     </tr>
                     <tr>
                         <td style="padding: 20px 5px; border-bottom: 1px solid #ddd;color:#555555">Transaction Date</td>
@@ -721,7 +735,9 @@ export class TransactionService extends GenericService(TransactionRecord) {
                 <p style="font-weight:300">
                     If you have any issues with payment, kindly reply to this email or send an email to 
                     <span style="font-weight: 400;">
-                        <a style="color: inherit;" href="mailto:hello@spraay.ng?subject=Problem with transaction: '${transaction.reference}'">hi@spraay.ng</a>
+                        <a style="color: inherit;" href="mailto:hello@spraay.ng?subject=Problem with transaction: '${
+                          transaction.reference
+                        }'">hi@spraay.ng</a>
                     </span>
                 </p>
             </section>
@@ -742,18 +758,21 @@ export class TransactionService extends GenericService(TransactionRecord) {
             </section>
             </div>
           </section>`;
-        break;
+          break;
       }
       if (html) {
         const subject = `Spraay Receipt for: ${transaction.reference}`;
-        await sendEmail(html, subject, [user.data.email, 'abelanico6@gmail.com']);
+        await sendEmail(html, subject, [
+          user.data.email,
+          'abelanico6@gmail.com',
+        ]);
       }
     } catch (ex) {
       this.logger.error(ex);
       throw ex;
     }
   }
-  
+
   @OnEvent('export.soa', { async: true })
   private async exportSOA(payload: ExportSOADTO): Promise<void> {
     try {
