@@ -68,6 +68,7 @@ export class WithdrawalService extends GenericService(Withdrawal) {
         { ...payload, userId },
       );
       validateUUIDField(userId, 'userId');
+      payload.amount = Number(payload.amount);
       await this.userSrv.checkAccountBalance(payload.amount, userId);
 
       // Verify account existence
