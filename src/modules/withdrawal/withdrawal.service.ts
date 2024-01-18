@@ -111,7 +111,7 @@ export class WithdrawalService extends GenericService(Withdrawal) {
         reference,
         currency: 'NGN',
         debit_currency: 'NGN',
-        amount: Number(amountSettled),
+        amount: amountSettled,
         account_number: payload.accountNumber,
         account_bank: payload.bankCode,
         // callback_url: 'https://spraay-api-577f3dc0a0fe.herokuapp.com/wallet/webhook',
