@@ -90,8 +90,9 @@ export class WithdrawalService extends GenericService(Withdrawal) {
       }
       const user = await this.userSrv.findUserById(userId);
 
-      const amountSettled = Number(
-        calculateAppCut(this.percentageAppFee, payload.amount),
+      const amountSettled = calculateAppCut(
+        this.percentageAppFee,
+        payload.amount,
       );
       const appCut = Number(payload.amount) - amountSettled;
 
@@ -117,6 +118,8 @@ export class WithdrawalService extends GenericService(Withdrawal) {
         withdrawalRequestPayload: requestPayload,
         amountSettled,
         type: typeof amountSettled,
+        percentageAppFee: this.percentageAppFee,
+        payload,
       });
       const flutterwaveResponse = await httpPost<any, any>(
         url,
