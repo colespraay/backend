@@ -3,15 +3,12 @@ import {
   HttpStatus,
   Inject,
   Injectable,
-  forwardRef
+  forwardRef,
 } from '@nestjs/common';
 import { EventEmitter2 } from '@nestjs/event-emitter';
 import { AxiosError } from 'axios';
 import { Not } from 'typeorm';
-import {
-  UserAccount,
-  Withdrawal
-} from '@entities/index';
+import { UserAccount, Withdrawal } from '@entities/index';
 import { GenericService } from '@schematics/index';
 import {
   PaymentStatus,
@@ -29,11 +26,7 @@ import {
   WithdrawalResponseDTO,
   CreateWithdrawalDTO,
 } from './dto/withdrawal.dto';
-import {
-  UserAccountService,
-  UserService,
-  WalletService
-} from '../index';
+import { UserAccountService, UserService, WalletService } from '../index';
 
 @Injectable()
 export class WithdrawalService extends GenericService(Withdrawal) {
@@ -97,14 +90,18 @@ export class WithdrawalService extends GenericService(Withdrawal) {
       }
       const user = await this.userSrv.findUserById(userId);
 
-      const amountSettled = Number(calculateAppCut(this.percentageAppFee, payload.amount));
+      const amountSettled = Number(
+        calculateAppCut(this.percentageAppFee, payload.amount),
+      );
       const appCut = Number(payload.amount) - amountSettled;
 
       const headers = {
         Authorization: `Bearer ${String(process.env.FLUTTERWAVE_SECRET_KEY)}`,
       };
       const reference = `Spraay-payout-${generateUniqueCode(10)}`;
-      const narration = `Wallet payout of ₦${formatAmount(payload.amount)} to ${user.data.firstName} ${user.data.lastName}`;
+      const narration = `Wallet payout of ₦${formatAmount(payload.amount)} to ${
+        user.data.firstName
+      } ${user.data.lastName}`;
       const url = 'https://api.flutterwave.com/v3/transfers';
       const requestPayload = {
         narration,
@@ -116,7 +113,11 @@ export class WithdrawalService extends GenericService(Withdrawal) {
         account_bank: payload.bankCode,
         // callback_url: 'https://spraay-api-577f3dc0a0fe.herokuapp.com/wallet/webhook',
       };
-      this.logger.debug({ withdrawalRequestPayload: requestPayload });
+      this.logger.debug({
+        withdrawalRequestPayload: requestPayload,
+        amountSettled,
+        type: typeof amountSettled,
+      });
       const flutterwaveResponse = await httpPost<any, any>(
         url,
         requestPayload,
@@ -159,7 +160,7 @@ export class WithdrawalService extends GenericService(Withdrawal) {
       const headers = {
         Authorization: `Bearer ${String(process.env.FLUTTERWAVE_SECRET_KEY)}`,
       };
-      const withdrawals = await this.getRepo().find({ 
+      const withdrawals = await this.getRepo().find({
         where: { paymentStatus: PaymentStatus.PENDING, transferId: Not(0) },
         take: 5,
       });
@@ -172,22 +173,29 @@ export class WithdrawalService extends GenericService(Withdrawal) {
           if (response?.data.status === 'SUCCESSFUL') {
             await this.getRepo().update(
               { id: withdrawal.id },
-              { paymentStatus: PaymentStatus.SUCCESSFUL }
+              { paymentStatus: PaymentStatus.SUCCESSFUL },
             );
-            const currentBalanceBeforeTransaction = await this.userSrv.getCurrentWalletBalance(withdrawal.userId);
-            const transactionRecord = await this.transactionSrv.findOne({ reference: withdrawal.reference });
+            const currentBalanceBeforeTransaction =
+              await this.userSrv.getCurrentWalletBalance(withdrawal.userId);
+            const transactionRecord = await this.transactionSrv.findOne({
+              reference: withdrawal.reference,
+            });
             const data = response.data;
             if (!transactionRecord?.id) {
-              const newTransaction = await this.transactionSrv.createTransaction({
-                userId: withdrawal.userId,
-                narration: data.narration,
-                type: TransactionType.DEBIT,
-                amount: parseFloat(data.amount),
-                reference: String(data.reference),
-                currentBalanceBeforeTransaction,
-                transactionDate: data.created_at
-              });
-              const amountSettled = calculateAppCut(this.percentageAppFee, withdrawal.amount);
+              const newTransaction =
+                await this.transactionSrv.createTransaction({
+                  userId: withdrawal.userId,
+                  narration: data.narration,
+                  type: TransactionType.DEBIT,
+                  amount: parseFloat(data.amount),
+                  reference: String(data.reference),
+                  currentBalanceBeforeTransaction,
+                  transactionDate: data.created_at,
+                });
+              const amountSettled = calculateAppCut(
+                this.percentageAppFee,
+                withdrawal.amount,
+              );
               const appCut = Number(withdrawal.amount) - amountSettled;
               // Log amount app earns from the transaction
               this.eventEmitterSrv.emit('app-profit.log', {
