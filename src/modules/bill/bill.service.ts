@@ -1,5 +1,6 @@
 import {
   BadRequestException,
+  HttpException,
   HttpStatus,
   Injectable,
   Logger,
@@ -223,8 +224,15 @@ export class BillService implements OnModuleInit {
         return dataResponse;
       }
     } catch (ex) {
-      this.logger.error(ex);
-      throw ex;
+      if (ex instanceof AxiosError) {
+        const errorObject = ex.response.data;
+        const message = typeof errorObject === 'string' ? errorObject : errorObject.message;
+        this.logger.error(message);
+        throw new HttpException(message, ex.response.status);
+      } else {
+        this.logger.error(ex);
+        throw ex;
+      }
     }
   }
 
@@ -271,8 +279,15 @@ export class BillService implements OnModuleInit {
         };
       }
     } catch (ex) {
-      this.logger.error(ex);
-      throw ex;
+      if (ex instanceof AxiosError) {
+        const errorObject = ex.response.data;
+        const message = typeof errorObject === 'string' ? errorObject : errorObject.message;
+        this.logger.error(message);
+        throw new HttpException(message, ex.response.status);
+      } else {
+        this.logger.error(ex);
+        throw ex;
+      }
     }
   }
 
@@ -320,8 +335,15 @@ export class BillService implements OnModuleInit {
         };
       }
     } catch (ex) {
-      this.logger.error(ex);
-      throw ex;
+      if (ex instanceof AxiosError) {
+        const errorObject = ex.response.data;
+        const message = typeof errorObject === 'string' ? errorObject : errorObject.message;
+        this.logger.error(message);
+        throw new HttpException(message, ex.response.status);
+      } else {
+        this.logger.error(ex);
+        throw ex;
+      }
     }
   }
 
@@ -338,7 +360,7 @@ export class BillService implements OnModuleInit {
         amount: payload.amount,
         recurrence: 'ONCE',
         type: 'AIRTIME',
-        reference,
+        reference: reference,
         biller_name: payload.provider,
       };
       if (env === 'TEST') {
@@ -390,8 +412,15 @@ export class BillService implements OnModuleInit {
         data: [...new Set(providers.map(({ name }) => name))] as string[],
       };
     } catch (ex) {
-      this.logger.error(ex);
-      throw ex;
+      if (ex instanceof AxiosError) {
+        const errorObject = ex.response.data;
+        const message = typeof errorObject === 'string' ? errorObject : errorObject.message;
+        this.logger.error(message);
+        throw new HttpException(message, ex.response.status);
+      } else {
+        this.logger.error(ex);
+        throw ex;
+      }
     }
   }
 
@@ -580,7 +609,6 @@ export class BillService implements OnModuleInit {
         payload.meterNumber,
         selectedOne.biller_code,
       );
-      this.logger.log({ verification });
       return { ...verification, selectedOne };
     } catch (ex) {
       this.logger.error(ex);
