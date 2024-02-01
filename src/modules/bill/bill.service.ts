@@ -203,7 +203,8 @@ export class BillService implements OnModuleInit {
         Authorization: `Bearer ${this.flutterwaveSecretKey}`,
       };
       const resp = await httpPost<any, any>(url, reqPayload, headers);
-      if (resp.status === 'success') {
+      console.log({ billResp: resp })
+      if (['success', 'pending'].includes(resp.status)) {
         const dataResponse: FlutterwaveBillPaymentResponseDTO = {
           success: true,
           code: HttpStatus.OK,
@@ -215,6 +216,7 @@ export class BillService implements OnModuleInit {
           verificationUrl,
           headers,
         );
+        console.log({ tokenRetrievalResponse })
         if (
           tokenRetrievalResponse?.status === 'success' &&
           tokenRetrievalResponse?.data
