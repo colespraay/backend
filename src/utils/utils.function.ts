@@ -947,4 +947,3 @@ export const formatDate = (date: Date): string => {
 
   return formattedDate;
 };
-

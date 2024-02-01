@@ -94,7 +94,6 @@ export class WithdrawalService extends GenericService(Withdrawal) {
         this.percentageAppFee,
         payload.amount,
       );
-      console.log({ tl: payload.amount, percentage: this.percentageAppFee, amountSettled })
       const appCut = Number(payload.amount) - amountSettled;
 
       const headers = {
@@ -115,13 +114,6 @@ export class WithdrawalService extends GenericService(Withdrawal) {
         account_bank: payload.bankCode,
         // callback_url: 'https://spraay-api-577f3dc0a0fe.herokuapp.com/wallet/webhook',
       };
-      this.logger.debug({
-        withdrawalRequestPayload: requestPayload,
-        amountSettled,
-        type: typeof amountSettled,
-        percentageAppFee: this.percentageAppFee,
-        payload,
-      });
       const flutterwaveResponse = await httpPost<any, any>(
         url,
         requestPayload,

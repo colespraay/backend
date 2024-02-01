@@ -685,27 +685,26 @@ export class WalletService {
             reference,
           });
           if (withdrawalRecord?.id) {
-            const newTransaction = await this.transactionSrv.createTransaction({
-              reference,
-              userId: userAccount.userId,
-              narration: data.narration,
-              transactionStatus: PaymentStatus.FAILED,
-              type: TransactionType.DEBIT,
-              transactionDate: data.created_at,
-              currentBalanceBeforeTransaction,
-              amount: parseFloat(data.amount),
-            });
+            // const newTransaction = await this.transactionSrv.createTransaction({
+            //   reference,
+            //   userId: userAccount.userId,
+            //   narration: data.narration,
+            //   transactionStatus: PaymentStatus.FAILED,
+            //   type: TransactionType.DEBIT,
+            //   transactionDate: data.created_at,
+            //   currentBalanceBeforeTransaction,
+            //   amount: parseFloat(data.amount),
+            // });
             this.logger.debug({
               event: 'transfer.completed',
               currentBalanceBeforeTransaction,
-              newTransaction,
               status: 'Failed',
             });
             await this.withdrawalSrv.getRepo().update(
               { id: withdrawalRecord.id },
               {
                 paymentStatus: PaymentStatus.FAILED,
-                transactionId: newTransaction.data.id,
+                // transactionId: newTransaction.data.id,
               },
             );
           }
