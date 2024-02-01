@@ -155,9 +155,14 @@ export class TransactionService extends GenericService(TransactionRecord) {
         (transaction) => transaction.type === TransactionType.DEBIT,
       );
       const response = new TransactionListHistoryDTO();
-      response.total = transactions.reduce(
-        (previousValue, currentValue) => previousValue + currentValue.amount,
-        0,
+      response.total = Number(
+        transactions
+          .reduce(
+            (previousValue, currentValue) =>
+              previousValue + currentValue.amount,
+            0,
+          )
+          .toFixed(2),
       );
       response.income = Number(
         incomingTransactions
