@@ -9,7 +9,7 @@ import {
   ApiTags,
 } from '@nestjs/swagger';
 import { User } from '@entities/index';
-import { CurrentUser, RolesGuard } from '@schematics/index';
+import { CurrentUser, RolesGuard, SetRequestTimeout } from '@schematics/index';
 import { AirtimeProvider, CableProvider, DecodedTokenKey } from '@utils/index';
 import { AirtimePurchaseService } from '@modules/airtime-purchase/airtime-purchase.service';
 import {
@@ -113,6 +113,7 @@ export class BillController {
   @ApiProduces('json')
   @ApiConsumes('application/json')
   @ApiResponse({ type: AirtimePurchaseResponseDTO })
+  @SetRequestTimeout(1000000)
   @Post('/airtime-purchase')
   async createAirtimePurchase(
     @Body() payload: CreateAirtimePurchaseDTO,

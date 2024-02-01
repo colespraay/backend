@@ -338,7 +338,7 @@ export class BillService implements OnModuleInit {
         amount: payload.amount,
         recurrence: 'ONCE',
         type: 'AIRTIME',
-        reference: reference,
+        reference,
         biller_name: payload.provider,
       };
       if (env === 'TEST') {

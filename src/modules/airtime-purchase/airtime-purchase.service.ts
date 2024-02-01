@@ -47,13 +47,10 @@ export class AirtimePurchaseService extends GenericService(AirtimePurchase) {
         'provider',
       );
       payload.phoneNumber = formatPhoneNumberWithPrefix(payload.phoneNumber);
-      const isPinValid = await this.userSrv.verifyTransactionPin(
+      await this.userSrv.verifyTransactionPin(
         user.id,
         payload.transactionPin,
       );
-      if (!isPinValid?.success) {
-        throw new BadRequestException('Invalid transaction pin');
-      }
       await this.userSrv.checkAccountBalance(payload.amount, user.id);
       const narration = `Airtime purchase (₦${payload.amount}) for ${payload.phoneNumber}`;
       const transactionDate = new Date().toLocaleString();
@@ -70,7 +67,7 @@ export class AirtimePurchaseService extends GenericService(AirtimePurchase) {
         userId: user.id,
         amount: payload.amount,
         type: TransactionType.DEBIT,
-        reference,
+        reference: airtimePurchaseResponse.data?.reference,
         transactionDate,
         currentBalanceBeforeTransaction: user.walletBalance,
       });
