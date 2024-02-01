@@ -149,7 +149,7 @@ export class ElectricityPurchaseService extends GenericService(
           billerName: String(verification.selectedOne.biller_name),
           amount: payload.amount,
           meterNumber: payload.meterNumber,
-          name: verification.data.customer,
+          name: verification.data.name,
         },
       };
     } catch (ex) {
