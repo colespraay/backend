@@ -159,13 +159,23 @@ export class TransactionService extends GenericService(TransactionRecord) {
         (previousValue, currentValue) => previousValue + currentValue.amount,
         0,
       );
-      response.income = incomingTransactions.reduce(
-        (previousValue, currentValue) => previousValue + currentValue.amount,
-        0,
+      response.income = Number(
+        incomingTransactions
+          .reduce(
+            (previousValue, currentValue) =>
+              previousValue + currentValue.amount,
+            0,
+          )
+          .toFixed(2),
       );
-      response.expense = outgoingTransactions.reduce(
-        (previousValue, currentValue) => previousValue + currentValue.amount,
-        0,
+      response.expense = Number(
+        outgoingTransactions
+          .reduce(
+            (previousValue, currentValue) =>
+              previousValue + currentValue.amount,
+            0,
+          )
+          .toFixed(2),
       );
       return response;
     } catch (ex) {
