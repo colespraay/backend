@@ -57,6 +57,7 @@ export class BillController {
   @ApiProduces('json')
   @ApiConsumes('application/json')
   @ApiResponse({ type: CablePurchaseResponseDTO })
+  @SetRequestTimeout(1000000)
   @Post('/cable-purchase')
   async createCablePurchase(
     @Body() payload: CreateCableProviderDTO,
@@ -81,6 +82,7 @@ export class BillController {
   @ApiProduces('json')
   @ApiConsumes('application/json')
   @ApiResponse({ type: ElectricityPurchaseResponseDTO })
+  @SetRequestTimeout(1000000)
   @Post('/electricity-unit-purchase')
   async createElectricityPurchase(
     @Body() payload: CreateElectricityPurchaseDTO,
@@ -126,6 +128,7 @@ export class BillController {
   @ApiProduces('json')
   @ApiConsumes('application/json')
   @ApiResponse({ type: DataPurchaseResponseDTO })
+  @SetRequestTimeout(1000000)
   @Post('/data-purchase')
   async createDataPurchase(
     @Body() payload: CreateDataPurchaseDTO,
