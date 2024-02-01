@@ -94,6 +94,7 @@ export class WithdrawalService extends GenericService(Withdrawal) {
         this.percentageAppFee,
         payload.amount,
       );
+      console.log({ tl: payload.amount, percentage: this.percentageAppFee, amountSettled })
       const appCut = Number(payload.amount) - amountSettled;
 
       const headers = {
