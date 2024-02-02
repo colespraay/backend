@@ -85,9 +85,6 @@ export class ElectricityPurchaseService extends GenericService(
           },
           reference,
         );
-      if (!electricUnitPurchaseResponse?.token) {
-        throw new ConflictException('Request for token failed. Please retry');
-      }
       this.logger.log({ electricUnitPurchaseResponse });
       const newTransaction = await this.transactionSrv.createTransaction({
         narration,

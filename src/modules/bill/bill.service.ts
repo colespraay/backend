@@ -1,4 +1,5 @@
 import {
+  BadGatewayException,
   BadRequestException,
   HttpException,
   HttpStatus,
@@ -203,14 +204,14 @@ export class BillService implements OnModuleInit {
         Authorization: `Bearer ${this.flutterwaveSecretKey}`,
       };
       const resp = await httpPost<any, any>(url, reqPayload, headers);
-      console.log({ billResp: resp })
+      console.log({ billResp: resp });
       if (['success', 'pending'].includes(resp.status)) {
-        const dataResponse: FlutterwaveBillPaymentResponseDTO = {
-          success: true,
-          code: HttpStatus.OK,
-          message: 'Electricity unit purchase successful',
-          data: resp.data,
-        };
+        const dataResponse = new FlutterwaveBillPaymentResponseDTO();
+        dataResponse.success = true;
+        dataResponse.code = HttpStatus.OK;
+        dataResponse.message = 'Electricity unit purchase successful';
+        dataResponse.data = resp.data;
+
         const verificationUrl = `https://api.flutterwave.com/v3/bills/${resp.data.reference}`;
         const tokenRetrievalResponse = await httpGet<any>(
           verificationUrl,
@@ -225,6 +226,7 @@ export class BillService implements OnModuleInit {
         }
         return dataResponse;
       }
+      throw new BadGatewayException('Request for token failed. Please retry');
     } catch (ex) {
       if (ex instanceof AxiosError) {
         const errorObject = ex.response.data;
