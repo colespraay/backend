@@ -25,11 +25,11 @@ import {
 @Entity({ name: 'transaction_record' })
 export class TransactionRecord extends Base {
   @ApiProperty()
-  @Column({ type: 'float', default: 0 })
+  @Column({ type: 'float', default: 0.0 })
   amount: number;
 
   @ApiProperty()
-  @Column({ type: 'float', default: 0 })
+  @Column({ type: 'float', default: 0.0 })
   currentBalanceBeforeTransaction: number;
 
   @ApiProperty()

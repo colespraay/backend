@@ -1,4 +1,9 @@
-import { BadRequestException, HttpStatus, Injectable } from '@nestjs/common';
+import {
+  BadRequestException,
+  ConflictException,
+  HttpStatus,
+  Injectable,
+} from '@nestjs/common';
 import { ElectricityPurchase, User } from '@entities/index';
 import { GenericService } from '@schematics/index';
 import {
@@ -80,6 +85,9 @@ export class ElectricityPurchaseService extends GenericService(
           },
           reference,
         );
+      if (!electricUnitPurchaseResponse?.token) {
+        throw new ConflictException('Request for token failed. Please retry');
+      }
       this.logger.log({ electricUnitPurchaseResponse });
       const newTransaction = await this.transactionSrv.createTransaction({
         narration,
