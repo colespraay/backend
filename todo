@@ -75,3 +75,117 @@ Encryption key: 9b55207040ee252b91a41765
 - spray app
 1. Fix issue with wallet funding not showing up
 2. Add flutterwave and app charges when making withdrawals and wallet funding
+
+
+================
+{
+  billResp: {
+    status: 'pending',
+    message: 'Bill payment is Pending',
+    data: {
+      phone_number: '62130027329',
+      amount: 100,
+      network: null,
+      flw_ref: 'CF-FLYAPI-20240202034657096324738',
+      reference: 'BP17068888194454130011'
+    }
+  }
+}
+{
+  tokenRetrievalResponse: {
+    status: 'pending',
+    message: 'Bill status fetch pending',
+    data: {
+      currency: 'NGN',
+      customer_id: '62130027329',
+      frequency: 'One Time',
+      amount: '100.0000',
+      product: 'ENUGU DISCO ELECTRIC BILLS PREPAID TOPUP',
+      product_name: 'ENUGU DISCO ELECTRIC BILLS PREPAID TOPUP',
+      commission: 0,
+      transaction_date: '2024-02-02T15:46:57.097Z',
+      country: 'NG',
+      tx_ref: 'CF-FLYAPI-20240202034657096324738',
+      extra: null,
+      product_details: 'FLY-API-NG-ENUGU DISCO ELECTRIC BILLS PREPAID TOPUP'
+    }
+  }
+}
+===================
+{
+  billResp: {
+    status: 'pending',
+    message: 'Bill payment is Pending',
+    data: {
+      phone_number: '62130027329',
+      amount: 100,
+      network: null,
+      flw_ref: 'CF-FLYAPI-20240202051928653959290',
+      reference: 'BP17068943706037571884'
+    }
+  }
+}
+{
+  tokenRetrievalResponse: {
+    status: 'pending',
+    message: 'Bill status fetch pending',
+    data: {
+      currency: 'NGN',
+      customer_id: '62130027329',
+      frequency: 'One Time',
+      amount: '100.0000',
+      product: 'ENUGU DISCO ELECTRIC BILLS PREPAID TOPUP',
+      product_name: 'ENUGU DISCO ELECTRIC BILLS PREPAID TOPUP',
+      commission: 0,
+      transaction_date: '2024-02-02T17:19:28.653Z',
+      country: 'NG',
+      tx_ref: 'CF-FLYAPI-20240202051928653959290',
+      extra: null,
+      product_details: 'FLY-API-NG-ENUGU DISCO ELECTRIC BILLS PREPAID TOPUP'
+    }
+  }
+}
+===============
+{
+  billResp: {
+    status: 'pending',
+    message: 'Bill payment is Pending',
+    data: {
+      phone_number: '62130027329',
+      amount: 100,
+      network: null,
+      flw_ref: 'CF-FLYAPI-20240203114247796465312',
+      reference: 'BP17069605702163256248'
+    }
+  }
+}
+{
+  tokenRetrievalResponse: {
+    status: 'pending',
+    message: 'Bill status fetch pending',
+    data: {
+      currency: 'NGN',
+      customer_id: '62130027329',
+      frequency: 'One Time',
+      amount: '100.0000',
+      product: 'ENUGU DISCO ELECTRIC BILLS PREPAID TOPUP',
+      product_name: 'ENUGU DISCO ELECTRIC BILLS PREPAID TOPUP',
+      commission: 0,
+      transaction_date: '2024-02-03T11:42:47.797Z',
+      country: 'NG',
+      tx_ref: 'CF-FLYAPI-20240203114247796465312',
+      extra: null,
+      product_details: 'FLY-API-NG-ENUGU DISCO ELECTRIC BILLS PREPAID TOPUP'
+    }
+  }
+}
+==============
+
+===> Buy plan for gotv cable (Testing)
+===> Make sure electricity bill payments work well.
+{
+  "provider": "EEDC",
+  "meterNumber": "62130027329",
+  "amount": 50,
+  "plan": "PREPAID"
+}

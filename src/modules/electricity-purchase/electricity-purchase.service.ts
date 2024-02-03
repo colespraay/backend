@@ -1,6 +1,8 @@
 import {
+  BadGatewayException,
   BadRequestException,
   ConflictException,
+  HttpException,
   HttpStatus,
   Injectable,
 } from '@nestjs/common';
@@ -24,6 +26,7 @@ import {
   ElectricityPurchaseVerificationDTO,
   VerifyElectricityPurchaseDTO,
 } from './dto/electricity-purchase.dto';
+import { AxiosError } from 'axios';
 
 @Injectable()
 export class ElectricityPurchaseService extends GenericService(
@@ -51,22 +54,19 @@ export class ElectricityPurchaseService extends GenericService(
         Object.values(ElectricityProvider),
         'provider',
       );
-      if (payload.plan) {
+      if (!payload.plan) {
+        payload.plan = ElectricityPlan.PRE_PAID;
+      } else {
         compareEnumValueFields(
           payload.plan,
           Object.values(ElectricityPlan),
           'plan',
         );
-      } else {
-        payload.plan = ElectricityPlan.PRE_PAID;
       }
-      const isPinValid = await this.userSrv.verifyTransactionPin(
+      await this.userSrv.verifyTransactionPin(
         user.id,
         payload.transactionPin,
       );
-      if (!isPinValid?.success) {
-        throw new BadRequestException('Invalid transaction pin');
-      }
       await this.userSrv.checkAccountBalance(payload.amount, user.id);
 
       const narration = `Electricity unit purchase (₦${payload.amount}) for ${payload.meterNumber}`;
@@ -86,12 +86,15 @@ export class ElectricityPurchaseService extends GenericService(
           reference,
         );
       this.logger.log({ electricUnitPurchaseResponse });
+      if (!electricUnitPurchaseResponse?.token) {
+        throw new BadGatewayException('Request for token failed. Please retry');
+      }
       const newTransaction = await this.transactionSrv.createTransaction({
         narration,
         userId: user.id,
         amount: payload.amount,
         type: TransactionType.DEBIT,
-        reference,
+        reference: electricUnitPurchaseResponse.data.reference,
         transactionDate,
         currentBalanceBeforeTransaction: user.walletBalance,
       });
@@ -102,7 +105,7 @@ export class ElectricityPurchaseService extends GenericService(
         provider: payload.provider,
         plan: payload.plan,
         unitToken: electricUnitPurchaseResponse.token,
-        flutterwaveReference: electricUnitPurchaseResponse.data.tx_ref,
+        flutterwaveReference: electricUnitPurchaseResponse.data.reference,
         transactionId: newTransaction.data.id,
         amount: payload.amount,
         userId: user.id,
@@ -158,8 +161,15 @@ export class ElectricityPurchaseService extends GenericService(
         },
       };
     } catch (ex) {
-      this.logger.error(ex);
-      throw ex;
+      if (ex instanceof AxiosError) {
+        const errorObject = ex.response.data;
+        const message = typeof errorObject === 'string' ? errorObject : errorObject.message;
+        this.logger.error(message);
+        throw new HttpException(message, ex.response.status);
+      } else {
+        this.logger.error(ex);
+        throw ex;
+      }
     }
   }
 
