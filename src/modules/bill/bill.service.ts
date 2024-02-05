@@ -335,16 +335,16 @@ export class BillService implements OnModuleInit {
         cablePurchaseResponse: resp,
         cableRequestPayload: reqPayload,
       });
-      if (resp.status === 'success') {
-        return {
-          success: true,
-          code: HttpStatus.OK,
-          message: 'Cable plan purchase successful',
-          data: resp.data,
-          token: resp.data.reference ?? reference,
-        };
+      if (resp.status !== 'success') {
+        throw new BadGatewayException('Cable plan purchase failed');
       }
-      throw new BadGatewayException('Cable plan purchase failed');
+      return {
+        success: true,
+        code: HttpStatus.OK,
+        message: 'Cable plan purchase successful',
+        data: resp.data,
+        token: resp.data.reference ?? reference,
+      };
     } catch (ex) {
       if (ex instanceof AxiosError) {
         const errorObject = ex.response.data;
