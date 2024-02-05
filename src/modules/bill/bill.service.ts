@@ -204,7 +204,7 @@ export class BillService implements OnModuleInit {
         Authorization: `Bearer ${this.flutterwaveSecretKey}`,
       };
       const resp = await httpPost<any, any>(url, reqPayload, headers);
-      console.log({ billResp: resp });
+      console.log({ reqPayload, billResp: resp });
       if (['success', 'pending'].includes(resp.status)) {
         const dataResponse = new FlutterwaveBillPaymentResponseDTO();
         dataResponse.success = true;
