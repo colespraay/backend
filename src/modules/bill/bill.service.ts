@@ -55,7 +55,8 @@ export class BillService implements OnModuleInit {
     } catch (ex) {
       if (ex instanceof AxiosError) {
         const errorObject = ex.response.data;
-        const message = typeof errorObject === 'string' ? errorObject : errorObject.message;
+        const message =
+          typeof errorObject === 'string' ? errorObject : errorObject.message;
         this.logger.error(message);
         // throw new HttpException(message, ex.response.status);
       } else {
@@ -217,7 +218,7 @@ export class BillService implements OnModuleInit {
           verificationUrl,
           headers,
         );
-        console.log({ tokenRetrievalResponse })
+        console.log({ tokenRetrievalResponse });
         if (
           tokenRetrievalResponse?.status === 'success' &&
           tokenRetrievalResponse?.data
@@ -230,7 +231,8 @@ export class BillService implements OnModuleInit {
     } catch (ex) {
       if (ex instanceof AxiosError) {
         const errorObject = ex.response.data;
-        const message = typeof errorObject === 'string' ? errorObject : errorObject.message;
+        const message =
+          typeof errorObject === 'string' ? errorObject : errorObject.message;
         this.logger.error(message);
         throw new HttpException(message, ex.response.status);
       } else {
@@ -285,7 +287,8 @@ export class BillService implements OnModuleInit {
     } catch (ex) {
       if (ex instanceof AxiosError) {
         const errorObject = ex.response.data;
-        const message = typeof errorObject === 'string' ? errorObject : errorObject.message;
+        const message =
+          typeof errorObject === 'string' ? errorObject : errorObject.message;
         this.logger.error(message);
         throw new HttpException(message, ex.response.status);
       } else {
@@ -304,13 +307,11 @@ export class BillService implements OnModuleInit {
     try {
       const url = 'https://api.flutterwave.com/v3/bills';
       const reqPayload = {
-        country: 'NG',
-        customer: payload.smartCardNumber,
-        amount: payload.amount,
-        recurrence: 'ONCE',
-        type: plan.biller_name,
         reference,
+        amount: plan.amount,
+        type: plan.biller_name,
         biller_name: plan.biller_name,
+        customer: payload.smartCardNumber,
       };
       if (env === 'TEST') {
         return {
@@ -330,18 +331,25 @@ export class BillService implements OnModuleInit {
       const resp = await httpPost<any, any>(url, reqPayload, {
         Authorization: `Bearer ${this.flutterwaveSecretKey}`,
       });
+      console.log({
+        cablePurchaseResponse: resp,
+        cableRequestPayload: reqPayload,
+      });
       if (resp.status === 'success') {
         return {
           success: true,
           code: HttpStatus.OK,
           message: 'Cable plan purchase successful',
           data: resp.data,
+          token: resp.data.reference ?? reference,
         };
       }
+      throw new BadGatewayException('Cable plan purchase failed');
     } catch (ex) {
       if (ex instanceof AxiosError) {
         const errorObject = ex.response.data;
-        const message = typeof errorObject === 'string' ? errorObject : errorObject.message;
+        const message =
+          typeof errorObject === 'string' ? errorObject : errorObject.message;
         this.logger.error(message);
         throw new HttpException(message, ex.response.status);
       } else {
@@ -418,7 +426,8 @@ export class BillService implements OnModuleInit {
     } catch (ex) {
       if (ex instanceof AxiosError) {
         const errorObject = ex.response.data;
-        const message = typeof errorObject === 'string' ? errorObject : errorObject.message;
+        const message =
+          typeof errorObject === 'string' ? errorObject : errorObject.message;
         this.logger.error(message);
         throw new HttpException(message, ex.response.status);
       } else {

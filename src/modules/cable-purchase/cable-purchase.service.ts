@@ -1,4 +1,4 @@
-import { BadRequestException, HttpStatus, Injectable } from '@nestjs/common';
+import { BadGatewayException, BadRequestException, HttpStatus, Injectable } from '@nestjs/common';
 import { CablePurchase, User } from '@entities/index';
 import { GenericService } from '@schematics/index';
 import {
@@ -46,13 +46,10 @@ export class CablePurchaseService extends GenericService(CablePurchase) {
         Object.values(CableProvider),
         'provider',
       );
-      const isPinValid = await this.userSrv.verifyTransactionPin(
+      await this.userSrv.verifyTransactionPin(
         user.id,
         payload.transactionPin,
       );
-      if (!isPinValid?.success) {
-        throw new BadRequestException('Invalid transaction pin');
-      }
       const plan = await this.billSrv.findCableProviderById(
         payload.cablePlanId,
       );
@@ -71,14 +68,17 @@ export class CablePurchaseService extends GenericService(CablePurchase) {
         reference,
         plan,
       );
-      this.logger.log({ cablePurchaseResponse });
+      this.logger.log({ cablePurchaseResponse, plan });
+      if (!cablePurchaseResponse?.success) {
+        throw new BadGatewayException('Cable plan purchase failed');
+      }
       const newTransaction = await this.transactionSrv.createTransaction({
         narration,
         userId: user.id,
+        transactionDate,
         amount: plan.amount,
         type: TransactionType.DEBIT,
-        reference,
-        transactionDate,
+        reference: cablePurchaseResponse.token,
         currentBalanceBeforeTransaction: user.walletBalance,
       });
       const createdCablePlanPurchase = await this.create<
