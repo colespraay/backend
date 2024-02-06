@@ -91,12 +91,12 @@ export class ElectricityPurchaseService extends GenericService(
       }
       const newTransaction = await this.transactionSrv.createTransaction({
         narration,
+        transactionDate,
         userId: user.id,
         amount: payload.amount,
         type: TransactionType.DEBIT,
-        reference: electricUnitPurchaseResponse.data.reference,
-        transactionDate,
         currentBalanceBeforeTransaction: user.walletBalance,
+        reference: electricUnitPurchaseResponse.data.reference,
       });
       const createdElectricityUnitPurchase = await this.create<
         Partial<ElectricityPurchase>
