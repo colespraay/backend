@@ -308,6 +308,7 @@ export class BillService implements OnModuleInit {
       const url = 'https://api.flutterwave.com/v3/bills';
       const reqPayload = {
         reference,
+        country: 'NG',
         amount: plan.amount,
         type: plan.biller_name,
         biller_name: plan.biller_name,
