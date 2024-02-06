@@ -343,7 +343,6 @@ export class BillService implements OnModuleInit {
         code: HttpStatus.OK,
         message: 'Cable plan purchase successful',
         data: resp.data,
-        token: resp.data.reference ?? reference,
       };
     } catch (ex) {
       if (ex instanceof AxiosError) {

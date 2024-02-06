@@ -78,7 +78,7 @@ export class CablePurchaseService extends GenericService(CablePurchase) {
         transactionDate,
         amount: plan.amount,
         type: TransactionType.DEBIT,
-        reference: cablePurchaseResponse.token,
+        reference: cablePurchaseResponse.data.reference,
         currentBalanceBeforeTransaction: user.walletBalance,
       });
       const createdCablePlanPurchase = await this.create<
