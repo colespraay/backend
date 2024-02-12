@@ -88,6 +88,7 @@ export class BillService implements OnModuleInit {
     provider?: CableProvider,
   ): Promise<FlutterwaveCableBillingOptionResponseDTO> {
     try {
+      throw new BadGatewayException('Feature is not yet available...coming soon');
       if (provider) {
         compareEnumValueFields(
           provider,
@@ -297,7 +298,7 @@ export class BillService implements OnModuleInit {
       }
     }
   }
-
+  
   async makeCablePlanPurchase(
     payload: CreateFlutterwaveCablePlanPurchaseDTO,
     reference: string,
