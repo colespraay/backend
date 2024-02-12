@@ -175,6 +175,8 @@ export class BillService implements OnModuleInit {
     env = 'PROD',
   ): Promise<FlutterwaveBillPaymentResponseDTO> {
     try {
+      // TODO: Remove later
+      throw new BadGatewayException('Feature is not yet available...coming soon');
       const url = 'https://api.flutterwave.com/v3/bills';
       const reqPayload = {
         country: 'NG',
