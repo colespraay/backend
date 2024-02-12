@@ -131,6 +131,8 @@ export class ElectricityPurchaseService extends GenericService(
     user: User,
   ): Promise<ElectricityPurchaseVerificationDTO> {
     try {
+      // TODO: Remove later
+      throw new BadGatewayException('Feature is not yet available...coming soon');
       checkForRequiredFields(['provider', 'meterNumber', 'amount'], payload);
       compareEnumValueFields(
         payload.provider,
