@@ -1,5 +1,6 @@
-import { BadRequestException, HttpStatus, Injectable } from '@nestjs/common';
+import { BadRequestException, HttpException, HttpStatus, Injectable } from '@nestjs/common';
 import { EventEmitter2 } from '@nestjs/event-emitter';
+import { AxiosError } from 'axios';
 import {
   AirtimeProvider,
   TransactionType,
@@ -85,8 +86,15 @@ export class AirtimePurchaseService extends GenericService(AirtimePurchase) {
         message: airtimePurchaseResponse.message,
       };
     } catch (ex) {
-      this.logger.error(ex);
-      throw ex;
+      if (ex instanceof AxiosError) {
+        const errorObject = ex.response.data;
+        const message = typeof errorObject === 'string' ? errorObject : errorObject.message;
+        this.logger.error(message);
+        throw new HttpException(message, ex.response.status);
+      } else {
+        this.logger.error(ex);
+        throw ex;
+      }
     }
   }
 }

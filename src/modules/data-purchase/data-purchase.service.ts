@@ -1,5 +1,6 @@
-import { BadRequestException, HttpStatus, Injectable } from '@nestjs/common';
+import { BadRequestException, HttpException, HttpStatus, Injectable } from '@nestjs/common';
 import { EventEmitter2 } from '@nestjs/event-emitter';
+import { AxiosError } from 'axios';
 import { BillService } from '@modules/bill/bill.service';
 import { DataPurchase, User } from '@entities/index';
 import { TransactionService } from '@modules/transaction/transaction.service';
@@ -94,8 +95,16 @@ export class DataPurchaseService extends GenericService(DataPurchase) {
         message: dataPurchaseResponse.message,
       };
     } catch (ex) {
-      this.logger.error(ex);
-      throw ex;
+      if (ex instanceof AxiosError) {
+        const errorObject = ex.response.data;
+        const message =
+          typeof errorObject === 'string' ? errorObject : errorObject.message;
+        this.logger.error(message);
+        throw new HttpException(message, ex.response.status);
+      } else {
+        this.logger.error(ex);
+        throw ex;
+      }
     }
   }
 }

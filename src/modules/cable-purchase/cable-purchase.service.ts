@@ -1,4 +1,11 @@
-import { BadGatewayException, BadRequestException, HttpStatus, Injectable } from '@nestjs/common';
+import {
+  BadGatewayException,
+  BadRequestException,
+  HttpException,
+  HttpStatus,
+  Injectable,
+} from '@nestjs/common';
+import { AxiosError } from 'axios';
 import { CablePurchase, User } from '@entities/index';
 import { GenericService } from '@schematics/index';
 import {
@@ -46,10 +53,7 @@ export class CablePurchaseService extends GenericService(CablePurchase) {
         Object.values(CableProvider),
         'provider',
       );
-      await this.userSrv.verifyTransactionPin(
-        user.id,
-        payload.transactionPin,
-      );
+      await this.userSrv.verifyTransactionPin(user.id, payload.transactionPin);
       const plan = await this.billSrv.findCableProviderById(
         payload.cablePlanId,
       );
@@ -98,8 +102,16 @@ export class CablePurchaseService extends GenericService(CablePurchase) {
         message: cablePurchaseResponse.message,
       };
     } catch (ex) {
-      this.logger.error(ex);
-      throw ex;
+      if (ex instanceof AxiosError) {
+        const errorObject = ex.response.data;
+        const message =
+          typeof errorObject === 'string' ? errorObject : errorObject.message;
+        this.logger.error(message);
+        throw new HttpException(message, ex.response.status);
+      } else {
+        this.logger.error(ex);
+        throw ex;
+      }
     }
   }
 }
