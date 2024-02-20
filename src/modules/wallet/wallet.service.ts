@@ -641,13 +641,16 @@ export class WalletService {
               amountSettled,
             );
             const appCut = amountSettled - amount;
+            const withdrawalRecord = await this.withdrawalSrv.findOne({
+              reference,
+            });
             // const amount = Number(transferRecord.data.amount) - Number(transferRecord.data.fee);
             if (userAccount?.userId) {
               const userId = userAccount.userId;
               const newTransaction =
                 await this.transactionSrv.createTransaction({
                   userId,
-                  amount: amountSettled,
+                  amount: withdrawalRecord?.amount ?? amountSettled,
                   reference,
                   narration: data.narration,
                   type: TransactionType.DEBIT,
@@ -659,9 +662,6 @@ export class WalletService {
                 event: 'transfer.completed',
                 currentBalanceBeforeTransaction,
                 newTransaction,
-              });
-              const withdrawalRecord = await this.withdrawalSrv.findOne({
-                reference,
               });
               if (withdrawalRecord?.id) {
                 await this.withdrawalSrv.getRepo().update(
