@@ -647,7 +647,7 @@ export class WalletService {
               const newTransaction =
                 await this.transactionSrv.createTransaction({
                   userId,
-                  amount,
+                  amount: amountSettled,
                   reference,
                   narration: data.narration,
                   type: TransactionType.DEBIT,
