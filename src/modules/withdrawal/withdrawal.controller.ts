@@ -8,7 +8,7 @@ import {
   ApiProduces,
   ApiConsumes,
 } from '@nestjs/swagger';
-import { CurrentUser, RolesGuard } from '@schematics/index';
+import { CurrentUser, RolesGuard, SetRequestTimeout } from '@schematics/index';
 import { DecodedTokenKey } from '@utils/index';
 import { WithdrawalService } from './withdrawal.service';
 import {
@@ -23,10 +23,11 @@ import {
 export class WithdrawalController {
   constructor(private readonly withdrawalSrv: WithdrawalService) {}
 
-  @ApiOperation({ description: 'Make withdrawal' })
+  @ApiOperation({ description: 'Make withdrawal from wallet' })
   @ApiProduces('json')
   @ApiConsumes('application/json')
   @ApiResponse({ type: WithdrawalResponseDTO })
+  @SetRequestTimeout(1000000)
   @Post()
   async makeWithdrawal(
     @Body() payload: CreateWithdrawalDTO,
@@ -36,7 +37,7 @@ export class WithdrawalController {
   }
 
   @Cron(CronExpression.EVERY_5_MINUTES)
-  async confirmWithdrawals(): Promise<void> { 
+  async confirmWithdrawals(): Promise<void> {
     await this.withdrawalSrv.confirmWithdrawals();
   }
 }

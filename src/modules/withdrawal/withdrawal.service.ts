@@ -1,4 +1,5 @@
 import {
+  BadGatewayException,
   HttpException,
   HttpStatus,
   Inject,
@@ -139,6 +140,7 @@ export class WithdrawalService extends GenericService(Withdrawal) {
           message: 'Withdrawal successful',
         };
       }
+      throw new BadGatewayException('Withdrawal failed');
     } catch (ex) {
       if (ex instanceof AxiosError) {
         const errorObject = ex.response?.data;
