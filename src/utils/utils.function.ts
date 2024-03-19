@@ -18,6 +18,7 @@ import {
 // eslint-disable-next-line @typescript-eslint/no-var-requires
 const ImageKit = require('imagekit');
 import { UploadResponse } from 'imagekit/dist/libs/interfaces';
+const SHA512 = require('crypto-js/sha512');
 
 dotenv.config();
 
@@ -921,19 +922,30 @@ export const calculateAppCut = (percentage: number, amount: number): number => {
   return Number(amount - deduction);
 };
 
-export const formatAmount = (amount: number, currency = 'NGN'): string => new Intl.NumberFormat('en-US', {
-  // style: 'currency',
-  // currency,
-  minimumFractionDigits: 2
-}).format(Number(amount));
+export const formatAmount = (amount: number, currency = 'NGN'): string =>
+  new Intl.NumberFormat('en-US', {
+    // style: 'currency',
+    // currency,
+    minimumFractionDigits: 2,
+  }).format(Number(amount));
 
 // Sample result: 17th April, 2023 - 2:30pm
 export const formatDate = (date: Date): string => {
   const months = [
-    "January", "February", "March", "April", "May", "June",
-    "July", "August", "September", "October", "November", "December"
+    'January',
+    'February',
+    'March',
+    'April',
+    'May',
+    'June',
+    'July',
+    'August',
+    'September',
+    'October',
+    'November',
+    'December',
   ];
-  const suffixes = ["st", "nd", "rd", "th"];
+  const suffixes = ['st', 'nd', 'rd', 'th'];
 
   const day = date.getDate();
   const month = date.getMonth();
@@ -943,7 +955,34 @@ export const formatDate = (date: Date): string => {
 
   const suffix = day <= 3 ? suffixes[day - 1] : suffixes[3];
 
-  const formattedDate = `${day}${suffix} ${months[month]}, ${year} - ${hour % 12 === 0 ? 12 : hour % 12}:${minute < 10 ? '0' + minute : minute}${hour >= 12 ? 'pm' : 'am'}`;
+  const formattedDate = `${day}${suffix} ${months[month]}, ${year} - ${
+    hour % 12 === 0 ? 12 : hour % 12
+  }:${minute < 10 ? '0' + minute : minute}${hour >= 12 ? 'pm' : 'am'}`;
 
   return formattedDate;
+};
+
+export const generatePagaHash = <T>(
+  paramKeys: string[],
+  requestBody: T,
+): { hash: string; username: string; password: string } => {
+  const username = String(process.env.PAGA_PUBLIC_KEY).trim();
+  const password = String(process.env.PAGA_SECRET_KEY).trim();
+  const data = JSON.parse(JSON.stringify(requestBody));
+  
+  let hashData = '';
+  for (let i in paramKeys) {
+    const keys = paramKeys[i].split('.');
+    let seek = 0;
+    let node = data[keys[seek]];
+
+    while (typeof node == 'object') {
+      seek++;
+      node = node[keys[seek]];
+    }
+    hashData += node || '';
+  }
+  hashData += String(process.env.PAGA_HMAC_KEY).trim();
+  const hash = SHA512(hashData).toString();
+  return { hash, username, password };
 };

@@ -1,30 +1,41 @@
 import { Injectable, OnModuleInit } from '@nestjs/common';
 import { AxiosError } from 'axios';
 import { Bank } from '@entities/index';
-import { httpGet } from '@utils/index';
+import { generatePagaHash, httpPost } from '@utils/index';
 import { GenericService } from '@schematics/index';
 
 @Injectable()
 export class BankService extends GenericService(Bank) implements OnModuleInit {
   async onModuleInit() {
     try {
-      const url = 'https://api.flutterwave.com/v3/banks/NG';
-      const headers = {
-        Authorization: `Bearer ${String(process.env.FLUTTERWAVE_SECRET_KEY)}`,
+      const url = `${process.env.PAGA_BASE_URL}/getBanks`;
+      const keys = ['referenceNumber'];
+      const body = {
+        referenceNumber: 'PAGA|280418|0000000021',
+        locale: 'EN',
       };
-      const response = await httpGet<any>(url, headers);
-      const banksFromAPI: { id: number, code: string, name: string }[] = response?.data;
+      const { hash, password, username } = generatePagaHash(keys, body);
+      const headers = {
+        hash,
+        principal: username,
+        credentials: password,
+        'Content-Type': 'application/json',
+      };
+      const banksFromAPI: any = await httpPost(url, body, headers);
       const banksFromDB = await this.getRepo().find({});
-
-      // Compare banks from API with banks from the database
       const banksToCreate: Partial<Bank>[] = [];
-      for (const apiBank of banksFromAPI) {
+      for (const apiBank of banksFromAPI.banks) {
         const existingBank = banksFromDB.find(
-          (dbBank) => dbBank.bankCode === apiBank.code,
+          (dbBank) => dbBank.bankCode === apiBank.uuid,
         );
         if (!existingBank) {
           // Bank does not exist in the database, insert a new record
-          banksToCreate.push({ bankCode: apiBank.code, bankName: apiBank.name });
+          banksToCreate.push({
+            bankCode: apiBank.uuid,
+            bankName: apiBank.name,
+            interInstitutionCode: apiBank.institutionCode,
+            sortCode: apiBank.sortCode,
+          });
         }
       }
       if (banksToCreate?.length > 0) {
@@ -35,12 +46,11 @@ export class BankService extends GenericService(Bank) implements OnModuleInit {
     } catch (ex) {
       if (ex instanceof AxiosError) {
         const errorObject = ex.response.data;
-        const message = typeof errorObject === 'string' ? errorObject : errorObject.message;
+        const message =
+          typeof errorObject === 'string' ? errorObject : errorObject.error;
         this.logger.error(message);
-        // throw new HttpException(message, ex.response.status);
       } else {
         this.logger.error(ex);
-        // throw ex;
       }
     }
   }

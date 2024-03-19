@@ -14,6 +14,7 @@ import {
   CableProvider,
   ElectricityProvider,
   compareEnumValueFields,
+  generatePagaHash,
   generateUniqueCode,
   httpGet,
   httpPost,
@@ -29,6 +30,7 @@ import {
 } from '@modules/electricity-purchase/dto/electricity-purchase.dto';
 import {
   BillProviderDTO,
+  BillProviderPartial,
   FlutterwaveBillItemVerificationResponseDTO,
   FlutterwaveBillPaymentResponseDTO,
   FlutterwaveCableBillingOptionPartial,
@@ -58,10 +60,8 @@ export class BillService implements OnModuleInit {
         const message =
           typeof errorObject === 'string' ? errorObject : errorObject.message;
         this.logger.error(message);
-        // throw new HttpException(message, ex.response.status);
       } else {
         this.logger.error(ex);
-        // throw ex;
       }
     }
   }
@@ -176,7 +176,9 @@ export class BillService implements OnModuleInit {
   ): Promise<FlutterwaveBillPaymentResponseDTO> {
     try {
       // TODO: Remove later
-      throw new BadGatewayException('Feature is not yet available...coming soon');
+      throw new BadGatewayException(
+        'Feature is not yet available...coming soon',
+      );
       const url = 'https://api.flutterwave.com/v3/bills';
       const reqPayload = {
         country: 'NG',
@@ -299,7 +301,7 @@ export class BillService implements OnModuleInit {
       }
     }
   }
-  
+
   async makeCablePlanPurchase(
     payload: CreateFlutterwaveCablePlanPurchaseDTO,
     reference: string,
@@ -411,25 +413,66 @@ export class BillService implements OnModuleInit {
 
   async findCableProviders(): Promise<BillProviderDTO> {
     try {
-      const url =
-        'https://api.flutterwave.com/v3/bill-categories?cable=1&country=NG';
-      const data = await httpGet<any>(url, {
-        Authorization: `Bearer ${this.flutterwaveSecretKey}`,
-      });
-      const providers = data?.data.filter(
-        ({ label_name }) => label_name === 'SmartCard Number',
+      const values = await this.getMerchants();
+      const searchValues = ['startimes', 'gotv', 'dstv'];
+      const cableProviders: BillProviderPartial[] = values.data.filter(
+        (item) => {
+          const itemName = item.name.toLowerCase();
+          if (searchValues.some((value) => itemName.includes(value))) {
+            return item;
+          }
+        },
       );
+      return {
+        ...values,
+        data: cableProviders,
+      };
+    } catch (ex) {
+      this.logger.error(ex);
+      throw ex;
+    }
+  }
+
+  async findAirtimeProviders(searchTerm?: string): Promise<BillProviderDTO> {
+    try {
+      const url = `${process.env.PAGA_BASE_URL}/getMobileOperators`;
+      const hashedKey = ['referenceNumber'];
+      const requestBody = {
+        referenceNumber: '11314250',
+        locale: 'EN',
+      };
+      const { hash, username, password } = generatePagaHash(
+        hashedKey,
+        requestBody,
+      );
+      const headers = {
+        hash,
+        principal: username,
+        credentials: password,
+        'Content-Type': 'application/json',
+      };
+      const response = await httpPost<any, any>(url, requestBody, headers);
+      let data = (response.mobileOperator as any[]).map(
+        ({ name, mobileOperatorCode }) => ({
+          name,
+          code: mobileOperatorCode,
+          displayName: name,
+        }),
+      );
+      if (searchTerm) {
+        data = data.filter((item) => item.name.includes(searchTerm));
+      }
       return {
         success: true,
         code: HttpStatus.OK,
         message: 'Records found',
-        data: [...new Set(providers.map(({ name }) => name))] as string[],
+        data,
       };
     } catch (ex) {
       if (ex instanceof AxiosError) {
-        const errorObject = ex.response.data;
+        const errorObject = ex.response?.data;
         const message =
-          typeof errorObject === 'string' ? errorObject : errorObject.message;
+          typeof errorObject === 'string' ? errorObject : errorObject.error;
         this.logger.error(message);
         throw new HttpException(message, ex.response.status);
       } else {
@@ -439,22 +482,37 @@ export class BillService implements OnModuleInit {
     }
   }
 
-  async findAirtimeProviders(): Promise<BillProviderDTO> {
+  private async getMerchants(): Promise<BillProviderDTO> {
     try {
-      const url =
-        'https://api.flutterwave.com/v3/bill-categories?airtime=1&country=NG';
-      const data = await httpGet<any>(url, {
-        Authorization: `Bearer ${this.flutterwaveSecretKey}`,
-      });
-      const providers: any[] = [
-        ...new Set(data?.data.map(({ name }) => name)),
-      ].filter((item) => item !== 'AIRTIME');
-      console;
+      const url = `${process.env.PAGA_BASE_URL}/getMerchants`;
+      const requestBody = {
+        referenceNumber: '123457679',
+        locale: 'EN',
+      };
+      const hashKeys = ['referenceNumber'];
+      const { hash, username, password } = generatePagaHash(
+        hashKeys,
+        requestBody,
+      );
+      const headers = {
+        hash,
+        principal: username,
+        credentials: password,
+        'Content-Type': 'application/json',
+      };
+      const response = await httpPost<any, any>(url, requestBody, headers);
+      const data = (response.merchants as any[]).map(
+        ({ name, displayName, uuid }) => ({
+          name,
+          code: uuid,
+          displayName: displayName ?? name,
+        }),
+      );
       return {
         success: true,
         code: HttpStatus.OK,
         message: 'Records found',
-        data: providers,
+        data,
       };
     } catch (ex) {
       this.logger.error(ex);
@@ -464,17 +522,25 @@ export class BillService implements OnModuleInit {
 
   async findElectricityProviders(): Promise<BillProviderDTO> {
     try {
-      const url =
-        'https://api.flutterwave.com/v3/bill-categories?power=1&country=NG';
-      const data = await httpGet<any>(url, {
-        Authorization: `Bearer ${this.flutterwaveSecretKey}`,
-      });
-      const providers = data?.data.map(({ name }) => name);
+      const values = await this.getMerchants();
+      const searchValues = ['electricity', 'enugu'];
+      const electricityProviders: BillProviderPartial[] = values.data.filter(
+        (item) => {
+          const itemName = item.name.toLowerCase();
+          const itemDisplayName = item.name.toLowerCase();
+          if (
+            searchValues.some(
+              (value) =>
+                itemName.includes(value) || itemDisplayName.includes(value),
+            )
+          ) {
+            return item;
+          }
+        },
+      );
       return {
-        success: true,
-        code: HttpStatus.OK,
-        message: 'Records found',
-        data: [...new Set(providers)] as string[],
+        ...values,
+        data: electricityProviders,
       };
     } catch (ex) {
       this.logger.error(ex);
@@ -483,24 +549,28 @@ export class BillService implements OnModuleInit {
   }
 
   async findInternetProviders(): Promise<BillProviderDTO> {
-    try {
-      const url =
-        'https://api.flutterwave.com/v3/bill-categories?internet=1&country=NG';
-      const data = await httpGet<any>(url, {
-        Authorization: `Bearer ${this.flutterwaveSecretKey}`,
-      });
-      const providers = data?.data.map(({ name }) => name);
-      return {
-        success: true,
-        code: HttpStatus.OK,
-        message: 'Records found',
-        data: [...new Set(providers)] as string[],
-      };
-    } catch (ex) {
-      this.logger.error(ex);
-      throw ex;
-    }
+    return await this.findAirtimeProviders();
   }
+
+  // async findInternetProviders(): Promise<BillProviderDTO> {
+  //   try {
+  //     const url =
+  //       'https://api.flutterwave.com/v3/bill-categories?internet=1&country=NG';
+  //     const data = await httpGet<any>(url, {
+  //       Authorization: `Bearer ${this.flutterwaveSecretKey}`,
+  //     });
+  //     const providers = data?.data.map(({ name }) => name);
+  //     return {
+  //       success: true,
+  //       code: HttpStatus.OK,
+  //       message: 'Records found',
+  //       data: [...new Set(providers)] as string[],
+  //     };
+  //   } catch (ex) {
+  //     this.logger.error(ex);
+  //     throw ex;
+  //   }
+  // }
 
   async verifyBillItem(
     itemCode: string,

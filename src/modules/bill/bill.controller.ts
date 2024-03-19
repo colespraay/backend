@@ -1,10 +1,19 @@
-import { Body, Controller, Param, Get, Post, UseGuards } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Param,
+  Get,
+  Post,
+  UseGuards,
+  Query,
+} from '@nestjs/common';
 import {
   ApiBearerAuth,
   ApiConsumes,
   ApiOperation,
   ApiParam,
   ApiProduces,
+  ApiQuery,
   ApiResponse,
   ApiTags,
 } from '@nestjs/swagger';
@@ -158,13 +167,16 @@ export class BillController {
     return await this.billSrv.findCableProviders();
   }
 
+  @ApiQuery({ name: 'searchTerm', required: false })
   @ApiOperation({ description: 'Find airtime providers' })
   @ApiProduces('json')
   @ApiConsumes('application/json')
   @ApiResponse({ type: BillProviderDTO })
   @Get('/airtime-providers')
-  async findAirtimeProviders(): Promise<BillProviderDTO> {
-    return await this.billSrv.findAirtimeProviders();
+  async findAirtimeProviders(
+    @Query('searchTerm') searchTerm?: string,
+  ): Promise<BillProviderDTO> {
+    return await this.billSrv.findAirtimeProviders(searchTerm);
   }
 
   @ApiOperation({ description: 'Find electricity providers' })

@@ -4,11 +4,17 @@ import { BaseResponseTypeDTO } from '@utils/index';
 export class BillProviderPartial {
   @ApiProperty()
   name: string;
+
+  @ApiProperty()
+  code: string;
+
+  @ApiProperty()
+  displayName: string;
 }
 
 export class BillProviderDTO extends BaseResponseTypeDTO {
-  @ApiProperty({ type: () => [String] })
-  data: string[];
+  @ApiProperty({ type: () => [BillProviderPartial] })
+  data: BillProviderPartial[];
 }
 
 export class FlutterwaveBillItemVerificationPartial {
