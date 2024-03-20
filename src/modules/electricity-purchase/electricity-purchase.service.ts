@@ -1,8 +1,6 @@
 import {
   BadGatewayException,
-  BadRequestException,
   ConflictException,
-  HttpException,
   HttpStatus,
   Injectable,
 } from '@nestjs/common';
@@ -10,13 +8,11 @@ import { ElectricityPurchase, User } from '@entities/index';
 import { GenericService } from '@schematics/index';
 import {
   checkForRequiredFields,
-  compareEnumValueFields,
-  ElectricityPlan,
-  ElectricityProvider,
   generateUniqueCode,
   sendEmail,
   TransactionType,
 } from '@utils/index';
+import { WalletService } from '@modules/wallet/wallet.service';
 import { TransactionService } from '@modules/transaction/transaction.service';
 import { BillService } from '@modules/bill/bill.service';
 import { UserService } from '@modules/user/user.service';
@@ -26,7 +22,6 @@ import {
   ElectricityPurchaseVerificationDTO,
   VerifyElectricityPurchaseDTO,
 } from './dto/electricity-purchase.dto';
-import { AxiosError } from 'axios';
 
 @Injectable()
 export class ElectricityPurchaseService extends GenericService(
@@ -35,6 +30,7 @@ export class ElectricityPurchaseService extends GenericService(
   constructor(
     private readonly userSrv: UserService,
     private readonly billSrv: BillService,
+    private readonly walletSrv: WalletService,
     private readonly transactionSrv: TransactionService,
   ) {
     super();
@@ -49,39 +45,23 @@ export class ElectricityPurchaseService extends GenericService(
         ['provider', 'transactionPin', 'billerName', 'meterNumber', 'amount'],
         payload,
       );
-      compareEnumValueFields(
-        payload.provider,
-        Object.values(ElectricityProvider),
-        'provider',
-      );
-      if (!payload.plan) {
-        payload.plan = ElectricityPlan.PRE_PAID;
-      } else {
-        compareEnumValueFields(
-          payload.plan,
-          Object.values(ElectricityPlan),
-          'plan',
-        );
-      }
-      await this.userSrv.verifyTransactionPin(
-        user.id,
-        payload.transactionPin,
-      );
+      await this.userSrv.verifyTransactionPin(user.id, payload.transactionPin);
       await this.userSrv.checkAccountBalance(payload.amount, user.id);
-
+      const { availableBalance } = await this.walletSrv.getAccountBalance();
+      if (availableBalance < payload.amount) {
+        throw new ConflictException('Insufficient balance');
+      }
       const narration = `Electricity unit purchase (₦${payload.amount}) for ${payload.meterNumber}`;
       const transactionDate = new Date().toLocaleString();
       const reference = `Spraay-power-${generateUniqueCode(10)}`;
-      // Make purchase from flutterwave
       const electricUnitPurchaseResponse =
         await this.billSrv.makeElectricUnitPurchase(
           {
             amount: payload.amount,
             meterNumber: payload.meterNumber,
-            provider: payload.provider,
+            providerId: payload.providerId,
             transactionPin: payload.transactionPin,
-            plan: payload.plan,
-            billerName: payload.billerName,
+            merchantPlan: payload.merchantPlan,
           },
           reference,
         );
@@ -102,8 +82,8 @@ export class ElectricityPurchaseService extends GenericService(
         Partial<ElectricityPurchase>
       >({
         meterNumber: payload.meterNumber,
-        provider: payload.provider,
-        plan: payload.plan,
+        providerId: payload.providerId,
+        plan: payload.merchantPlan,
         unitToken: electricUnitPurchaseResponse.token,
         flutterwaveReference: electricUnitPurchaseResponse.data.reference,
         transactionId: newTransaction.data.id,
@@ -126,52 +106,119 @@ export class ElectricityPurchaseService extends GenericService(
     }
   }
 
+  // async createElectricityPurchase(
+  //   payload: CreateElectricityPurchaseDTO,
+  //   user: User,
+  // ): Promise<ElectricityPurchaseResponseDTO> {
+  //   try {
+  //     checkForRequiredFields(
+  //       ['provider', 'transactionPin', 'billerName', 'meterNumber', 'amount'],
+  //       payload,
+  //     );
+  //     compareEnumValueFields(
+  //       payload.provider,
+  //       Object.values(ElectricityProvider),
+  //       'provider',
+  //     );
+  //     if (!payload.plan) {
+  //       payload.plan = ElectricityPlan.PRE_PAID;
+  //     } else {
+  //       compareEnumValueFields(
+  //         payload.plan,
+  //         Object.values(ElectricityPlan),
+  //         'plan',
+  //       );
+  //     }
+  //     await this.userSrv.verifyTransactionPin(user.id, payload.transactionPin);
+  //     await this.userSrv.checkAccountBalance(payload.amount, user.id);
+
+  //     const narration = `Electricity unit purchase (₦${payload.amount}) for ${payload.meterNumber}`;
+  //     const transactionDate = new Date().toLocaleString();
+  //     const reference = `Spraay-power-${generateUniqueCode(10)}`;
+  //     // Make purchase from flutterwave
+  //     const electricUnitPurchaseResponse =
+  //       await this.billSrv.makeElectricUnitPurchase(
+  //         {
+  //           amount: payload.amount,
+  //           meterNumber: payload.meterNumber,
+  //           provider: payload.provider,
+  //           transactionPin: payload.transactionPin,
+  //           plan: payload.plan,
+  //           billerName: payload.billerName,
+  //         },
+  //         reference,
+  //       );
+  //     this.logger.log({ electricUnitPurchaseResponse });
+  //     if (!electricUnitPurchaseResponse?.token) {
+  //       throw new BadGatewayException('Request for token failed. Please retry');
+  //     }
+  //     const newTransaction = await this.transactionSrv.createTransaction({
+  //       narration,
+  //       transactionDate,
+  //       userId: user.id,
+  //       amount: payload.amount,
+  //       type: TransactionType.DEBIT,
+  //       currentBalanceBeforeTransaction: user.walletBalance,
+  //       reference: electricUnitPurchaseResponse.data.reference,
+  //     });
+  //     const createdElectricityUnitPurchase = await this.create<
+  //       Partial<ElectricityPurchase>
+  //     >({
+  //       meterNumber: payload.meterNumber,
+  //       provider: payload.provider,
+  //       plan: payload.plan,
+  //       unitToken: electricUnitPurchaseResponse.token,
+  //       flutterwaveReference: electricUnitPurchaseResponse.data.reference,
+  //       transactionId: newTransaction.data.id,
+  //       amount: payload.amount,
+  //       userId: user.id,
+  //     });
+  //     await this.sendElectricityUnitToUser(
+  //       user.id,
+  //       electricUnitPurchaseResponse.token,
+  //     );
+  //     return {
+  //       success: true,
+  //       code: HttpStatus.CREATED,
+  //       data: createdElectricityUnitPurchase,
+  //       message: electricUnitPurchaseResponse.message,
+  //     };
+  //   } catch (ex) {
+  //     this.logger.error(ex);
+  //     throw ex;
+  //   }
+  // }
+
   async verifyElectricityPurchase(
     payload: VerifyElectricityPurchaseDTO,
     user: User,
   ): Promise<ElectricityPurchaseVerificationDTO> {
     try {
-      // TODO: Remove later
-      throw new BadGatewayException('Feature is not yet available...coming soon');
-      checkForRequiredFields(['provider', 'meterNumber', 'amount'], payload);
-      compareEnumValueFields(
-        payload.provider,
-        Object.values(ElectricityProvider),
-        'provider',
-      );
-      if (payload.plan) {
-        compareEnumValueFields(
-          payload.plan,
-          Object.values(ElectricityPlan),
-          'plan',
-        );
-      } else {
-        payload.plan = ElectricityPlan.PRE_PAID;
-      }
+      checkForRequiredFields(['providerId', 'meterNumber', 'amount'], payload);
       await this.userSrv.checkAccountBalance(payload.amount, user.id);
-      // Verify meter number from flutterwave
-      const verification = await this.billSrv.verifyElectricityPlan(payload);
+      const { availableBalance } = await this.walletSrv.getAccountBalance();
+      if (availableBalance < payload.amount) {
+        throw new ConflictException('Insufficient balance');
+      }
+      const meterDetails = await this.billSrv.verifyElectricityMeter(
+        payload.meterNumber,
+        payload.providerId,
+        payload.merchantPlan,
+      );
       return {
         success: true,
         code: HttpStatus.OK,
-        message: 'Meter number verified',
+        message: 'Customer device verified successfully',
         data: {
-          billerName: String(verification.selectedOne.biller_name),
           amount: payload.amount,
-          meterNumber: payload.meterNumber,
-          name: verification.data.name,
+          billerName: payload.merchantPlan,
+          meterNumber: meterDetails.meterNumber,
+          name: meterDetails.deviceName,
         },
       };
     } catch (ex) {
-      if (ex instanceof AxiosError) {
-        const errorObject = ex.response.data;
-        const message = typeof errorObject === 'string' ? errorObject : errorObject.message;
-        this.logger.error(message);
-        throw new HttpException(message, ex.response.status);
-      } else {
-        this.logger.error(ex);
-        throw ex;
-      }
+      this.logger.error(ex);
+      throw ex;
     }
   }
 

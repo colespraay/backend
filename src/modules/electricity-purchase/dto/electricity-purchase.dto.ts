@@ -1,15 +1,10 @@
 import { ApiProperty } from '@nestjs/swagger';
-import {
-  BaseResponseTypeDTO,
-  ElectricityPlan,
-  ElectricityProvider,
-  PaginationResponseType,
-} from '@utils/index';
+import { BaseResponseTypeDTO, PaginationResponseType } from '@utils/index';
 import { ElectricityPurchase } from '@entities/index';
 
 export class VerifyElectricityPurchaseDTO {
-  @ApiProperty({ enum: ElectricityProvider })
-  provider: ElectricityProvider;
+  @ApiProperty()
+  providerId: string;
 
   @ApiProperty()
   meterNumber: string;
@@ -17,8 +12,8 @@ export class VerifyElectricityPurchaseDTO {
   @ApiProperty()
   amount: number;
 
-  @ApiProperty({ enum: ElectricityPlan, nullable: true })
-  plan: ElectricityPlan;
+  @ApiProperty()
+  merchantPlan: string;
 }
 
 export class ElectricityPurchaseVerificationPartial {
@@ -43,9 +38,6 @@ export class ElectricityPurchaseVerificationDTO extends BaseResponseTypeDTO {
 export class CreateElectricityPurchaseDTO extends VerifyElectricityPurchaseDTO {
   @ApiProperty()
   transactionPin: string;
-
-  @ApiProperty()
-  billerName: string;
 }
 
 export class ElectricityPurchaseResponseDTO extends BaseResponseTypeDTO {

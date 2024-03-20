@@ -43,13 +43,13 @@ import {
   CablePurchaseResponseDTO,
   CreateCableProviderDTO,
 } from '@modules/cable-purchase/dto/cable-purchase.dto';
+import { BillService } from './bill.service';
 import {
   BillProviderDTO,
   FlutterwaveCableBillingOptionResponseDTO,
   PagaDataPlanDTO,
   PagaMerchantPlanResponseDTO,
 } from './dto/bill.dto';
-import { BillService } from './bill.service';
 
 @ApiBearerAuth('JWT')
 @UseGuards(RolesGuard)

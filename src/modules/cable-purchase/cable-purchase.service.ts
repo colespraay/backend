@@ -1,4 +1,4 @@
-import { BadGatewayException, HttpStatus, Injectable } from '@nestjs/common';
+import { BadGatewayException, ConflictException, HttpStatus, Injectable } from '@nestjs/common';
 import { CablePurchase, User } from '@entities/index';
 import { GenericService } from '@schematics/index';
 import {
@@ -7,6 +7,7 @@ import {
   generateUniqueCode,
 } from '@utils/index';
 import { TransactionService } from '@modules/transaction/transaction.service';
+import { WalletService } from '@modules/wallet/wallet.service';
 import { BillService } from '@modules/bill/bill.service';
 import { UserService } from '@modules/user/user.service';
 import {
@@ -19,6 +20,7 @@ export class CablePurchaseService extends GenericService(CablePurchase) {
   constructor(
     private readonly userSrv: UserService,
     private readonly billSrv: BillService,
+    private readonly walletSrv: WalletService,
     private readonly transactionSrv: TransactionService,
   ) {
     super();
@@ -45,7 +47,10 @@ export class CablePurchaseService extends GenericService(CablePurchase) {
         payload.cablePlanId,
       );
       await this.userSrv.checkAccountBalance(payload.amount, user.id);
-
+      const { availableBalance } = await this.walletSrv.getAccountBalance();
+      if (availableBalance < Number(plan.price)) {
+        throw new ConflictException('Insufficient balance');
+      }
       const narration = `Cable plan purchase (₦${plan.price}) for ${payload.smartCardNumber}`;
       const transactionDate = new Date().toLocaleString();
       const reference = `Spraay-cable-${generateUniqueCode(10)}`;

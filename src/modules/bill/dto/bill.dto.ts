@@ -256,3 +256,11 @@ export class CablePaymentRequestDTO {
   @ApiProperty({ description: 'Provider UUID, I.E Gotv, DSTV' })
   providerId: string;
 }
+
+export class PagaMeterDetailDTO {
+  @ApiProperty()
+  deviceName: string;
+
+  @ApiProperty()
+  meterNumber: string;
+}

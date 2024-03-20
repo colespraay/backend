@@ -1,5 +1,6 @@
 import {
   BadRequestException,
+  ConflictException,
   HttpException,
   HttpStatus,
   Injectable,
@@ -8,6 +9,7 @@ import { EventEmitter2 } from '@nestjs/event-emitter';
 import { AxiosError } from 'axios';
 import { BillService } from '@modules/bill/bill.service';
 import { DataPurchase, User } from '@entities/index';
+import { WalletService } from '@modules/wallet/wallet.service';
 import { TransactionService } from '@modules/transaction/transaction.service';
 import {
   TransactionType,
@@ -27,6 +29,7 @@ export class DataPurchaseService extends GenericService(DataPurchase) {
   constructor(
     private readonly userSrv: UserService,
     private readonly billSrv: BillService,
+    private readonly walletSrv: WalletService,
     private readonly transactionSrv: TransactionService,
     private readonly eventEmitterSrv: EventEmitter2,
   ) {
@@ -58,6 +61,10 @@ export class DataPurchaseService extends GenericService(DataPurchase) {
         payload.dataPlanId,
       );
       await this.userSrv.checkAccountBalance(plan.servicePrice, user.id);
+      const { availableBalance } = await this.walletSrv.getAccountBalance();
+      if (availableBalance < Number(plan.servicePrice)) {
+        throw new ConflictException('Insufficient balance');
+      }
       const reference = `Spraay-data-${generateUniqueCode(10)}`;
 
       const dataPurchaseResponse = await this.billSrv.makeDataPurchase(
