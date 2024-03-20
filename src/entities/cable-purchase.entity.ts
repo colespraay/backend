@@ -13,9 +13,9 @@ export class CablePurchase extends Base {
   @Column({ type: 'float', default: 0 })
   amount: number;
 
-  @ApiProperty({ enum: CableProvider })
-  @Column({ enum: CableProvider })
-  provider: CableProvider;
+  @ApiProperty()
+  @Column({ type: 'varchar', length: 255 })
+  providerId: string;
 
   @Column({ type: 'uuid' })
   userId: string;
@@ -29,8 +29,8 @@ export class CablePurchase extends Base {
   user: User;
 
   @ApiProperty()
-  @Column({ type: 'int' })
-  cablePlanId: number;
+  @Column({ type: 'varchar', length: 50 })
+  cablePlanId: string;
 
   @Column({ type: 'uuid', nullable: true })
   transactionId: string;

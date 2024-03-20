@@ -1,10 +1,10 @@
 import { ApiProperty } from '@nestjs/swagger';
 import { AirtimePurchase } from '@entities/index';
-import { AirtimeProvider, BaseResponseTypeDTO } from '@utils/index';
+import { BaseResponseTypeDTO } from '@utils/index';
 
 export class CreateAirtimePurchaseDTO {
-  @ApiProperty({ enum: AirtimeProvider })
-  provider: AirtimeProvider;
+  @ApiProperty()
+  providerId: string;
 
   @ApiProperty()
   phoneNumber: string;

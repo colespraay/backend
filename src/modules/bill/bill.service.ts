@@ -10,9 +10,9 @@ import {
 } from '@nestjs/common';
 import { AxiosError } from 'axios';
 import {
-  AirtimeProvider,
   CableProvider,
   ElectricityProvider,
+  checkForRequiredFields,
   compareEnumValueFields,
   generatePagaHash,
   generateUniqueCode,
@@ -31,12 +31,16 @@ import {
 import {
   BillProviderDTO,
   BillProviderPartial,
+  CablePaymentRequestDTO,
   FlutterwaveBillItemVerificationResponseDTO,
   FlutterwaveBillPaymentResponseDTO,
   FlutterwaveCableBillingOptionPartial,
   FlutterwaveCableBillingOptionResponseDTO,
-  FlutterwaveDataPlanDTO,
-  FlutterwaveDataPlanPartial,
+  PagaCablePaymentResponseDTO,
+  PagaDataPlanDTO,
+  PagaDataPlanPartial,
+  PagaMerchantPlanPartial,
+  PagaMerchantPlanResponseDTO,
 } from './dto/bill.dto';
 
 @Injectable()
@@ -119,48 +123,63 @@ export class BillService implements OnModuleInit {
     }
   }
 
-  async findDataPlansForProvider(
-    provider?: AirtimeProvider,
-  ): Promise<FlutterwaveDataPlanDTO> {
+  async findDataPlansForProvider(providerId: string): Promise<PagaDataPlanDTO> {
     try {
-      if (provider) {
-        compareEnumValueFields(
-          provider,
-          Object.values(AirtimeProvider),
-          'provider',
-        );
-      }
-      const url =
-        'https://api.flutterwave.com/v3/bill-categories?data_bundle=1&country=NG';
-      const plans = await httpGet<any>(url, {
-        Authorization: `Bearer ${this.flutterwaveSecretKey}`,
-      });
-      let providerPlans: FlutterwaveDataPlanPartial[] = plans.data;
-      if (provider) {
-        providerPlans = plans.data.filter((item) =>
-          String(item.name)?.toUpperCase().includes(provider),
+      const url = `${process.env.PAGA_BASE_URL}/getDataBundleByOperator`;
+      const hashKey = ['referenceNumber', 'operatorPublicId'];
+      const body = {
+        referenceNumber: '11314250',
+        operatorPublicId: providerId,
+      };
+      const { hash, password, username } = generatePagaHash(hashKey, body);
+      const headers = {
+        hash,
+        principal: username,
+        credentials: password,
+        'Content-Type': 'application/json',
+      };
+      const response = await httpPost<any, any>(url, body, headers);
+      if (response.responseCode !== 0) {
+        throw new BadGatewayException(
+          `Failed to get data plans for provider: ${providerId}`,
         );
       }
       return {
         success: true,
         code: HttpStatus.OK,
-        data: providerPlans,
-        message: 'Records found',
+        message: 'Data-plans fetched successfully',
+        data: response.mobileOperatorServices ?? [],
       };
     } catch (ex) {
-      this.logger.error(ex);
-      throw ex;
+      if (ex instanceof AxiosError) {
+        const errorObject = ex.response.data;
+        const message =
+          typeof errorObject === 'string'
+            ? errorObject
+            : errorObject.statusMessage;
+        this.logger.error(message);
+        throw new HttpException(
+          message,
+          Number(errorObject.statusCode) ?? HttpStatus.BAD_GATEWAY,
+        );
+      } else {
+        this.logger.error(ex);
+        throw ex;
+      }
     }
   }
 
   async findDataPlanById(
+    providerId: string,
     dataPlanId: number,
-  ): Promise<FlutterwaveDataPlanPartial> {
+  ): Promise<PagaDataPlanPartial> {
     try {
-      const list = await this.findDataPlansForProvider();
-      const item = list.data.find(({ id }) => id === dataPlanId);
-      if (!item?.id) {
-        throw new NotFoundException('Could not find data plan');
+      const plans = await this.findDataPlansForProvider(providerId);
+      const item = plans.data.find(({ serviceId }) => serviceId === dataPlanId);
+      if (!item?.serviceId) {
+        throw new NotFoundException(
+          `Data plan with id: '${dataPlanId}' not found`,
+        );
       }
       return item;
     } catch (ex) {
@@ -168,6 +187,22 @@ export class BillService implements OnModuleInit {
       throw ex;
     }
   }
+
+  // async findDataPlanById(
+  //   dataPlanId: number,
+  // ): Promise<FlutterwaveDataPlanPartial> {
+  //   try {
+  //     const list = await this.findDataPlansForProvider();
+  //     const item = list.data.find(({ id }) => id === dataPlanId);
+  //     if (!item?.id) {
+  //       throw new NotFoundException('Could not find data plan');
+  //     }
+  //     return item;
+  //   } catch (ex) {
+  //     this.logger.error(ex);
+  //     throw ex;
+  //   }
+  // }
 
   async makeElectricUnitPurchase(
     payload: CreateElectricityPurchaseDTO,
@@ -252,49 +287,85 @@ export class BillService implements OnModuleInit {
     env = 'PROD',
   ): Promise<FlutterwaveBillPaymentResponseDTO> {
     try {
-      const url = 'https://api.flutterwave.com/v3/bills';
-      const reqPayload = {
-        country: 'NG',
-        customer: payload.phoneNumber,
-        amount: payload.amount,
-        recurrence: 'ONCE',
-        type: payload.type,
-        reference: reference,
-        biller_name: payload.provider,
-      };
       if (env === 'TEST') {
+        const response = {
+          responseCode: 0,
+          responseCategoryCode: null,
+          message:
+            'You successfully purchased N50.00 worth of data for phone number 08173749456.TRANSACTION Id: RDVZR.',
+          referenceNumber: '00000000000025',
+          transactionId: 'RDVZR',
+          reversalId: null,
+          currency: 'NGN',
+          exchangeRate: null,
+          integrationStatus: null,
+          fee: null,
+        };
+        const transactionId = response.transactionId;
         return {
           success: true,
           code: HttpStatus.OK,
-          message: 'Data purchase successful',
+          message: response.message ?? 'Data-plans fetched successfully',
+          token: transactionId,
           data: {
+            amount: 0,
+            flw_ref: response.referenceNumber,
+            network: payload.operatorServiceId,
             phone_number: payload.phoneNumber,
-            amount: payload.amount,
-            network: payload.provider,
-            flw_ref: reqPayload.reference,
-            tx_ref: reqPayload.reference,
-            reference: null,
+            reference: response.referenceNumber,
+            tx_ref: response.referenceNumber,
           },
         };
       }
-      const resp = await httpPost<any, any>(url, reqPayload, {
-        Authorization: `Bearer ${this.flutterwaveSecretKey}`,
-      });
-      if (resp.status === 'success') {
-        return {
-          success: true,
-          code: HttpStatus.OK,
-          message: 'Data purchase successful',
-          data: resp.data,
-        };
+      const url = `${process.env.PAGA_BASE_URL}/airtimePurchase`;
+      const body = {
+        referenceNumber: reference,
+        amount: payload.amount,
+        isDataBundle: true,
+        destinationPhoneNumber: payload.phoneNumber,
+        mobileOperatorServiceId: payload.operatorServiceId,
+      };
+      const hashKey = ['referenceNumber', 'amount', 'destinationPhoneNumber'];
+      const { hash, password, username } = generatePagaHash(hashKey, body);
+      const headers = {
+        hash,
+        principal: username,
+        credentials: password,
+        'Content-Type': 'application/json',
+      };
+      const response = await httpPost<any, any>(url, body, headers);
+      if (response?.responseCode !== 0) {
+        throw new BadGatewayException(
+          `Failed to get data plans for provider: ${payload.operatorServiceId}`,
+        );
       }
+      const transactionId = response.transactionId;
+      return {
+        success: true,
+        code: HttpStatus.OK,
+        message: response.message ?? 'Data-plans fetched successfully',
+        token: transactionId,
+        data: {
+          amount: 0,
+          flw_ref: response.referenceNumber,
+          network: body.mobileOperatorServiceId,
+          phone_number: payload.phoneNumber,
+          reference: response.referenceNumber,
+          tx_ref: response.referenceNumber,
+        },
+      };
     } catch (ex) {
       if (ex instanceof AxiosError) {
         const errorObject = ex.response.data;
         const message =
-          typeof errorObject === 'string' ? errorObject : errorObject.message;
+          typeof errorObject === 'string'
+            ? errorObject
+            : errorObject.statusMessage;
         this.logger.error(message);
-        throw new HttpException(message, ex.response.status);
+        throw new HttpException(
+          message,
+          Number(errorObject.statusCode) ?? HttpStatus.BAD_GATEWAY,
+        );
       } else {
         this.logger.error(ex);
         throw ex;
@@ -302,7 +373,92 @@ export class BillService implements OnModuleInit {
     }
   }
 
+  async findMerchantPlan(
+    providerId: string,
+    planCode: string,
+  ): Promise<PagaMerchantPlanPartial> {
+    try {
+      const plans = await this.findMerchantPlans(providerId);
+      const plan = plans.data.find((item) => item.shortCode === planCode);
+      if (!plan) {
+        throw new NotFoundException('Could not find plan');
+      }
+      return plan;
+    } catch (ex) {
+      this.logger.error(ex);
+      throw ex;
+    }
+  }
+
   async makeCablePlanPurchase(
+    payload: CablePaymentRequestDTO,
+    reference: string,
+    plan: PagaMerchantPlanPartial,
+  ): Promise<PagaCablePaymentResponseDTO> {
+    try {
+      checkForRequiredFields(
+        ['providerId', 'decoderNumber', 'merchantServiceCode'],
+        { ...payload, reference },
+      );
+      const url = `${process.env.PAGA_BASE_URL}/merchantPayment`;
+      const hashKey = [
+        'referenceNumber',
+        'amount',
+        'merchantAccount',
+        'merchantReferenceNumber',
+      ];
+      const body = {
+        referenceNumber: reference,
+        amount: plan.price,
+        currency: 'NGN',
+        merchantAccount: payload.providerId,
+        merchantReferenceNumber: payload.decoderNumber,
+        merchantService: [payload.merchantServiceCode],
+      };
+      const { hash, password, username } = generatePagaHash(hashKey, body);
+      const headers = {
+        hash,
+        principal: username,
+        credentials: password,
+        'Content-Type': 'application/json',
+      };
+      const response = await httpPost<any, any>(url, body, headers);
+      if (response.responseCode !== 0) {
+        throw new BadGatewayException(
+          `Failed to buy cable plan for customer: ${payload.merchantServiceCode}`,
+        );
+      }
+      return {
+        success: true,
+        code: HttpStatus.OK,
+        message: response.message ?? 'Cable recharge successful',
+        data: {
+          decoderNumber: payload.decoderNumber,
+          reference: response.referenceNumber,
+          amount: String(plan.price),
+          transactionId: response.transactionId,
+        },
+      };
+    } catch (ex) {
+      if (ex instanceof AxiosError) {
+        const errorObject = ex.response.data;
+        const message =
+          typeof errorObject === 'string'
+            ? errorObject
+            : errorObject.statusMessage;
+        this.logger.error(message);
+        throw new HttpException(
+          message,
+          Number(errorObject.statusCode) ?? HttpStatus.BAD_GATEWAY,
+        );
+      } else {
+        this.logger.error(ex);
+        throw ex;
+      }
+    }
+  }
+
+  async makeCablePlanPurchase2(
     payload: CreateFlutterwaveCablePlanPurchaseDTO,
     reference: string,
     plan: FlutterwaveCableBillingOptionPartial,
@@ -369,17 +525,12 @@ export class BillService implements OnModuleInit {
     env = 'PROD',
   ): Promise<FlutterwaveBillPaymentResponseDTO> {
     try {
-      const url = 'https://api.flutterwave.com/v3/bills';
-      const reqPayload = {
-        country: 'NG',
-        customer: payload.phoneNumber,
-        amount: payload.amount,
-        recurrence: 'ONCE',
-        type: 'AIRTIME',
-        reference: reference,
-        biller_name: payload.provider,
-      };
+      checkForRequiredFields(
+        ['amount', 'transactionPin', 'providerId', 'phoneNumber'],
+        payload,
+      );
       if (env === 'TEST') {
+        const transactionId = '8W2B0';
         return {
           success: true,
           code: HttpStatus.OK,
@@ -387,27 +538,56 @@ export class BillService implements OnModuleInit {
           data: {
             phone_number: payload.phoneNumber,
             amount: payload.amount,
-            network: payload.provider,
-            flw_ref: reqPayload.reference,
-            tx_ref: reqPayload.reference,
-            reference: null,
+            network: payload.providerId,
+            flw_ref: transactionId,
+            tx_ref: transactionId,
+            reference: transactionId,
           },
         };
       }
-      const resp = await httpPost<any, any>(url, reqPayload, {
-        Authorization: `Bearer ${this.flutterwaveSecretKey}`,
-      });
-      if (resp.status === 'success') {
+      const url = `${process.env.PAGA_BASE_URL}/airtimePurchase`;
+      const body = {
+        referenceNumber: reference,
+        isDataBundle: false,
+        mobileOperatorPublicId: payload.providerId,
+        destinationPhoneNumber: payload.phoneNumber,
+      };
+      const hashKey = ['referenceNumber', 'amount', 'destinationPhoneNumber'];
+      const { hash, password, username } = generatePagaHash(hashKey, body);
+      const headers = {
+        hash,
+        principal: username,
+        credentials: password,
+        'Content-Type': 'application/json',
+      };
+      const response = await httpPost<any, any>(url, body, headers);
+      if (response.responseCode === 0) {
+        const transactionId = response.transactionId;
         return {
           success: true,
           code: HttpStatus.OK,
-          message: 'Airtime purchase successful',
-          data: resp.data,
+          message: response.message ?? 'Airtime purchase successful',
+          data: {
+            phone_number: payload.phoneNumber,
+            amount: payload.amount,
+            network: payload.providerId,
+            flw_ref: transactionId,
+            tx_ref: transactionId,
+            reference: transactionId,
+          },
         };
       }
     } catch (ex) {
-      this.logger.error(ex);
-      throw ex;
+      if (ex instanceof AxiosError) {
+        const errorObject = ex.response.data;
+        const message =
+          typeof errorObject === 'string' ? errorObject : errorObject.error;
+        this.logger.error(message);
+        throw new HttpException(message, ex.response.status);
+      } else {
+        this.logger.error(ex);
+        throw ex;
+      }
     }
   }
 
@@ -517,6 +697,54 @@ export class BillService implements OnModuleInit {
     } catch (ex) {
       this.logger.error(ex);
       throw ex;
+    }
+  }
+
+  async findMerchantPlans(
+    merchantPublicId: string,
+  ): Promise<PagaMerchantPlanResponseDTO> {
+    try {
+      checkForRequiredFields(['merchantPublicId'], { merchantPublicId });
+      const url = `${process.env.PAGA_BASE_URL}/getMerchantServices`;
+      const body = {
+        referenceNumber: '123456',
+        merchantPublicId,
+        locale: 'EN',
+      };
+      const hashKey = ['referenceNumber', 'merchantPublicId'];
+      const { hash, password, username } = generatePagaHash(hashKey, body);
+      const headers = {
+        hash,
+        principal: username,
+        credentials: password,
+        'Content-Type': 'application/json',
+      };
+      const response = await httpPost<any, any>(url, body, headers);
+      if (response.responseCode !== 0) {
+        throw new BadGatewayException('Could not find merchant plans');
+      }
+      return {
+        success: true,
+        code: HttpStatus.OK,
+        message: 'Records found',
+        data: response.services ?? [],
+      };
+    } catch (ex) {
+      if (ex instanceof AxiosError) {
+        const errorObject = ex.response.data;
+        const message =
+          typeof errorObject === 'string'
+            ? errorObject
+            : errorObject.statusMessage;
+        this.logger.error(message);
+        throw new HttpException(
+          message,
+          Number(errorObject.statusCode) ?? HttpStatus.BAD_GATEWAY,
+        );
+      } else {
+        this.logger.error(ex);
+        throw ex;
+      }
     }
   }
 

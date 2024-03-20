@@ -131,7 +131,7 @@ export class WalletController {
   }
 
   @Post('/webhook')
-  async flutterwaveWebhook(@Body() body: any): Promise<void> {
+  async pagaWebhook(@Body() body: any): Promise<void> {
     await this.walletSrv.webhookHandler(body);
   }
 
@@ -139,17 +139,4 @@ export class WalletController {
   async checkTransactions(): Promise<void> { 
     await this.walletSrv.checkTransactions();
   }
-
-  // @Post('/webhook')
-  // async wemaBankWebhook(@Body() body: WebhookResponseDTO): Promise<void> {
-  //   await this.walletSrv.webhookHandler(body);
-  // }
-
-  // URL: https://playground.alat.ng/api-transaction-notification
-  // @Post('/wallet-notifications')
-  // async transactionNotificationWebhook(
-  //   @Body() body: TransactionNotificationResponseDTO,
-  // ): Promise<void> {
-  //   await this.walletSrv.transactionNotificationWebhookHandler(body);
-  // }
 }

@@ -6,6 +6,7 @@ import {
   Post,
   UseGuards,
   Query,
+  ParseUUIDPipe,
 } from '@nestjs/common';
 import {
   ApiBearerAuth,
@@ -19,7 +20,7 @@ import {
 } from '@nestjs/swagger';
 import { User } from '@entities/index';
 import { CurrentUser, RolesGuard, SetRequestTimeout } from '@schematics/index';
-import { AirtimeProvider, CableProvider, DecodedTokenKey } from '@utils/index';
+import { CableProvider, DecodedTokenKey } from '@utils/index';
 import { AirtimePurchaseService } from '@modules/airtime-purchase/airtime-purchase.service';
 import {
   AirtimePurchaseResponseDTO,
@@ -45,7 +46,8 @@ import {
 import {
   BillProviderDTO,
   FlutterwaveCableBillingOptionResponseDTO,
-  FlutterwaveDataPlanDTO,
+  PagaDataPlanDTO,
+  PagaMerchantPlanResponseDTO,
 } from './dto/bill.dto';
 import { BillService } from './bill.service';
 
@@ -146,16 +148,31 @@ export class BillController {
     return await this.dataPurchaseSrv.createDataPurchase(payload, user);
   }
 
-  @ApiParam({ enum: AirtimeProvider, name: 'provider' })
   @ApiOperation({ description: 'Find data plans for a specific provider' })
   @ApiProduces('json')
   @ApiConsumes('application/json')
-  @ApiResponse({ type: FlutterwaveDataPlanDTO })
-  @Get('/data-purchase/find-plans/:provider')
+  @ApiResponse({ type: PagaDataPlanDTO })
+  @Get('/data-purchase/find-plans/:providerId')
   async findDataPlansForProvider(
-    @Param('provider') provider: AirtimeProvider,
-  ): Promise<FlutterwaveDataPlanDTO> {
-    return await this.billSrv.findDataPlansForProvider(provider);
+    @Param('providerId', ParseUUIDPipe) providerId: string,
+  ): Promise<PagaDataPlanDTO> {
+    return await this.billSrv.findDataPlansForProvider(providerId);
+  }
+
+  @ApiOperation({
+    summary:
+      'Find plans for a specific merchant. I.E plans for cable-TV provider',
+    description:
+      'Find plans for a specific merchant. I.E plans for cable-TV provider',
+  })
+  @ApiProduces('json')
+  @ApiConsumes('application/json')
+  @ApiResponse({ type: PagaMerchantPlanResponseDTO })
+  @Get('/merchants/find-plans/:merchantPublicId')
+  async findMerchantPlans(
+    @Param('merchantPublicId', ParseUUIDPipe) merchantPublicId: string,
+  ): Promise<PagaMerchantPlanResponseDTO> {
+    return await this.billSrv.findMerchantPlans(merchantPublicId);
   }
 
   @ApiOperation({ description: 'Find cable providers' })

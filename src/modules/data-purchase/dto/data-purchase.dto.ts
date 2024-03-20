@@ -8,8 +8,8 @@ import {
 import { CreateAirtimePurchaseDTO } from '@modules/airtime-purchase/dto/airtime-purchase.dto';
 
 export class CreateDataPurchaseDTO {
-  @ApiProperty({ enum: AirtimeProvider })
-  provider: AirtimeProvider;
+  @ApiProperty()
+  providerId: string;
 
   @ApiProperty()
   phoneNumber: string;
@@ -21,14 +21,20 @@ export class CreateDataPurchaseDTO {
   transactionPin: string;
 }
 
-export class CreateFlutterwaveDataPurchaseDTO extends CreateAirtimePurchaseDTO {
+export class CreateFlutterwaveDataPurchaseDTO extends OmitType(
+  CreateAirtimePurchaseDTO,
+  ['providerId'] as const,
+) {
+  @ApiProperty()
+  operatorServiceId: string;
+
   @ApiProperty()
   type: string;
 }
 
 export class CreateFlutterwaveCablePlanPurchaseDTO extends OmitType(
   CreateAirtimePurchaseDTO,
-  ['phoneNumber', 'provider'] as const,
+  ['phoneNumber', 'providerId'] as const,
 ) {
   @ApiProperty()
   smartCardNumber: string;

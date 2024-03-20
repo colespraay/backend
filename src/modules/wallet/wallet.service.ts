@@ -669,138 +669,148 @@ export class WalletService {
     }
   }
 
-  async webhookHandler(payload: any): Promise<void> {
+  // TODO
+  async webhookHandler(payload: any): Promise<void> { 
     try {
       this.logger.debug({ webhookPayload: payload });
-      if (payload.event === 'charge.completed') {
-        // User funds their wallet
-        const data = payload.data;
-        // Reconfirm Charge
-        const moneyChargeRecord = await this.fetchPaymentRecord(
-          Number(data.id),
-        );
-        if (moneyChargeRecord?.data.status === 'successful') {
-          if (data?.tx_ref) {
-            const userRecord = await this.userSrv.getRepo().findOne({
-              where: { flutterwaveUserKey: data.tx_ref },
-              select: ['id', 'walletBalance'],
-            });
-            if (userRecord?.id) {
-              const currentBalanceBeforeTransaction =
-                await this.userSrv.getCurrentWalletBalance(userRecord.id);
-              const reference = String(data.flw_ref);
-              const narration = `${data.narration} - Wallet Funded`;
-              const amount = parseFloat(moneyChargeRecord.data.amount_settled);
-              const newTransaction =
-                await this.transactionSrv.createTransaction({
-                  amount,
-                  reference,
-                  narration,
-                  type: TransactionType.CREDIT,
-                  transactionStatus: PaymentStatus.SUCCESSFUL,
-                  userId: userRecord.id,
-                  transactionDate: data.created_at,
-                  currentBalanceBeforeTransaction,
-                });
-              this.logger.debug({ newTransaction, narration, reference });
-            }
-          }
-        }
-      }
-      if (payload.event === 'transfer.completed') {
-        const data = payload.data;
-        const reference = String(data.reference);
-        const userAccount = await this.userAccountSrv.getRepo().findOne({
-          where: { accountNumber: String(data.account_number) },
-        });
-        const currentBalanceBeforeTransaction =
-          await this.userSrv.getCurrentWalletBalance(userAccount.userId);
-        if (data.status === 'SUCCESSFUL') {
-          // Reconfirm transfer
-          const transferRecord = await this.fetchTransferRecord(
-            Number(data.id),
-          );
-          if (transferRecord.data.status === 'SUCCESSFUL') {
-            const amountSettled = Number(transferRecord.data.amount);
-            const amount = calculateAppCut(
-              this.percentageAppFee,
-              amountSettled,
-            );
-            const appCut = amountSettled - amount;
-            const withdrawalRecord = await this.withdrawalSrv.findOne({
-              reference,
-            });
-            // const amount = Number(transferRecord.data.amount) - Number(transferRecord.data.fee);
-            if (userAccount?.userId) {
-              const userId = userAccount.userId;
-              const newTransaction =
-                await this.transactionSrv.createTransaction({
-                  userId,
-                  amount: withdrawalRecord?.amount ?? amountSettled,
-                  reference,
-                  narration: data.narration,
-                  type: TransactionType.DEBIT,
-                  transactionStatus: PaymentStatus.SUCCESSFUL,
-                  transactionDate: data.created_at,
-                  currentBalanceBeforeTransaction,
-                });
-              this.logger.debug({
-                event: 'transfer.completed',
-                currentBalanceBeforeTransaction,
-                newTransaction,
-              });
-              if (withdrawalRecord?.id) {
-                await this.withdrawalSrv.getRepo().update(
-                  { id: withdrawalRecord.id },
-                  {
-                    paymentStatus: PaymentStatus.SUCCESSFUL,
-                    transactionId: newTransaction.data.id,
-                  },
-                );
-                // Log amount app earns from the transaction
-                this.eventEmitterSrv.emit('app-profit.log', {
-                  amount: appCut,
-                  transactionId: newTransaction.data.id,
-                });
-              }
-            }
-          }
-        }
-        if (data.status === 'FAILED') {
-          const withdrawalRecord = await this.withdrawalSrv.findOne({
-            reference,
-          });
-          if (withdrawalRecord?.id) {
-            // const newTransaction = await this.transactionSrv.createTransaction({
-            //   reference,
-            //   userId: userAccount.userId,
-            //   narration: data.narration,
-            //   transactionStatus: PaymentStatus.FAILED,
-            //   type: TransactionType.DEBIT,
-            //   transactionDate: data.created_at,
-            //   currentBalanceBeforeTransaction,
-            //   amount: parseFloat(data.amount),
-            // });
-            this.logger.debug({
-              event: 'transfer.completed',
-              currentBalanceBeforeTransaction,
-              status: 'Failed',
-            });
-            await this.withdrawalSrv.getRepo().update(
-              { id: withdrawalRecord.id },
-              {
-                paymentStatus: PaymentStatus.FAILED,
-                // transactionId: newTransaction.data.id,
-              },
-            );
-          }
-        }
-      }
     } catch (ex) {
       this.logger.error(ex);
       throw ex;
     }
   }
+
+  // async webhookHandler(payload: any): Promise<void> {
+  //   try {
+  //     this.logger.debug({ webhookPayload: payload });
+  //     if (payload.event === 'charge.completed') {
+  //       // User funds their wallet
+  //       const data = payload.data;
+  //       // Reconfirm Charge
+  //       const moneyChargeRecord = await this.fetchPaymentRecord(
+  //         Number(data.id),
+  //       );
+  //       if (moneyChargeRecord?.data.status === 'successful') {
+  //         if (data?.tx_ref) {
+  //           const userRecord = await this.userSrv.getRepo().findOne({
+  //             where: { flutterwaveUserKey: data.tx_ref },
+  //             select: ['id', 'walletBalance'],
+  //           });
+  //           if (userRecord?.id) {
+  //             const currentBalanceBeforeTransaction =
+  //               await this.userSrv.getCurrentWalletBalance(userRecord.id);
+  //             const reference = String(data.flw_ref);
+  //             const narration = `${data.narration} - Wallet Funded`;
+  //             const amount = parseFloat(moneyChargeRecord.data.amount_settled);
+  //             const newTransaction =
+  //               await this.transactionSrv.createTransaction({
+  //                 amount,
+  //                 reference,
+  //                 narration,
+  //                 type: TransactionType.CREDIT,
+  //                 transactionStatus: PaymentStatus.SUCCESSFUL,
+  //                 userId: userRecord.id,
+  //                 transactionDate: data.created_at,
+  //                 currentBalanceBeforeTransaction,
+  //               });
+  //             this.logger.debug({ newTransaction, narration, reference });
+  //           }
+  //         }
+  //       }
+  //     }
+  //     if (payload.event === 'transfer.completed') {
+  //       const data = payload.data;
+  //       const reference = String(data.reference);
+  //       const userAccount = await this.userAccountSrv.getRepo().findOne({
+  //         where: { accountNumber: String(data.account_number) },
+  //       });
+  //       const currentBalanceBeforeTransaction =
+  //         await this.userSrv.getCurrentWalletBalance(userAccount.userId);
+  //       if (data.status === 'SUCCESSFUL') {
+  //         // Reconfirm transfer
+  //         const transferRecord = await this.fetchTransferRecord(
+  //           Number(data.id),
+  //         );
+  //         if (transferRecord.data.status === 'SUCCESSFUL') {
+  //           const amountSettled = Number(transferRecord.data.amount);
+  //           const amount = calculateAppCut(
+  //             this.percentageAppFee,
+  //             amountSettled,
+  //           );
+  //           const appCut = amountSettled - amount;
+  //           const withdrawalRecord = await this.withdrawalSrv.findOne({
+  //             reference,
+  //           });
+  //           // const amount = Number(transferRecord.data.amount) - Number(transferRecord.data.fee);
+  //           if (userAccount?.userId) {
+  //             const userId = userAccount.userId;
+  //             const newTransaction =
+  //               await this.transactionSrv.createTransaction({
+  //                 userId,
+  //                 amount: withdrawalRecord?.amount ?? amountSettled,
+  //                 reference,
+  //                 narration: data.narration,
+  //                 type: TransactionType.DEBIT,
+  //                 transactionStatus: PaymentStatus.SUCCESSFUL,
+  //                 transactionDate: data.created_at,
+  //                 currentBalanceBeforeTransaction,
+  //               });
+  //             this.logger.debug({
+  //               event: 'transfer.completed',
+  //               currentBalanceBeforeTransaction,
+  //               newTransaction,
+  //             });
+  //             if (withdrawalRecord?.id) {
+  //               await this.withdrawalSrv.getRepo().update(
+  //                 { id: withdrawalRecord.id },
+  //                 {
+  //                   paymentStatus: PaymentStatus.SUCCESSFUL,
+  //                   transactionId: newTransaction.data.id,
+  //                 },
+  //               );
+  //               // Log amount app earns from the transaction
+  //               this.eventEmitterSrv.emit('app-profit.log', {
+  //                 amount: appCut,
+  //                 transactionId: newTransaction.data.id,
+  //               });
+  //             }
+  //           }
+  //         }
+  //       }
+  //       if (data.status === 'FAILED') {
+  //         const withdrawalRecord = await this.withdrawalSrv.findOne({
+  //           reference,
+  //         });
+  //         if (withdrawalRecord?.id) {
+  //           // const newTransaction = await this.transactionSrv.createTransaction({
+  //           //   reference,
+  //           //   userId: userAccount.userId,
+  //           //   narration: data.narration,
+  //           //   transactionStatus: PaymentStatus.FAILED,
+  //           //   type: TransactionType.DEBIT,
+  //           //   transactionDate: data.created_at,
+  //           //   currentBalanceBeforeTransaction,
+  //           //   amount: parseFloat(data.amount),
+  //           // });
+  //           this.logger.debug({
+  //             event: 'transfer.completed',
+  //             currentBalanceBeforeTransaction,
+  //             status: 'Failed',
+  //           });
+  //           await this.withdrawalSrv.getRepo().update(
+  //             { id: withdrawalRecord.id },
+  //             {
+  //               paymentStatus: PaymentStatus.FAILED,
+  //               // transactionId: newTransaction.data.id,
+  //             },
+  //           );
+  //         }
+  //       }
+  //     }
+  //   } catch (ex) {
+  //     this.logger.error(ex);
+  //     throw ex;
+  //   }
+  // }
 
   async checkTransactions(): Promise<void> {
     try {

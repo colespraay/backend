@@ -36,16 +36,11 @@ export class AirtimePurchaseService extends GenericService(AirtimePurchase) {
   ): Promise<AirtimePurchaseResponseDTO> {
     try {
       checkForRequiredFields(
-        ['userId', 'provider', 'amount', 'phoneNumber', 'transactionPin'],
+        ['userId', 'providerId', 'amount', 'phoneNumber', 'transactionPin'],
         {
           ...payload,
           userId: user.id,
         },
-      );
-      compareEnumValueFields(
-        payload.provider,
-        Object.values(AirtimeProvider),
-        'provider',
       );
       payload.phoneNumber = formatPhoneNumberWithPrefix(payload.phoneNumber);
       await this.userSrv.verifyTransactionPin(

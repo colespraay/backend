@@ -1,17 +1,8 @@
-import {
-  BadGatewayException,
-  BadRequestException,
-  HttpException,
-  HttpStatus,
-  Injectable,
-} from '@nestjs/common';
-import { AxiosError } from 'axios';
+import { BadGatewayException, HttpStatus, Injectable } from '@nestjs/common';
 import { CablePurchase, User } from '@entities/index';
 import { GenericService } from '@schematics/index';
 import {
   checkForRequiredFields,
-  compareEnumValueFields,
-  CableProvider,
   TransactionType,
   generateUniqueCode,
 } from '@utils/index';
@@ -43,31 +34,26 @@ export class CablePurchaseService extends GenericService(CablePurchase) {
           'amount',
           'smartCardNumber',
           'transactionPin',
-          'provider',
+          'providerId',
           'cablePlanId',
         ],
         payload,
       );
-      compareEnumValueFields(
-        payload.provider,
-        Object.values(CableProvider),
-        'provider',
-      );
       await this.userSrv.verifyTransactionPin(user.id, payload.transactionPin);
-      const plan = await this.billSrv.findCableProviderById(
+      const plan = await this.billSrv.findMerchantPlan(
+        payload.providerId,
         payload.cablePlanId,
       );
       await this.userSrv.checkAccountBalance(payload.amount, user.id);
-      // Make purchase from flutterwave
-      const narration = `Cable plan purchase (₦${plan.amount}) for ${payload.smartCardNumber}`;
+
+      const narration = `Cable plan purchase (₦${plan.price}) for ${payload.smartCardNumber}`;
       const transactionDate = new Date().toLocaleString();
       const reference = `Spraay-cable-${generateUniqueCode(10)}`;
       const cablePurchaseResponse = await this.billSrv.makeCablePlanPurchase(
         {
-          amount: plan.amount,
-          smartCardNumber: payload.smartCardNumber,
-          provider: payload.provider,
-          transactionPin: payload.transactionPin,
+          decoderNumber: payload.smartCardNumber,
+          merchantServiceCode: payload.cablePlanId,
+          providerId: payload.providerId,
         },
         reference,
         plan,
@@ -80,7 +66,7 @@ export class CablePurchaseService extends GenericService(CablePurchase) {
         narration,
         userId: user.id,
         transactionDate,
-        amount: plan.amount,
+        amount: plan.price,
         type: TransactionType.DEBIT,
         reference: cablePurchaseResponse.data.reference,
         currentBalanceBeforeTransaction: user.walletBalance,
@@ -88,11 +74,11 @@ export class CablePurchaseService extends GenericService(CablePurchase) {
       const createdCablePlanPurchase = await this.create<
         Partial<CablePurchase>
       >({
-        amount: plan.amount,
+        amount: plan.price,
         userId: user.id,
-        provider: payload.provider,
+        providerId: payload.providerId,
         smartCardNumber: payload.smartCardNumber,
-        cablePlanId: plan.id,
+        cablePlanId: plan.shortCode,
         transactionId: newTransaction.data.id,
       });
       return {
@@ -102,16 +88,8 @@ export class CablePurchaseService extends GenericService(CablePurchase) {
         message: cablePurchaseResponse.message,
       };
     } catch (ex) {
-      if (ex instanceof AxiosError) {
-        const errorObject = ex.response.data;
-        const message =
-          typeof errorObject === 'string' ? errorObject : errorObject.message;
-        this.logger.error(message);
-        throw new HttpException(message, ex.response.status);
-      } else {
-        this.logger.error(ex);
-        throw ex;
-      }
+      this.logger.error(ex);
+      throw ex;
     }
   }
 }
