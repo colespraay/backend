@@ -27,6 +27,7 @@ import {
   CablePurchase,
   EventCategory,
   AppProfit,
+  BettingPurchase,
 } from './index';
 
 @Entity({ name: 'user' })
@@ -207,6 +208,12 @@ export class User extends Base {
     cascade: true,
   })
   airtimePurchases: AirtimePurchase[];
+
+  @ApiProperty({ type: () => [BettingPurchase] })
+  @OneToMany(() => BettingPurchase, ({ user }) => user, {
+    cascade: true,
+  })
+  bettingPurchases: BettingPurchase[];
 
   @ApiProperty({ type: () => [DataPurchase] })
   @OneToMany(() => DataPurchase, ({ user }) => user, {

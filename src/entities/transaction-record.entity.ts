@@ -20,6 +20,7 @@ import {
   DataPurchase,
   CablePurchase,
   AppProfit,
+  BettingPurchase,
 } from './index';
 
 @Entity({ name: 'transaction_record' })
@@ -111,10 +112,16 @@ export class TransactionRecord extends Base {
   electricityPurchases: ElectricityPurchase[];
 
   @ApiProperty({ type: () => [AirtimePurchase] })
-  @OneToMany(() => CablePurchase, ({ transaction }) => transaction, {
+  @OneToMany(() => AirtimePurchase, ({ transaction }) => transaction, {
     cascade: true,
   })
-  airtimePurchases: CablePurchase[];
+  airtimePurchases: AirtimePurchase[];
+
+  @ApiProperty({ type: () => [BettingPurchase] })
+  @OneToMany(() => BettingPurchase, ({ transaction }) => transaction, {
+    cascade: true,
+  })
+  bettingPurchases: BettingPurchase[];
 
   @ApiProperty({ type: () => [DataPurchase] })
   @OneToMany(() => DataPurchase, ({ transaction }) => transaction, {

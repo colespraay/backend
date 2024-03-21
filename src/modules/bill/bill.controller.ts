@@ -50,6 +50,11 @@ import {
   PagaDataPlanDTO,
   PagaMerchantPlanResponseDTO,
 } from './dto/bill.dto';
+import { BettingPurchaseService } from '@modules/betting-purchase/betting-purchase.service';
+import {
+  CreateBettingPurchaseDTO,
+  BettingPurchaseResponseDTO,
+} from '@modules/betting-purchase/dto/betting-purchase.dto';
 
 @ApiBearerAuth('JWT')
 @UseGuards(RolesGuard)
@@ -62,7 +67,21 @@ export class BillController {
     private readonly dataPurchaseSrv: DataPurchaseService,
     private readonly airtimePurchaseSrv: AirtimePurchaseService,
     private readonly cablePurchaseSrv: CablePurchaseService,
+    private readonly bettingPurchaseSrv: BettingPurchaseService,
   ) {}
+
+  @ApiOperation({ description: 'Fund betting wallet' })
+  @ApiProduces('json')
+  @ApiConsumes('application/json')
+  @ApiResponse({ type: BettingPurchaseResponseDTO })
+  @SetRequestTimeout(1000000)
+  @Post('/fund-betting-wallet')
+  async fundBettingWallet(
+    @Body() payload: CreateBettingPurchaseDTO,
+    @CurrentUser(DecodedTokenKey.USER) user: User,
+  ): Promise<BettingPurchaseResponseDTO> {
+    return await this.bettingPurchaseSrv.fundBettingWallet(payload, user);
+  }
 
   @ApiOperation({ description: 'Pay for cable plans' })
   @ApiProduces('json')
@@ -182,6 +201,15 @@ export class BillController {
   @Get('/cable-providers')
   async findCableProviders(): Promise<BillProviderDTO> {
     return await this.billSrv.findCableProviders();
+  }
+
+  @ApiOperation({ description: 'Find bet providers' })
+  @ApiProduces('json')
+  @ApiConsumes('application/json')
+  @ApiResponse({ type: BillProviderDTO })
+  @Get('/betting-providers')
+  async findBettingProviders(): Promise<BillProviderDTO> {
+    return await this.billSrv.findBettingProviders();
   }
 
   @ApiQuery({ name: 'searchTerm', required: false })

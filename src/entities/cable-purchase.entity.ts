@@ -1,6 +1,5 @@
 import { ApiProperty } from '@nestjs/swagger';
 import { Column, Entity, BeforeInsert, JoinColumn, ManyToOne } from 'typeorm';
-import { CableProvider } from '@utils/index';
 import { Base, TransactionRecord, User, uuidV4 } from './index';
 
 @Entity({ name: 'cable_purchase' })

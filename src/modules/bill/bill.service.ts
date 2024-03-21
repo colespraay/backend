@@ -37,6 +37,7 @@ import {
   PagaMerchantPlanResponseDTO,
   PagaMeterDetailDTO,
 } from './dto/bill.dto';
+import { CreateBettingPurchaseDTO } from '@modules/betting-purchase/dto/betting-purchase.dto';
 
 @Injectable()
 export class BillService implements OnModuleInit {
@@ -183,6 +184,71 @@ export class BillService implements OnModuleInit {
     }
   }
 
+  async fundBettingWallet(
+    payload: Partial<CreateBettingPurchaseDTO>,
+    reference: string,
+  ): Promise<FlutterwaveBillPaymentResponseDTO> {
+    try {
+      const url = `${process.env.PAGA_BASE_URL}/merchantPayment`;
+      const body = {
+        referenceNumber: reference,
+        amount: payload.amount,
+        currency: 'NGN',
+        merchantAccount: payload.providerId,
+        merchantReferenceNumber: payload.bettingWalletId,
+        merchantService: [payload.merchantPlan],
+      };
+      const hashKey = [
+        'referenceNumber',
+        'amount',
+        'merchantAccount',
+        'merchantReferenceNumber',
+      ];
+      const { hash, password, username } = generatePagaHash(hashKey, body);
+      const headers = {
+        hash,
+        principal: username,
+        credentials: password,
+        'Content-Type': 'application/json',
+      };
+      const response = await httpPost<any, any>(url, body, headers);
+      if (response.responseCode !== 0) {
+        throw new BadGatewayException(
+          response.message ?? `Failed to fund betting wallet`,
+        );
+      }
+      return {
+        success: true,
+        code: HttpStatus.OK,
+        message: response.message ?? 'Unit purchase was successful',
+        data: {
+          amount: payload.amount,
+          flw_ref: response.transactionId,
+          reference,
+          network: payload.merchantPlan,
+          phone_number: payload.bettingWalletId,
+          tx_ref: reference,
+        },
+      };
+    } catch (ex) {
+      if (ex instanceof AxiosError) {
+        const errorObject = ex.response.data;
+        const message =
+          typeof errorObject === 'string'
+            ? errorObject
+            : errorObject.statusMessage;
+        this.logger.error(message);
+        throw new HttpException(
+          message,
+          Number(errorObject.statusCode) ?? HttpStatus.BAD_GATEWAY,
+        );
+      } else {
+        this.logger.error(ex);
+        throw ex;
+      }
+    }
+  }
+
   async makeElectricUnitPurchase(
     payload: CreateElectricityPurchaseDTO,
     reference: string,
@@ -231,7 +297,7 @@ export class BillService implements OnModuleInit {
       const response = await httpPost<any, any>(url, body, headers);
       if (response.responseCode !== 0) {
         throw new BadGatewayException(
-          `Failed to make electricity unit purchase`,
+          response.message ?? `Failed to make electricity unit purchase`,
         );
       }
       return {
@@ -241,7 +307,7 @@ export class BillService implements OnModuleInit {
         message: response.message ?? 'Unit purchase was successful',
         data: {
           amount: payload.amount,
-          flw_ref: response.flw_ref,
+          flw_ref: response.transactionId,
           reference,
           network: payload.merchantPlan,
           phone_number: payload.meterNumber,
@@ -411,7 +477,8 @@ export class BillService implements OnModuleInit {
       const response = await httpPost<any, any>(url, body, headers);
       if (response.responseCode !== 0) {
         throw new BadGatewayException(
-          `Failed to buy cable plan for customer: ${payload.merchantServiceCode}`,
+          response.message ??
+            `Failed to buy cable plan for customer: ${payload.merchantServiceCode}`,
         );
       }
       return {
@@ -437,67 +504,6 @@ export class BillService implements OnModuleInit {
           message,
           Number(errorObject.statusCode) ?? HttpStatus.BAD_GATEWAY,
         );
-      } else {
-        this.logger.error(ex);
-        throw ex;
-      }
-    }
-  }
-
-  async makeCablePlanPurchase2(
-    payload: CreateFlutterwaveCablePlanPurchaseDTO,
-    reference: string,
-    plan: FlutterwaveCableBillingOptionPartial,
-    env = 'PROD',
-  ): Promise<FlutterwaveBillPaymentResponseDTO> {
-    try {
-      const url = 'https://api.flutterwave.com/v3/bills';
-      const reqPayload = {
-        reference,
-        country: 'NG',
-        amount: plan.amount,
-        type: plan.biller_name,
-        biller_name: plan.biller_name,
-        customer: payload.smartCardNumber,
-      };
-      if (env === 'TEST') {
-        return {
-          success: true,
-          code: HttpStatus.OK,
-          message: 'Cable plan purchase successful',
-          data: {
-            phone_number: payload.smartCardNumber,
-            amount: payload.amount,
-            network: payload.provider,
-            flw_ref: reqPayload.reference,
-            tx_ref: reqPayload.reference,
-            reference: null,
-          },
-        };
-      }
-      const resp = await httpPost<any, any>(url, reqPayload, {
-        Authorization: `Bearer ${this.flutterwaveSecretKey}`,
-      });
-      console.log({
-        cablePurchaseResponse: resp,
-        cableRequestPayload: reqPayload,
-      });
-      if (resp.status !== 'success') {
-        throw new BadGatewayException('Cable plan purchase failed');
-      }
-      return {
-        success: true,
-        code: HttpStatus.OK,
-        message: 'Cable plan purchase successful',
-        data: resp.data,
-      };
-    } catch (ex) {
-      if (ex instanceof AxiosError) {
-        const errorObject = ex.response.data;
-        const message =
-          typeof errorObject === 'string' ? errorObject : errorObject.message;
-        this.logger.error(message);
-        throw new HttpException(message, ex.response.status);
       } else {
         this.logger.error(ex);
         throw ex;
@@ -547,22 +553,25 @@ export class BillService implements OnModuleInit {
         'Content-Type': 'application/json',
       };
       const response = await httpPost<any, any>(url, body, headers);
-      if (response.responseCode === 0) {
-        const transactionId = response.transactionId;
-        return {
-          success: true,
-          code: HttpStatus.OK,
-          message: response.message ?? 'Airtime purchase successful',
-          data: {
-            phone_number: payload.phoneNumber,
-            amount: payload.amount,
-            network: payload.providerId,
-            flw_ref: transactionId,
-            tx_ref: transactionId,
-            reference: transactionId,
-          },
-        };
+      if (response.responseCode !== 0) {
+        throw new BadGatewayException(
+          response.message ?? 'Airtime purchase failed',
+        );
       }
+      const transactionId = response.transactionId;
+      return {
+        success: true,
+        code: HttpStatus.OK,
+        message: response.message ?? 'Airtime purchase successful',
+        data: {
+          phone_number: payload.phoneNumber,
+          amount: payload.amount,
+          network: payload.providerId,
+          flw_ref: transactionId,
+          tx_ref: transactionId,
+          reference: transactionId,
+        },
+      };
     } catch (ex) {
       if (ex instanceof AxiosError) {
         const errorObject = ex.response.data;
@@ -574,6 +583,36 @@ export class BillService implements OnModuleInit {
         this.logger.error(ex);
         throw ex;
       }
+    }
+  }
+
+  async findBettingProviders(): Promise<BillProviderDTO> {
+    try {
+      const values = await this.getMerchants();
+      const searchValues = ['bet'];
+      const excludeValues = [
+        'travelbeta and tours limited',
+        'better nature travel and tours',
+        'grooming people for better lifehood',
+      ];
+      const bettingProviders: BillProviderPartial[] = values.data.filter(
+        (item) => {
+          const itemName = item.name.toLowerCase();
+          if (
+            searchValues.some((value) => itemName.includes(value.trim())) &&
+            !excludeValues.some((value) => itemName.includes(value.trim()))
+          ) {
+            return item;
+          }
+        },
+      );
+      return {
+        ...values,
+        data: bettingProviders,
+      };
+    } catch (ex) {
+      this.logger.error(ex);
+      throw ex;
     }
   }
 
