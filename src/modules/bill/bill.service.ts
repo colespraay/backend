@@ -16,10 +16,7 @@ import {
   httpGet,
   httpPost,
 } from '@utils/index';
-import {
-  CreateFlutterwaveCablePlanPurchaseDTO,
-  CreateFlutterwaveDataPurchaseDTO,
-} from '@modules/data-purchase/dto/data-purchase.dto';
+import { CreateFlutterwaveDataPurchaseDTO } from '@modules/data-purchase/dto/data-purchase.dto';
 import { CreateAirtimePurchaseDTO } from '@modules/airtime-purchase/dto/airtime-purchase.dto';
 import { CreateElectricityPurchaseDTO } from '@modules/electricity-purchase/dto/electricity-purchase.dto';
 import {
@@ -220,7 +217,7 @@ export class BillService implements OnModuleInit {
       return {
         success: true,
         code: HttpStatus.OK,
-        message: response.message ?? 'Unit purchase was successful',
+        message: response.message ?? 'Funding betting wallet was successful',
         data: {
           amount: payload.amount,
           flw_ref: response.transactionId,
@@ -719,6 +716,22 @@ export class BillService implements OnModuleInit {
         message: 'Records found',
         data,
       };
+    } catch (ex) {
+      this.logger.error(ex);
+      throw ex;
+    }
+  }
+
+  async findBettingMerchantPlans(
+    merchantPublicId: string,
+  ): Promise<PagaMerchantPlanResponseDTO> {
+    try {
+      const values = await this.findMerchantPlans(merchantPublicId);
+      values.data = values.data.map((item) => ({
+        ...item,
+        shortCode: item.name,
+      }));
+      return values;
     } catch (ex) {
       this.logger.error(ex);
       throw ex;
