@@ -90,37 +90,37 @@ export class UserService extends GenericService(User) {
     // ========== Clear DB tables ========== //
   }
 
-  // async getAllTables(): Promise<{ connection: DataSource; tables: string[] }> {
-  //   const connection = await createConnection(ormConfig);
-  //   try {
-  //     const tableNames = getConnection().entityMetadatas.map(
-  //       (entityMetadata) => entityMetadata.tableName,
-  //     );
-  //     return { connection, tables: tableNames };
-  //   } catch (ex) {
-  //     console.error(ex);
-  //   } finally {
-  //     // await connection.close();
-  //   }
-  // }
+  private async getAllTables(): Promise<{ connection: DataSource; tables: string[] }> {
+    const connection = await createConnection(ormConfig);
+    try {
+      const tableNames = getConnection().entityMetadatas.map(
+        (entityMetadata) => entityMetadata.tableName,
+      );
+      return { connection, tables: tableNames };
+    } catch (ex) {
+      console.error(ex);
+    } finally {
+      // await connection.close();
+    }
+  }
 
-  // async deleteAllTables(
-  //   dbConnection: DataSource,
-  //   tableNames: string[],
-  // ): Promise<void> {
-  //   try {
-  //     console.log('All tables in the database:', tableNames);
-  //     const queryRunner = dbConnection.createQueryRunner();
-  //     for (const tableName of tableNames) {
-  //       const query = `DELETE FROM "${tableName}";`;
-  //       await queryRunner.query(query);
-  //     }
-  //   } catch (ex) {
-  //     console.error(ex);
-  //   } finally {
-  //     await dbConnection.close();
-  //   }
-  // }
+  private async deleteAllTables(
+    dbConnection: DataSource,
+    tableNames: string[],
+  ): Promise<void> {
+    try {
+      console.log('All tables in the database:', tableNames);
+      const queryRunner = dbConnection.createQueryRunner();
+      for (const tableName of tableNames) {
+        const query = `DELETE FROM "${tableName}";`;
+        await queryRunner.query(query);
+      }
+    } catch (ex) {
+      console.error(ex);
+    } finally {
+      await dbConnection.close();
+    }
+  }
 
   async findContactsFilteredByUserContacts(
     payload: UserContactsDTO,
