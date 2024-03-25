@@ -49,6 +49,9 @@ export class TransactionRecord extends Base {
   @Column({ type: 'varchar', length: 100 })
   transactionDate: string;
 
+  @Column({ type: 'jsonb', default: {} })
+  jsonResponse: any;
+
   @ApiProperty()
   @Column({ type: 'varchar', length: 20 })
   createdTime: string;

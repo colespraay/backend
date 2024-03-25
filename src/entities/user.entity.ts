@@ -114,14 +114,6 @@ export class User extends Base {
   gender: Gender;
 
   @ApiProperty({ nullable: true })
-  @Column({ type: 'varchar', length: 255, nullable: true })
-  flutterwaveUserKey: string;
-
-  @ApiProperty({ nullable: true })
-  @Column({ type: 'varchar', length: 255, nullable: true })
-  flutterwaveNarration: string;
-
-  @ApiProperty({ nullable: true })
   @Column({ type: 'date', nullable: true })
   dob: Date;
 

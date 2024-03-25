@@ -135,7 +135,7 @@ export class WalletController {
     await this.walletSrv.webhookHandler(body);
   }
 
-  @Cron(CronExpression.EVERY_MINUTE)
+  @Cron(CronExpression.EVERY_30_MINUTES)
   async checkTransactions(): Promise<void> { 
     await this.walletSrv.checkTransactions();
   }

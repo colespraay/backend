@@ -10,6 +10,7 @@ import {
   Query,
   UseGuards,
   ParseIntPipe,
+  Req,
 } from '@nestjs/common';
 import {
   ApiBearerAuth,
@@ -44,6 +45,7 @@ import {
   UserContactsQueryDTO,
 } from './dto/user.dto';
 import { UserService } from './user.service';
+import { Request } from 'express';
 
 @ApiTags('user')
 @Controller('user')
@@ -309,8 +311,9 @@ export class UserController {
   @Patch()
   async updateUser(
     @Body() payload: UpdateUserDTO,
+    @Req() req: Request,
   ): Promise<BaseResponseTypeDTO> {
-    return await this.userSrv.updateUser(payload);
+    return await this.userSrv.updateUser(payload, req);
   }
 
   @ApiOperation({ description: 'Delete user account' })

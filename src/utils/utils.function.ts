@@ -969,7 +969,7 @@ export const generatePagaHash = <T>(
   const username = String(process.env.PAGA_PUBLIC_KEY).trim();
   const password = String(process.env.PAGA_SECRET_KEY).trim();
   const data = JSON.parse(JSON.stringify(requestBody));
-  
+
   let hashData = '';
   for (let i in paramKeys) {
     const keys = paramKeys[i].split('.');
@@ -985,4 +985,15 @@ export const generatePagaHash = <T>(
   hashData += String(process.env.PAGA_HMAC_KEY).trim();
   const hash = SHA512(hashData).toString();
   return { hash, username, password };
+};
+
+export const formatPagaDate = (date: Date): string => {
+  // Get the year, month, and day from the Date object
+  const year = date.getFullYear();
+  // Add 1 to month because getMonth() returns zero-based month index
+  const month = ('0' + (date.getMonth() + 1)).slice(-2);
+  const day = ('0' + date.getDate()).slice(-2);
+
+  // Construct the formatted date string
+  return year + '-' + month + '-' + day;
 };

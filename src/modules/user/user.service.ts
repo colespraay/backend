@@ -62,6 +62,7 @@ import {
   UserContactsQueryDTO,
 } from './dto/user.dto';
 import ormConfig from '../../orm.config';
+import { Request } from 'express';
 
 @Injectable()
 export class UserService extends GenericService(User) {
@@ -855,7 +856,7 @@ export class UserService extends GenericService(User) {
     }
   }
 
-  async updateUser(payload: UpdateUserDTO): Promise<BaseResponseTypeDTO> {
+  async updateUser(payload: UpdateUserDTO, req: Request): Promise<BaseResponseTypeDTO> {
     try {
       checkForRequiredFields(['userId'], payload);
       const record = await this.findOne({ id: payload.userId });
@@ -962,7 +963,10 @@ export class UserService extends GenericService(User) {
             record.lastName = bvnValidationResponse.data.lastName;
           }
           if (!record.virtualAccountNumber) {
-            this.eventEmitterSrv.emit('create-wallet', record.id);
+            this.eventEmitterSrv.emit('create-wallet', {
+              userId: record.id,
+              req,
+            });
           }
         }
         record.bvn = payload.bvn;
@@ -989,7 +993,10 @@ export class UserService extends GenericService(User) {
         displayWalletBalance: record.displayWalletBalance,
       };
       await this.getRepo().update({ id: record.id }, updatedRecord);
-      this.eventEmitterSrv.emit('create-wallet', record.id);
+      this.eventEmitterSrv.emit('create-wallet', {
+        userId: record.id,
+        req,
+      });
       return {
         success: true,
         code: HttpStatus.OK,
