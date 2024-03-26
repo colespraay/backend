@@ -1,16 +1,15 @@
 import { ApiProperty } from '@nestjs/swagger';
 import { Entity, Column, JoinColumn, ManyToOne, BeforeInsert } from 'typeorm';
-import { formatPhoneNumberWithPrefix } from '@utils/index';
 import { Base, TransactionRecord, User, uuidV4 } from './index';
 
-@Entity({ name: 'airtime_purchase' })
-export class AirtimePurchase extends Base {
+@Entity({ name: 'betting_purchase' })
+export class BettingPurchase extends Base {
   @Column({ type: 'uuid' })
   userId: string;
 
   @ApiProperty({ type: () => User })
   @JoinColumn({ name: 'userId' })
-  @ManyToOne(() => User, ({ airtimePurchases }) => airtimePurchases, {
+  @ManyToOne(() => User, ({ bettingPurchases }) => bettingPurchases, {
     onDelete: 'CASCADE',
     onUpdate: 'CASCADE',
   })
@@ -28,6 +27,10 @@ export class AirtimePurchase extends Base {
   @Column({ type: 'varchar', length: 255 })
   providerId: string;
 
+  @ApiProperty()
+  @Column({ type: 'varchar', length: 255 })
+  bettingWalletId: string;
+
   @Column({ type: 'uuid', nullable: true })
   transactionId: string;
 
@@ -35,7 +38,7 @@ export class AirtimePurchase extends Base {
   @JoinColumn({ name: 'transactionId' })
   @ManyToOne(
     () => TransactionRecord,
-    ({ airtimePurchases }) => airtimePurchases,
+    ({ bettingPurchases }) => bettingPurchases,
     {
       onDelete: 'CASCADE',
       onUpdate: 'CASCADE',
@@ -46,6 +49,5 @@ export class AirtimePurchase extends Base {
   @BeforeInsert()
   beforeInsertHandler(): void {
     this.id = uuidV4();
-    this.phoneNumber = formatPhoneNumberWithPrefix(this.phoneNumber);
   }
 }

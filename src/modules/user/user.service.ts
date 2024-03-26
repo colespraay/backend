@@ -11,12 +11,7 @@ import {
   NotFoundException,
   HttpException,
 } from '@nestjs/common';
-import {
-  FindManyOptions,
-  ILike,
-  In,
-  Not,
-} from 'typeorm';
+import { DataSource, FindManyOptions, ILike, In, Not, createConnection, getConnection } from 'typeorm';
 import axios, { AxiosError } from 'axios';
 import { GenericService } from '@schematics/index';
 import { User } from '@entities/index';
@@ -66,6 +61,8 @@ import {
   UserContactsDTO,
   UserContactsQueryDTO,
 } from './dto/user.dto';
+import ormConfig from '../../orm.config';
+import { Request } from 'express';
 
 @Injectable()
 export class UserService extends GenericService(User) {
@@ -84,8 +81,47 @@ export class UserService extends GenericService(User) {
     // // console.log({ tl });
     // const userData = await this.resolveUserBvn(bvn, userId);
     // console.log({ userData  });
+
+
+    // ========== Clear DB tables ========== //
+    // const { connection, tables } = await this.getAllTables();
+    // console.log({ tables });
+    // await this.deleteAllTables(connection, tables);
+    // ========== Clear DB tables ========== //
   }
-  
+
+  private async getAllTables(): Promise<{ connection: DataSource; tables: string[] }> {
+    const connection = await createConnection(ormConfig);
+    try {
+      const tableNames = getConnection().entityMetadatas.map(
+        (entityMetadata) => entityMetadata.tableName,
+      );
+      return { connection, tables: tableNames };
+    } catch (ex) {
+      console.error(ex);
+    } finally {
+      // await connection.close();
+    }
+  }
+
+  private async deleteAllTables(
+    dbConnection: DataSource,
+    tableNames: string[],
+  ): Promise<void> {
+    try {
+      console.log('All tables in the database:', tableNames);
+      const queryRunner = dbConnection.createQueryRunner();
+      for (const tableName of tableNames) {
+        const query = `DELETE FROM "${tableName}";`;
+        await queryRunner.query(query);
+      }
+    } catch (ex) {
+      console.error(ex);
+    } finally {
+      await dbConnection.close();
+    }
+  }
+
   async findContactsFilteredByUserContacts(
     payload: UserContactsDTO,
     pagination?: UserContactsQueryDTO,
@@ -820,7 +856,7 @@ export class UserService extends GenericService(User) {
     }
   }
 
-  async updateUser(payload: UpdateUserDTO): Promise<BaseResponseTypeDTO> {
+  async updateUser(payload: UpdateUserDTO, req: Request): Promise<BaseResponseTypeDTO> {
     try {
       checkForRequiredFields(['userId'], payload);
       const record = await this.findOne({ id: payload.userId });
@@ -927,7 +963,10 @@ export class UserService extends GenericService(User) {
             record.lastName = bvnValidationResponse.data.lastName;
           }
           if (!record.virtualAccountNumber) {
-            this.eventEmitterSrv.emit('create-wallet', record.id);
+            this.eventEmitterSrv.emit('create-wallet', {
+              userId: record.id,
+              req,
+            });
           }
         }
         record.bvn = payload.bvn;
@@ -954,7 +993,10 @@ export class UserService extends GenericService(User) {
         displayWalletBalance: record.displayWalletBalance,
       };
       await this.getRepo().update({ id: record.id }, updatedRecord);
-      this.eventEmitterSrv.emit('create-wallet', record.id);
+      this.eventEmitterSrv.emit('create-wallet', {
+        userId: record.id,
+        req,
+      });
       return {
         success: true,
         code: HttpStatus.OK,
@@ -1290,12 +1332,14 @@ export class UserService extends GenericService(User) {
           env === 'TEST'
             ? 'http://api.sandbox.youverify.co/v2/api/identity/ng/bvn'
             : 'http://api.youverify.co/v2/api/identity/ng/bvn';
-        const axiosResponse = await axios.post(url, {
-          id: bvn,
-          isSubjectConsent: true,
-          }, 
-          { headers: { token: String(process.env.YOU_VERIFY_SECRET_KEY) },
-        });
+        const axiosResponse = await axios.post(
+          url,
+          {
+            id: bvn,
+            isSubjectConsent: true,
+          },
+          { headers: { token: String(process.env.YOU_VERIFY_SECRET_KEY) } },
+        );
         const youVerifyResponse = axiosResponse.data;
         if (youVerifyResponse.success) {
           const photo = String(youVerifyResponse.data.image);

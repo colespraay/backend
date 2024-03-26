@@ -49,6 +49,9 @@ export class CreateTransactionDTO {
 
   @ApiProperty({ nullable: true })
   reference?: string;
+
+  @ApiProperty({ nullable: true })
+  jsonResponse?: any;
 }
 
 export class FindTransactionDTO extends PaginationRequestType {

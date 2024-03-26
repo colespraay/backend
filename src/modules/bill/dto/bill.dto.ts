@@ -4,11 +4,17 @@ import { BaseResponseTypeDTO } from '@utils/index';
 export class BillProviderPartial {
   @ApiProperty()
   name: string;
+
+  @ApiProperty()
+  code: string;
+
+  @ApiProperty()
+  displayName: string;
 }
 
 export class BillProviderDTO extends BaseResponseTypeDTO {
-  @ApiProperty({ type: () => [String] })
-  data: string[];
+  @ApiProperty({ type: () => [BillProviderPartial] })
+  data: BillProviderPartial[];
 }
 
 export class FlutterwaveBillItemVerificationPartial {
@@ -71,6 +77,25 @@ export class FlutterwaveBillPaymentResponsePartial {
 
   @ApiProperty()
   reference: string;
+}
+
+export class PagaCablePaymentPartial {
+  @ApiProperty()
+  reference: string;
+
+  @ApiProperty()
+  amount: string;
+
+  @ApiProperty()
+  decoderNumber: string;
+
+  @ApiProperty()
+  transactionId: string;
+}
+
+export class PagaCablePaymentResponseDTO extends BaseResponseTypeDTO {
+  @ApiProperty({ type: () => PagaCablePaymentPartial })
+  data: PagaCablePaymentPartial;
 }
 
 export class FlutterwaveBillPaymentResponseDTO extends BaseResponseTypeDTO {
@@ -174,4 +199,68 @@ export class FlutterwaveCableBillingOptionPartial {
 export class FlutterwaveCableBillingOptionResponseDTO extends BaseResponseTypeDTO {
   @ApiProperty({ type: () => [FlutterwaveCableBillingOptionPartial] })
   data: FlutterwaveCableBillingOptionPartial[];
+}
+
+export class PagaDataPlanPartial {
+  @ApiProperty()
+  validityPeriod: string;
+
+  @ApiProperty()
+  mobileOperatorId: number;
+
+  @ApiProperty()
+  servicePrice: number;
+
+  @ApiProperty()
+  dataValue: string;
+
+  @ApiProperty()
+  serviceName: string;
+
+  @ApiProperty()
+  serviceId: number;
+}
+
+export class PagaDataPlanDTO extends BaseResponseTypeDTO {
+  @ApiProperty({ type: () => [PagaDataPlanPartial] })
+  data: PagaDataPlanPartial[];
+}
+
+export class PagaMerchantPlanPartial {
+  @ApiProperty()
+  name: string;
+
+  @ApiProperty()
+  code: string;
+
+  @ApiProperty()
+  price: number;
+
+  @ApiProperty()
+  shortCode: string;
+}
+
+export class PagaMerchantPlanResponseDTO extends BaseResponseTypeDTO {
+  @ApiProperty({ type: () => [PagaMerchantPlanPartial] })
+  data: PagaMerchantPlanPartial[];
+}
+
+
+export class CablePaymentRequestDTO {
+  @ApiProperty()
+  merchantServiceCode: string;
+
+  @ApiProperty()
+  decoderNumber: string;
+
+  @ApiProperty({ description: 'Provider UUID, I.E Gotv, DSTV' })
+  providerId: string;
+}
+
+export class PagaMeterDetailDTO {
+  @ApiProperty()
+  deviceName: string;
+
+  @ApiProperty()
+  meterNumber: string;
 }

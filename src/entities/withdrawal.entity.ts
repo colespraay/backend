@@ -21,7 +21,7 @@ export class Withdrawal extends Base {
   user: User;
 
   @ApiProperty()
-  @Column({ type: 'bigint', default: 0 })
+  @Column({ type: 'varchar', length: 30, default: '0' })
   transferId: number;
 
   @Column({ type: 'uuid', nullable: true })

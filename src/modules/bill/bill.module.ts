@@ -8,6 +8,7 @@ import { BankModule } from '@modules/bank/bank.module';
 import { DataPurchaseModule } from '@modules/data-purchase/data-purchase.module';
 import { ElectricityPurchaseModule } from '@modules/electricity-purchase/electricity-purchase.module';
 import { CablePurchaseModule } from '@modules/cable-purchase/cable-purchase.module';
+import { BettingPurchaseModule } from '@modules/betting-purchase/betting-purchase.module';
 
 @Module({
   imports: [
@@ -18,6 +19,7 @@ import { CablePurchaseModule } from '@modules/cable-purchase/cable-purchase.modu
     ElectricityPurchaseModule,
     DataPurchaseModule,
     CablePurchaseModule,
+    BettingPurchaseModule,
   ],
   controllers: [BillController],
   providers: [BillService],

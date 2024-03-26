@@ -27,6 +27,7 @@ import {
   CablePurchase,
   EventCategory,
   AppProfit,
+  BettingPurchase,
 } from './index';
 
 @Entity({ name: 'user' })
@@ -111,14 +112,6 @@ export class User extends Base {
   @ApiProperty({ enum: Gender, nullable: true })
   @Column({ enum: Gender, nullable: true })
   gender: Gender;
-
-  @ApiProperty({ nullable: true })
-  @Column({ type: 'varchar', length: 255, nullable: true })
-  flutterwaveUserKey: string;
-
-  @ApiProperty({ nullable: true })
-  @Column({ type: 'varchar', length: 255, nullable: true })
-  flutterwaveNarration: string;
 
   @ApiProperty({ nullable: true })
   @Column({ type: 'date', nullable: true })
@@ -207,6 +200,12 @@ export class User extends Base {
     cascade: true,
   })
   airtimePurchases: AirtimePurchase[];
+
+  @ApiProperty({ type: () => [BettingPurchase] })
+  @OneToMany(() => BettingPurchase, ({ user }) => user, {
+    cascade: true,
+  })
+  bettingPurchases: BettingPurchase[];
 
   @ApiProperty({ type: () => [DataPurchase] })
   @OneToMany(() => DataPurchase, ({ user }) => user, {

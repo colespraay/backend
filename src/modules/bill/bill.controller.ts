@@ -1,16 +1,26 @@
-import { Body, Controller, Param, Get, Post, UseGuards } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Param,
+  Get,
+  Post,
+  UseGuards,
+  Query,
+  ParseUUIDPipe,
+} from '@nestjs/common';
 import {
   ApiBearerAuth,
   ApiConsumes,
   ApiOperation,
   ApiParam,
   ApiProduces,
+  ApiQuery,
   ApiResponse,
   ApiTags,
 } from '@nestjs/swagger';
 import { User } from '@entities/index';
 import { CurrentUser, RolesGuard, SetRequestTimeout } from '@schematics/index';
-import { AirtimeProvider, CableProvider, DecodedTokenKey } from '@utils/index';
+import { CableProvider, DecodedTokenKey } from '@utils/index';
 import { AirtimePurchaseService } from '@modules/airtime-purchase/airtime-purchase.service';
 import {
   AirtimePurchaseResponseDTO,
@@ -33,12 +43,18 @@ import {
   CablePurchaseResponseDTO,
   CreateCableProviderDTO,
 } from '@modules/cable-purchase/dto/cable-purchase.dto';
+import { BillService } from './bill.service';
 import {
   BillProviderDTO,
   FlutterwaveCableBillingOptionResponseDTO,
-  FlutterwaveDataPlanDTO,
+  PagaDataPlanDTO,
+  PagaMerchantPlanResponseDTO,
 } from './dto/bill.dto';
-import { BillService } from './bill.service';
+import { BettingPurchaseService } from '@modules/betting-purchase/betting-purchase.service';
+import {
+  CreateBettingPurchaseDTO,
+  BettingPurchaseResponseDTO,
+} from '@modules/betting-purchase/dto/betting-purchase.dto';
 
 @ApiBearerAuth('JWT')
 @UseGuards(RolesGuard)
@@ -51,7 +67,21 @@ export class BillController {
     private readonly dataPurchaseSrv: DataPurchaseService,
     private readonly airtimePurchaseSrv: AirtimePurchaseService,
     private readonly cablePurchaseSrv: CablePurchaseService,
+    private readonly bettingPurchaseSrv: BettingPurchaseService,
   ) {}
+
+  @ApiOperation({ description: 'Fund betting wallet' })
+  @ApiProduces('json')
+  @ApiConsumes('application/json')
+  @ApiResponse({ type: BettingPurchaseResponseDTO })
+  @SetRequestTimeout(1000000)
+  @Post('/fund-betting-wallet')
+  async fundBettingWallet(
+    @Body() payload: CreateBettingPurchaseDTO,
+    @CurrentUser(DecodedTokenKey.USER) user: User,
+  ): Promise<BettingPurchaseResponseDTO> {
+    return await this.bettingPurchaseSrv.fundBettingWallet(payload, user);
+  }
 
   @ApiOperation({ description: 'Pay for cable plans' })
   @ApiProduces('json')
@@ -67,7 +97,7 @@ export class BillController {
   }
 
   @ApiParam({ enum: CableProvider, name: 'provider' })
-  @ApiOperation({ description: 'View plans for cable providers' })
+  @ApiOperation({ description: 'View plans for cable providers', deprecated: true })
   @ApiProduces('json')
   @ApiConsumes('application/json')
   @ApiResponse({ type: FlutterwaveCableBillingOptionResponseDTO })
@@ -137,16 +167,47 @@ export class BillController {
     return await this.dataPurchaseSrv.createDataPurchase(payload, user);
   }
 
-  @ApiParam({ enum: AirtimeProvider, name: 'provider' })
   @ApiOperation({ description: 'Find data plans for a specific provider' })
   @ApiProduces('json')
   @ApiConsumes('application/json')
-  @ApiResponse({ type: FlutterwaveDataPlanDTO })
-  @Get('/data-purchase/find-plans/:provider')
+  @ApiResponse({ type: PagaDataPlanDTO })
+  @Get('/data-purchase/find-plans/:providerId')
   async findDataPlansForProvider(
-    @Param('provider') provider: AirtimeProvider,
-  ): Promise<FlutterwaveDataPlanDTO> {
-    return await this.billSrv.findDataPlansForProvider(provider);
+    @Param('providerId', ParseUUIDPipe) providerId: string,
+  ): Promise<PagaDataPlanDTO> {
+    return await this.billSrv.findDataPlansForProvider(providerId);
+  }
+
+  @ApiOperation({
+    summary:
+      'Find plans for a specific merchant. I.E plans for cable-TV provider',
+    description:
+      'Find plans for a specific merchant. I.E plans for cable-TV provider',
+  })
+  @ApiProduces('json')
+  @ApiConsumes('application/json')
+  @ApiResponse({ type: PagaMerchantPlanResponseDTO })
+  @Get('/merchants/find-plans/:merchantPublicId')
+  async findMerchantPlans(
+    @Param('merchantPublicId', ParseUUIDPipe) merchantPublicId: string,
+  ): Promise<PagaMerchantPlanResponseDTO> {
+    return await this.billSrv.findMerchantPlans(merchantPublicId);
+  }
+
+  @ApiOperation({
+    summary:
+      'Find plans for a specific merchant. I.E plans for betting provider',
+    description:
+      'Find plans for a specific merchant. I.E plans for betting provider',
+  })
+  @ApiProduces('json')
+  @ApiConsumes('application/json')
+  @ApiResponse({ type: PagaMerchantPlanResponseDTO })
+  @Get('/merchants/betting/find-plans/:merchantPublicId')
+  async findBettingMerchantPlans(
+    @Param('merchantPublicId', ParseUUIDPipe) merchantPublicId: string,
+  ): Promise<PagaMerchantPlanResponseDTO> { 
+    return await this.billSrv.findBettingMerchantPlans(merchantPublicId);
   }
 
   @ApiOperation({ description: 'Find cable providers' })
@@ -158,13 +219,25 @@ export class BillController {
     return await this.billSrv.findCableProviders();
   }
 
+  @ApiOperation({ description: 'Find bet providers' })
+  @ApiProduces('json')
+  @ApiConsumes('application/json')
+  @ApiResponse({ type: BillProviderDTO })
+  @Get('/betting-providers')
+  async findBettingProviders(): Promise<BillProviderDTO> {
+    return await this.billSrv.findBettingProviders();
+  }
+
+  @ApiQuery({ name: 'searchTerm', required: false })
   @ApiOperation({ description: 'Find airtime providers' })
   @ApiProduces('json')
   @ApiConsumes('application/json')
   @ApiResponse({ type: BillProviderDTO })
   @Get('/airtime-providers')
-  async findAirtimeProviders(): Promise<BillProviderDTO> {
-    return await this.billSrv.findAirtimeProviders();
+  async findAirtimeProviders(
+    @Query('searchTerm') searchTerm?: string,
+  ): Promise<BillProviderDTO> {
+    return await this.billSrv.findAirtimeProviders(searchTerm);
   }
 
   @ApiOperation({ description: 'Find electricity providers' })

@@ -1,5 +1,4 @@
 import { Body, Post, Controller, UseGuards } from '@nestjs/common';
-import { Cron, CronExpression } from '@nestjs/schedule';
 import {
   ApiBearerAuth,
   ApiTags,
@@ -34,10 +33,5 @@ export class WithdrawalController {
     @CurrentUser(DecodedTokenKey.USER_ID) userId: string,
   ): Promise<WithdrawalResponseDTO> {
     return await this.withdrawalSrv.makeWithdrawal(payload, userId);
-  }
-
-  @Cron(CronExpression.EVERY_5_MINUTES)
-  async confirmWithdrawals(): Promise<void> {
-    await this.withdrawalSrv.confirmWithdrawals();
   }
 }

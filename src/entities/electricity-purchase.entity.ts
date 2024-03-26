@@ -1,6 +1,5 @@
 import { ApiProperty } from '@nestjs/swagger';
 import { Column, Entity, JoinColumn, ManyToOne, BeforeInsert } from 'typeorm';
-import { ElectricityProvider, ElectricityPlan } from '@utils/index';
 import { Base, TransactionRecord, User, uuidV4 } from './index';
 
 @Entity({ name: 'electricity_purchase' })
@@ -47,13 +46,13 @@ export class ElectricityPurchase extends Base {
   @Column({ type: 'float' })
   amount: number;
 
-  @ApiProperty({ enum: ElectricityProvider })
-  @Column({ enum: ElectricityProvider })
-  provider: ElectricityProvider;
+  @ApiProperty()
+  @Column({ type: 'varchar', length: 255 })
+  providerId: string;
 
-  @ApiProperty({ enum: ElectricityPlan })
-  @Column({ enum: ElectricityProvider, default: ElectricityPlan.PRE_PAID })
-  plan: ElectricityPlan;
+  @ApiProperty()
+  @Column({ type: 'varchar', length: 255 })
+  plan: string;
 
   @BeforeInsert()
   beforeInsertHandler(): void {

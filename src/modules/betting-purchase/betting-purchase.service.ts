@@ -1,71 +1,76 @@
-import { BadGatewayException, ConflictException, HttpStatus, Injectable } from '@nestjs/common';
-import { CablePurchase, User } from '@entities/index';
-import { GenericService } from '@schematics/index';
 import {
-  checkForRequiredFields,
+  BadGatewayException,
+  ConflictException,
+  HttpStatus,
+  Injectable,
+} from '@nestjs/common';
+import {
   TransactionType,
+  checkForRequiredFields,
   generateUniqueCode,
 } from '@utils/index';
-import { TransactionService } from '@modules/transaction/transaction.service';
-import { WalletService } from '@modules/wallet/wallet.service';
+import { BettingPurchase, User } from '@entities/index';
+import { GenericService } from '@schematics/index';
 import { BillService } from '@modules/bill/bill.service';
 import { UserService } from '@modules/user/user.service';
+import { WalletService } from '@modules/wallet/wallet.service';
+import { TransactionService } from '@modules/transaction/transaction.service';
 import {
-  CablePurchaseResponseDTO,
-  CreateCableProviderDTO,
-} from './dto/cable-purchase.dto';
+  BettingPurchaseResponseDTO,
+  CreateBettingPurchaseDTO,
+} from './dto/betting-purchase.dto';
 
 @Injectable()
-export class CablePurchaseService extends GenericService(CablePurchase) {
+export class BettingPurchaseService extends GenericService(BettingPurchase) {
   constructor(
-    private readonly userSrv: UserService,
     private readonly billSrv: BillService,
+    private readonly userSrv: UserService,
     private readonly walletSrv: WalletService,
     private readonly transactionSrv: TransactionService,
   ) {
     super();
   }
 
-  async createCablePurchase(
-    payload: CreateCableProviderDTO,
+  async fundBettingWallet(
+    payload: CreateBettingPurchaseDTO,
     user: User,
-  ): Promise<CablePurchaseResponseDTO> {
+  ): Promise<BettingPurchaseResponseDTO> {
     try {
       checkForRequiredFields(
         [
           'amount',
-          'smartCardNumber',
           'transactionPin',
           'providerId',
-          'cablePlanId',
+          'merchantPlan',
+          'bettingWalletId',
         ],
         payload,
       );
       await this.userSrv.verifyTransactionPin(user.id, payload.transactionPin);
       const plan = await this.billSrv.findMerchantPlan(
         payload.providerId,
-        payload.cablePlanId,
+        payload.merchantPlan,
       );
       await this.userSrv.checkAccountBalance(payload.amount, user.id);
       const { availableBalance } = await this.walletSrv.getAccountBalance();
       if (availableBalance < Number(plan.price)) {
         throw new ConflictException('Insufficient balance');
       }
-      const narration = `Cable plan purchase (₦${plan.price}) for ${payload.smartCardNumber}`;
+      const narration = `Betting wallet funded with (₦${plan.price})`;
       const transactionDate = new Date().toLocaleString();
-      const reference = `Spraay-cable-${generateUniqueCode(10)}`;
-      const cablePurchaseResponse = await this.billSrv.makeCablePlanPurchase(
+      const reference = `Spraay-betting-${generateUniqueCode(10)}`;
+      const bettingPurchaseResponse = await this.billSrv.fundBettingWallet(
         {
-          decoderNumber: payload.smartCardNumber,
-          merchantServiceCode: payload.cablePlanId,
+          amount: payload.amount,
+          bettingWalletId: payload.bettingWalletId,
+          merchantPlan: payload.merchantPlan,
           providerId: payload.providerId,
         },
         reference,
-        plan,
       );
-      this.logger.log({ cablePurchaseResponse, plan });
-      if (!cablePurchaseResponse?.success) {
-        throw new BadGatewayException('Cable plan purchase failed');
+      this.logger.log({ bettingPurchaseResponse });
+      if (!bettingPurchaseResponse?.success) {
+        throw new BadGatewayException('Wallet funding failed');
       }
       const newTransaction = await this.transactionSrv.createTransaction({
         narration,
@@ -73,24 +78,23 @@ export class CablePurchaseService extends GenericService(CablePurchase) {
         transactionDate,
         amount: plan.price,
         type: TransactionType.DEBIT,
-        reference: cablePurchaseResponse.data.reference,
+        reference: bettingPurchaseResponse.data.reference,
         currentBalanceBeforeTransaction: user.walletBalance,
       });
-      const createdCablePlanPurchase = await this.create<
-        Partial<CablePurchase>
+      const createdBettingPurchase = await this.create<
+        Partial<BettingPurchase>
       >({
         amount: plan.price,
         userId: user.id,
         providerId: payload.providerId,
-        smartCardNumber: payload.smartCardNumber,
-        cablePlanId: plan.shortCode,
+        bettingWalletId: payload.bettingWalletId,
         transactionId: newTransaction.data.id,
       });
       return {
         success: true,
         code: HttpStatus.CREATED,
-        data: createdCablePlanPurchase,
-        message: cablePurchaseResponse.message,
+        data: createdBettingPurchase,
+        message: bettingPurchaseResponse.message,
       };
     } catch (ex) {
       this.logger.error(ex);

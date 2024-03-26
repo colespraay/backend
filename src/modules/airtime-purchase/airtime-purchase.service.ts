@@ -1,11 +1,9 @@
-import { BadRequestException, HttpException, HttpStatus, Injectable } from '@nestjs/common';
+import { ConflictException, HttpException, HttpStatus, Injectable } from '@nestjs/common';
 import { EventEmitter2 } from '@nestjs/event-emitter';
 import { AxiosError } from 'axios';
 import {
-  AirtimeProvider,
   TransactionType,
   checkForRequiredFields,
-  compareEnumValueFields,
   formatPhoneNumberWithPrefix,
   generateUniqueCode,
 } from '@utils/index';
@@ -14,6 +12,7 @@ import { AirtimePurchase, User } from '@entities/index';
 import { GenericService } from '@schematics/index';
 import { UserService } from '@modules/user/user.service';
 import { BillService } from '@modules/bill/bill.service';
+import { WalletService } from '@modules/wallet/wallet.service';
 import {
   CreateAirtimePurchaseDTO,
   AirtimePurchaseResponseDTO,
@@ -24,6 +23,7 @@ export class AirtimePurchaseService extends GenericService(AirtimePurchase) {
   constructor(
     private readonly userSrv: UserService,
     private readonly billSrv: BillService,
+    private readonly walletSrv: WalletService,
     private readonly transactionSrv: TransactionService,
     private readonly eventEmitterSrv: EventEmitter2,
   ) {
@@ -36,16 +36,11 @@ export class AirtimePurchaseService extends GenericService(AirtimePurchase) {
   ): Promise<AirtimePurchaseResponseDTO> {
     try {
       checkForRequiredFields(
-        ['userId', 'provider', 'amount', 'phoneNumber', 'transactionPin'],
+        ['userId', 'providerId', 'amount', 'phoneNumber', 'transactionPin'],
         {
           ...payload,
           userId: user.id,
         },
-      );
-      compareEnumValueFields(
-        payload.provider,
-        Object.values(AirtimeProvider),
-        'provider',
       );
       payload.phoneNumber = formatPhoneNumberWithPrefix(payload.phoneNumber);
       await this.userSrv.verifyTransactionPin(
@@ -53,6 +48,10 @@ export class AirtimePurchaseService extends GenericService(AirtimePurchase) {
         payload.transactionPin,
       );
       await this.userSrv.checkAccountBalance(payload.amount, user.id);
+      const { availableBalance } = await this.walletSrv.getAccountBalance();
+      if (availableBalance < payload.amount) {
+        throw new ConflictException('Insufficient balance');
+      }
       const narration = `Airtime purchase (₦${payload.amount}) for ${payload.phoneNumber}`;
       const transactionDate = new Date().toLocaleString();
       const reference = `Spraay-airtime-${generateUniqueCode(10)}`;

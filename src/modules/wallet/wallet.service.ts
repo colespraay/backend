@@ -8,13 +8,15 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { AxiosError } from 'axios';
+import { Request } from 'express';
 import {
   PaymentStatus,
   TransactionType,
   calculateAppCut,
   checkForRequiredFields,
   compareEnumValueFields,
-  formatTransactionKey,
+  formatPagaDate,
+  generatePagaHash,
   generateUniqueCode,
   httpGet,
   httpPost,
@@ -26,12 +28,10 @@ import { BankService } from '@modules/bank/bank.service';
 import { WithdrawalService } from '@modules/withdrawal/withdrawal.service';
 import { TransactionService } from '@modules/transaction/transaction.service';
 import { UserAccountService } from '@modules/user-account/user-account.service';
-import { CreateTransactionDTO } from '@modules/transaction/dto/transaction.dto';
 import {
   BankAccountStatementDTO,
   BankListDTO,
   BankListPartialDTO,
-  CreateFlutterwaveResponseDTO,
   FindStatementOfAccountDTO,
   FindTransferChargeDTO,
   InterbankTransferChargeDTO,
@@ -67,64 +67,119 @@ export class WalletService {
     private readonly transactionSrv: TransactionService,
   ) {}
 
-  // async onModuleInit(): Promise<void> {
-  //   const flutterwaveUserKey = 'Spraay-GODSWILL-CHIORI-e4ea3007-8';
-  //   const user = await this.userSrv.findOne({ flutterwaveUserKey });
-  //   this.logger.log({ user });
-  //   // const reference = '100004231228230108110041167300';
-  //   // await this.transactionSrv.delete({ reference });
-  // }
+  async getAccountBalance(): Promise<{
+    totalBalance: number;
+    availableBalance: number;
+    message: string;
+  }> {
+    try {
+      const url = `${process.env.PAGA_BASE_URL}/accountBalance`;
+      const referenceNumber = generateUniqueCode(13);
+      const body = { referenceNumber, locale: 'EN' };
+      const hashKey = ['referenceNumber'];
+      const { hash, password, username } = generatePagaHash(hashKey, body);
+      const headers = {
+        hash,
+        principal: username,
+        credentials: password,
+        'Content-Type': 'application/json',
+      };
+      const response = await httpPost<any, any>(url, body, headers);
+      if (response?.totalBalance) {
+        return {
+          message: response.message,
+          availableBalance: Number(response.availableBalance),
+          totalBalance: Number(response.totalBalance),
+        };
+      }
+      throw new BadGatewayException('Could not find balance');
+    } catch (ex) {
+      if (ex instanceof AxiosError) {
+        const errorObject = ex.response.data;
+        const message =
+          typeof errorObject === 'string'
+            ? errorObject
+            : errorObject.statusMessage;
+        this.logger.error(message);
+        throw new HttpException(
+          message,
+          Number(errorObject.statusCode) ?? HttpStatus.BAD_GATEWAY,
+        );
+      } else {
+        this.logger.error(ex);
+        throw ex;
+      }
+    }
+  }
 
   @OnEvent('create-wallet', { async: true })
-  async createWallet(userId: string): Promise<void> {
+  async createWallet(payload: { userId: string; req: Request }): Promise<void> {
     try {
-      checkForRequiredFields(['userId'], { userId });
-      validateUUIDField(userId, 'userId');
-      const url = 'https://api.flutterwave.com/v3/virtual-account-numbers';
-      const user = await this.userSrv.findUserById(userId);
+      checkForRequiredFields(['userId', 'req'], payload);
+      validateUUIDField(payload.userId, 'userId');
+      const user = await this.userSrv.findUserById(payload.userId);
       const {
-        data: { firstName, lastName, bvn, phoneNumber, email },
+        data: { firstName, lastName, bvn, phoneNumber },
       } = user;
-      if (firstName && lastName && email && bvn && phoneNumber) {
-        if (user?.data && !user.data.virtualAccountNumber) {
-          const fullNameNarration = `${user.data.firstName} ${user.data.lastName}`;
-          const userRef = formatTransactionKey(
-            `Spraay-${fullNameNarration}-${generateUniqueCode(10)}`,
-          );
-          const payload = {
-            bvn: user.data.bvn,
-            email: user.data.email,
-            is_permanent: true,
-            tx_ref: userRef,
-            phonenumber: user.data.phoneNumber,
-            firstname: user.data.firstName,
-            lastname: user.data.lastName,
-            narration: fullNameNarration,
+      if (firstName && lastName && bvn && phoneNumber) {
+        const url = `${process.env.PAGA_COLLECT_URL}/registerPersistentPaymentAccount`;
+        const hashKeys = [
+          'referenceNumber',
+          'accountReference',
+          'creditBankId',
+          'creditBankAccountNumber',
+          'callbackUrl',
+        ];
+        const callbackUrl =
+          payload.req.protocol && payload.req.get('host')
+            ? `${payload.req.protocol}://${payload.req.get(
+                'host',
+              )}/wallet/webhook`
+            : String(process.env.PAGA_WEBHOOK);
+        const referenceNumber = generateUniqueCode(13);
+        const requestBody = {
+          referenceNumber,
+          phoneNumber,
+          firstName,
+          lastName,
+          accountName: `${firstName} ${lastName}`,
+          accountReference: referenceNumber,
+          callbackUrl,
+        };
+        const { hash } = generatePagaHash(hashKeys, requestBody);
+        const headers = {
+          hash,
+          Authorization: `Basic ${process.env.PAGA_AUTH_TOKEN}`,
+          'Content-Type': 'application/json',
+        };
+        const response = await httpPost<any, any>(url, requestBody, headers);
+        if (response?.statusMessage === 'success') {
+          const updatedUser: Partial<User> = {
+            bankName: 'PAGA',
+            virtualAccountName: `${process.env.APP_COMPANY_NAME} - ${requestBody.accountName}`,
+            virtualAccountNumber: response.accountNumber,
           };
-          const flutterwaveResponse = await httpPost<
-            CreateFlutterwaveResponseDTO,
-            any
-          >(url, payload, {
-            Authorization: `Bearer ${String(
-              process.env.FLUTTERWAVE_SECRET_KEY,
-            )}`,
-          }); // "walletBalance": 9810,
-          this.logger.debug({ virtualAccount: flutterwaveResponse });
-          if (flutterwaveResponse?.status) {
-            const updatedUser: Partial<User> = {
-              bankName: flutterwaveResponse.data.bank_name,
-              virtualAccountName: `${fullNameNarration} FLW`,
-              virtualAccountNumber: flutterwaveResponse.data.account_number,
-              flutterwaveNarration: fullNameNarration,
-              flutterwaveUserKey: userRef,
-            };
-            await this.userSrv.getRepo().update({ id: userId }, updatedUser);
-          }
+          await this.userSrv
+            .getRepo()
+            .update({ id: payload.userId }, updatedUser);
         }
       }
     } catch (ex) {
-      this.logger.error(ex);
-      throw ex;
+      if (ex instanceof AxiosError) {
+        const errorObject = ex.response.data;
+        const message =
+          typeof errorObject === 'string'
+            ? errorObject
+            : errorObject.statusMessage;
+        this.logger.error(message);
+        throw new HttpException(
+          message,
+          Number(errorObject.statusCode) ?? HttpStatus.BAD_GATEWAY,
+        );
+      } else {
+        this.logger.error(ex);
+        throw ex;
+      }
     }
   }
 
@@ -292,33 +347,54 @@ export class WalletService {
         userBankCode,
         userAccountNumber,
       });
-      const url = 'https://api.flutterwave.com/v3/accounts/resolve';
-      const payload = {
-        account_number: userAccountNumber,
-        account_bank: userBankCode,
+      const url = `${process.env.PAGA_BASE_URL}/validateDepositToBank`;
+      const hashKeys = [
+        'referenceNumber',
+        'amount',
+        'destinationBankUUID',
+        'destinationBankAccountNumber',
+      ];
+      const amount = '50';
+      const referenceNumber = '23453498574985830';
+      const requestBody = {
+        referenceNumber,
+        amount,
+        currency: 'NGN',
+        destinationBankUUID: userBankCode,
+        destinationBankAccountNumber: userAccountNumber,
       };
+      const { hash, password, username } = generatePagaHash(
+        hashKeys,
+        requestBody,
+      );
       const headers = {
-        Authorization: `Bearer ${String(process.env.FLUTTERWAVE_SECRET_KEY)}`,
+        hash,
+        principal: username,
+        credentials: password,
+        'Content-Type': 'application/json',
       };
-      const resp = await httpPost<any, any>(url, payload, headers);
-      if (resp?.status === 'success') {
+      const response = await httpPost<any, any>(url, requestBody, headers);
+      if (response?.destinationAccountHolderNameAtBank) {
+        const bank = await this.bankSrv.findOne({ bankCode: userBankCode });
         return {
-          accountName: resp.data.account_name,
-          accountNumber: resp.data.account_number,
-          bankCode: userBankCode,
+          accountName: response.destinationAccountHolderNameAtBank,
+          accountNumber: userAccountNumber,
+          bankCode: bank.bankCode,
           currency: 'NGN',
         };
       }
+      throw new NotFoundException('Could not verify account');
     } catch (ex) {
       if (ex instanceof AxiosError) {
-        const errorObject = ex.response;
-        console.log({ errorObject, code: errorObject.status });
-        const message = errorObject.data.message ?? 'Request failed';
-        const code = errorObject.status ?? HttpStatus.BAD_GATEWAY;
-        throw new HttpException(message, code);
+        const errorObject = ex.response.data;
+        const message =
+          typeof errorObject === 'string' ? errorObject : errorObject.error;
+        this.logger.error(message);
+        throw new HttpException(message, ex.response.status);
+      } else {
+        this.logger.error(ex);
+        throw ex;
       }
-      this.logger.error(ex);
-      throw ex;
     }
   }
 
@@ -583,131 +659,56 @@ export class WalletService {
     }
   }
 
+  // ===== Paga response
+  // {
+  //   statusCode: '0',
+  //   statusMessage: 'success',
+  //   transactionReference: 'DFB-U_20240325121426747_551681845_H3ZDQ_z456b',
+  //   fundingPaymentReference: 'S22607128',
+  //   accountNumber: '3206420520',
+  //   accountName: 'Abel Ani',
+  //   financialIdentificationNumber: null,
+  //   amount: '250.00',
+  //   clearingFeeAmount: '1.88',
+  //   payerDetails: {
+  //     paymentReferenceNumber: '000003240325121230002969709827 - S22607128',
+  //     narration: 'Appfund wallet To Paga Spraay Software Limited  Abel Ani',
+  //     paymentMethod: 'BANK_TRANSFER',
+  //     payerName: 'ANI ABEL CHIDIEBERE',
+  //     payerBankName: 'FCMB',
+  //     payerBankAccountNumber: '6881408019'
+  //   },
+  //   hash: 'a277843f58d1e3fe27f91045ae6a8a3fc889c596aa95ed7e6eeed407393b830fe66ab3bf86be50d2883fa463e8df120e3003efe34815a1211d20c419de1377ea'
+  // }
   async webhookHandler(payload: any): Promise<void> {
     try {
       this.logger.debug({ webhookPayload: payload });
-      if (payload.event === 'charge.completed') {
-        // User funds their wallet
-        const data = payload.data;
-        // Reconfirm Charge
-        const moneyChargeRecord = await this.fetchPaymentRecord(
-          Number(data.id),
-        );
-        if (moneyChargeRecord?.data.status === 'successful') {
-          if (data?.tx_ref) {
-            const userRecord = await this.userSrv.getRepo().findOne({
-              where: { flutterwaveUserKey: data.tx_ref },
-              select: ['id', 'walletBalance'],
-            });
-            if (userRecord?.id) {
-              const currentBalanceBeforeTransaction =
-                await this.userSrv.getCurrentWalletBalance(userRecord.id);
-              const reference = String(data.flw_ref);
-              const narration = `${data.narration} - Wallet Funded`;
-              const amount = parseFloat(moneyChargeRecord.data.amount_settled);
-              const newTransaction =
-                await this.transactionSrv.createTransaction({
-                  amount,
-                  reference,
-                  narration,
-                  type: TransactionType.CREDIT,
-                  transactionStatus: PaymentStatus.SUCCESSFUL,
-                  userId: userRecord.id,
-                  transactionDate: data.created_at,
-                  currentBalanceBeforeTransaction,
-                });
-              this.logger.debug({ newTransaction, narration, reference });
-            }
-          }
-        }
-      }
-      if (payload.event === 'transfer.completed') {
-        const data = payload.data;
-        const reference = String(data.reference);
-        const userAccount = await this.userAccountSrv.getRepo().findOne({
-          where: { accountNumber: String(data.account_number) },
+      if (payload.statusCode === '0' && payload.statusMessage === 'success') {
+        const user = await this.userSrv.getRepo().findOne({
+          where: { virtualAccountNumber: payload.accountNumber },
         });
-        const currentBalanceBeforeTransaction =
-          await this.userSrv.getCurrentWalletBalance(userAccount.userId);
-        if (data.status === 'SUCCESSFUL') {
-          // Reconfirm transfer
-          const transferRecord = await this.fetchTransferRecord(
-            Number(data.id),
-          );
-          if (transferRecord.data.status === 'SUCCESSFUL') {
-            const amountSettled = Number(transferRecord.data.amount);
-            const amount = calculateAppCut(
-              this.percentageAppFee,
-              amountSettled,
-            );
-            const appCut = amountSettled - amount;
-            const withdrawalRecord = await this.withdrawalSrv.findOne({
-              reference,
-            });
-            // const amount = Number(transferRecord.data.amount) - Number(transferRecord.data.fee);
-            if (userAccount?.userId) {
-              const userId = userAccount.userId;
-              const newTransaction =
-                await this.transactionSrv.createTransaction({
-                  userId,
-                  amount: withdrawalRecord?.amount ?? amountSettled,
-                  reference,
-                  narration: data.narration,
-                  type: TransactionType.DEBIT,
-                  transactionStatus: PaymentStatus.SUCCESSFUL,
-                  transactionDate: data.created_at,
-                  currentBalanceBeforeTransaction,
-                });
-              this.logger.debug({
-                event: 'transfer.completed',
-                currentBalanceBeforeTransaction,
-                newTransaction,
-              });
-              if (withdrawalRecord?.id) {
-                await this.withdrawalSrv.getRepo().update(
-                  { id: withdrawalRecord.id },
-                  {
-                    paymentStatus: PaymentStatus.SUCCESSFUL,
-                    transactionId: newTransaction.data.id,
-                  },
-                );
-                // Log amount app earns from the transaction
-                this.eventEmitterSrv.emit('app-profit.log', {
-                  amount: appCut,
-                  transactionId: newTransaction.data.id,
-                });
-              }
-            }
-          }
-        }
-        if (data.status === 'FAILED') {
-          const withdrawalRecord = await this.withdrawalSrv.findOne({
+        if (user?.id) {
+          const currentBalanceBeforeTransaction =
+            await this.userSrv.getCurrentWalletBalance(user.id);
+          const reference = String(payload.payerDetails.paymentReferenceNumber);
+          const narration =
+            payload.payerDetails?.narration ??
+            `${payload.fundingPaymentReference} - Wallet Funded`;
+          const pagaCharge = parseFloat(payload.clearingFeeAmount);
+          const amount = parseFloat(payload.amount) - pagaCharge;
+          const transactionDate = new Date().toLocaleString();
+          const newTransaction = await this.transactionSrv.createTransaction({
+            amount,
             reference,
+            narration,
+            type: TransactionType.CREDIT,
+            transactionStatus: PaymentStatus.SUCCESSFUL,
+            userId: user.id,
+            transactionDate,
+            jsonResponse: payload,
+            currentBalanceBeforeTransaction,
           });
-          if (withdrawalRecord?.id) {
-            // const newTransaction = await this.transactionSrv.createTransaction({
-            //   reference,
-            //   userId: userAccount.userId,
-            //   narration: data.narration,
-            //   transactionStatus: PaymentStatus.FAILED,
-            //   type: TransactionType.DEBIT,
-            //   transactionDate: data.created_at,
-            //   currentBalanceBeforeTransaction,
-            //   amount: parseFloat(data.amount),
-            // });
-            this.logger.debug({
-              event: 'transfer.completed',
-              currentBalanceBeforeTransaction,
-              status: 'Failed',
-            });
-            await this.withdrawalSrv.getRepo().update(
-              { id: withdrawalRecord.id },
-              {
-                paymentStatus: PaymentStatus.FAILED,
-                // transactionId: newTransaction.data.id,
-              },
-            );
-          }
+          this.logger.debug({ newTransaction, narration, reference });
         }
       }
     } catch (ex) {
@@ -718,109 +719,43 @@ export class WalletService {
 
   async checkTransactions(): Promise<void> {
     try {
+      const url = `${process.env.PAGA_BASE_URL}/transactionHistory`;
       // Get the current timestamp
       const currentTime = new Date();
 
-      // Calculate the timestamp for 12 hours ago
+      // Calculate the timestamp for 1 day ago
       const fromDate = new Date(currentTime);
-      // fromDate.setDate(currentTime.getDate() - 2);
-      fromDate.setHours(currentTime.getHours() - 12);
-
-      // Format the dates as YYYY-MM-DD
-      const formattedFromDate = fromDate.toISOString().split('T')[0];
-      const formattedCurrentDate = currentTime.toISOString().split('T')[0];
-
-      const url = `https://api.flutterwave.com/v3/transactions?from=${formattedFromDate}&to=${formattedCurrentDate}&status=successful`;
-      const list = await httpGet<any>(url, {
-        Authorization: `Bearer ${String(process.env.FLUTTERWAVE_SECRET_KEY)}`,
-      });
-      for (const transaction of list.data) {
-        if (transaction.status === 'successful') {
-          const user = await this.userSrv.getRepo().findOne({
-            where: { flutterwaveUserKey: transaction.tx_ref },
-            select: ['id', 'flutterwaveUserKey', 'walletBalance'],
-          });
-          if (user?.id) {
-            const userId = user.id;
-            const amount = parseFloat(transaction.amount_settled);
-            const reference = String(transaction.flw_ref);
-            const narration = `${transaction.narration} - Wallet Funded`;
-            const existingTransaction = await this.transactionSrv
-              .getRepo()
-              .findOne({
-                where: { userId, reference },
-                select: [
-                  'id',
-                  'type',
-                  'amount',
-                  'narration',
-                  'reference',
-                  'createdTime',
-                  'createdDate',
-                  'transactionDate',
-                  'currentBalanceBeforeTransaction',
-                ],
-              });
-            if (!existingTransaction?.id) {
-              const currentBalanceBeforeTransaction =
-                await this.userSrv.getCurrentWalletBalance(user.id);
-              this.logger.debug({ amount, currentBalanceBeforeTransaction });
-              const newTransactionPayload: CreateTransactionDTO = {
-                userId,
-                amount,
-                reference,
-                narration,
-                type: TransactionType.CREDIT,
-                currentBalanceBeforeTransaction,
-                transactionDate: transaction.created_at,
-                transactionStatus: PaymentStatus.SUCCESSFUL,
-              };
-              this.logger.debug({ newTransactionPayload });
-              const newTransaction =
-                await this.transactionSrv.createTransaction(
-                  newTransactionPayload,
-                );
-              this.logger.debug({ newTransaction });
-              const newBalance = await this.userSrv.getCurrentWalletBalance(
-                user.id,
-              );
-              this.logger.debug({
-                newBalance,
-                narration,
-                reference,
-                newTransaction: newTransaction.data,
-              });
-            }
-          }
-        }
+      fromDate.setDate(currentTime.getDate() - 1);
+      const hashKey = ['referenceNumber'];
+      const requestBody = {
+        referenceNumber: '123456789',
+        startDateUTC: formatPagaDate(fromDate),
+        endDateUTC: formatPagaDate(currentTime),
+        locale: 'EN',
+      };
+      const { hash, password, username } = generatePagaHash(
+        hashKey,
+        requestBody,
+      );
+      const headers = {
+        hash,
+        principal: username,
+        credentials: password,
+        'Content-Type': 'application/json',
+      };
+      const response = await httpPost<any, any>(url, requestBody, headers);
+      if (response.responseCode === '0') {
+        console.log({ response: response.items });
       }
     } catch (ex) {
-      this.logger.error(ex);
-      throw ex;
-    }
-  }
-
-  private async fetchTransferRecord(id: number): Promise<any> {
-    try {
-      const url = `https://api.flutterwave.com/v3/transfers/${id}`;
-      return await httpGet(url, {
-        Authorization: `Bearer ${String(process.env.FLUTTERWAVE_SECRET_KEY)}`,
-      });
-    } catch (ex) {
-      this.logger.error(ex);
-      throw ex;
-    }
-  }
-
-  private async fetchPaymentRecord(id: number): Promise<any> {
-    try {
-      const url = `https://api.flutterwave.com/v3/transactions/${id}/verify`;
-      return await httpGet(url, {
-        Authorization: `Bearer ${String(process.env.FLUTTERWAVE_SECRET_KEY)}`,
-      });
-    } catch (ex) {
-      this.logger.error(ex);
-      throw ex;
+      if (ex instanceof AxiosError) {
+        const errorObject = ex.response?.data;
+        const message =
+          typeof errorObject === 'string' ? errorObject : errorObject.error;
+        this.logger.error(message);
+      } else {
+        this.logger.error(ex);
+      }
     }
   }
 

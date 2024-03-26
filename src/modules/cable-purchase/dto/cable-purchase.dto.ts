@@ -3,11 +3,11 @@ import { BaseResponseTypeDTO, CableProvider } from '@utils/index';
 import { CablePurchase } from '@entities/index';
 
 export class CreateCableProviderDTO {
-  @ApiProperty()
-  cablePlanId: number;
+  @ApiProperty({ example: 'GOHAN' })
+  cablePlanId: string;
 
   @ApiProperty({ enum: CableProvider })
-  provider: CableProvider;
+  providerId: CableProvider;
 
   @ApiProperty()
   amount: number;
