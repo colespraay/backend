@@ -963,14 +963,14 @@ export class UserService extends GenericService(User) {
         //     record.lastName = bvnValidationResponse.data.lastName;
         //   }
         //   if (!record.virtualAccountNumber) {
-        //     this.eventEmitterSrv.emit('create-wallet', {
-        //       userId: record.id,
-        //       req,
-        //     });
-        //   }
+            this.eventEmitterSrv.emit('create-wallet', {
+              userId: record.id,
+              req,
+            });
+          // }
         // }
         record.bvn = payload.bvn;
-      // }
+      }
       const updatedRecord: Partial<User> = {
         bvn: record.bvn,
         dob: record.dob,
