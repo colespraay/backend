@@ -153,7 +153,7 @@ export class WalletService {
           'Content-Type': 'application/json',
         };
         const response = await httpPost<any, any>(url, requestBody, headers);
-        console.log({ walletCreated: response });
+        console.log({ callbackUrl, walletCreated: response });
         if (response?.statusMessage === 'success') {
           const updatedUser: Partial<User> = {
             bankName: 'PAGA',
