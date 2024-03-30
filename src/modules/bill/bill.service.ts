@@ -551,7 +551,6 @@ export class BillService implements OnModuleInit {
         'Content-Type': 'application/json',
       };
       const response = await httpPost<any, any>(url, body, headers);
-      console.log({ response, body });
       if (response.responseCode !== 0) {
         throw new BadGatewayException(
           response.message ?? 'Airtime purchase failed',
