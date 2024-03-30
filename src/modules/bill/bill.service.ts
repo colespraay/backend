@@ -385,7 +385,7 @@ export class BillService implements OnModuleInit {
       const response = await httpPost<any, any>(url, body, headers);
       if (response?.responseCode !== 0) {
         throw new BadGatewayException(
-          `Failed to get data plans for provider: ${payload.operatorServiceId}`,
+          response.message ?? `Failed to get data plans for provider: ${payload.operatorServiceId}`,
         );
       }
       const transactionId = response.transactionId;
@@ -537,6 +537,7 @@ export class BillService implements OnModuleInit {
       const url = `${process.env.PAGA_BASE_URL}/airtimePurchase`;
       const body = {
         referenceNumber: reference,
+        amount: payload.amount,
         isDataBundle: false,
         mobileOperatorPublicId: payload.providerId,
         destinationPhoneNumber: payload.phoneNumber,
@@ -550,6 +551,7 @@ export class BillService implements OnModuleInit {
         'Content-Type': 'application/json',
       };
       const response = await httpPost<any, any>(url, body, headers);
+      console.log({ response, body });
       if (response.responseCode !== 0) {
         throw new BadGatewayException(
           response.message ?? 'Airtime purchase failed',
