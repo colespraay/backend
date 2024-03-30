@@ -67,6 +67,14 @@ export class WalletService {
     private readonly transactionSrv: TransactionService,
   ) {}
 
+  async onModuleInit() {
+    // const account = { bank: 'PAGA', aza: '3396313211' }
+    // const userId = 'e1aec132-a6aa-4d52-b3e0-6163078fb521';
+    // await this.createWallet({
+    //   userId,
+    // });
+  }
+
   async getAccountBalance(): Promise<{
     totalBalance: number;
     availableBalance: number;
@@ -113,7 +121,10 @@ export class WalletService {
   }
 
   @OnEvent('create-wallet', { async: true })
-  async createWallet(payload: { userId: string; req: Request }): Promise<void> {
+  async createWallet(payload: {
+    userId: string;
+    req: Request;
+  }): Promise<void> {
     try {
       checkForRequiredFields(['userId', 'req'], payload);
       validateUUIDField(payload.userId, 'userId');
