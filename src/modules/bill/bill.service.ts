@@ -485,7 +485,7 @@ export class BillService implements OnModuleInit {
       return {
         success: true,
         code: HttpStatus.OK,
-        message: response.message ?? 'Cable recharge successful',
+        message: response.message ?? 'Cable-tv recharge successful',
         data: {
           decoderNumber: payload.decoderNumber,
           reference: response.referenceNumber,
