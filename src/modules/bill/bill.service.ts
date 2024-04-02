@@ -385,7 +385,8 @@ export class BillService implements OnModuleInit {
       const response = await httpPost<any, any>(url, body, headers);
       if (response?.responseCode !== 0) {
         throw new BadGatewayException(
-          response.message ?? `Failed to get data plans for provider: ${payload.operatorServiceId}`,
+          response.message ??
+            `Failed to get data plans for provider: ${payload.operatorServiceId}`,
         );
       }
       const transactionId = response.transactionId;
@@ -762,11 +763,21 @@ export class BillService implements OnModuleInit {
       if (response.responseCode !== 0) {
         throw new BadGatewayException('Could not find merchant plans');
       }
+      const services = (response.services as any[]).map((service) => {
+        const shortCode =
+          service.shortCode === '' || !service.shortCode
+            ? service.code
+            : service.shortCode;
+        return {
+          ...service,
+          shortCode,
+        };
+      });
       return {
         success: true,
         code: HttpStatus.OK,
         message: 'Records found',
-        data: response.services ?? [],
+        data: services ?? [],
       };
     } catch (ex) {
       if (ex instanceof AxiosError) {
