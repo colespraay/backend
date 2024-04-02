@@ -189,7 +189,7 @@ export class BillService implements OnModuleInit {
       const url = `${process.env.PAGA_BASE_URL}/merchantPayment`;
       const body = {
         referenceNumber: reference,
-        amount: payload.amount,
+        amount: String(payload.amount),
         currency: 'NGN',
         merchantAccount: payload.providerId,
         merchantReferenceNumber: payload.bettingWalletId,
@@ -209,6 +209,7 @@ export class BillService implements OnModuleInit {
         'Content-Type': 'application/json',
       };
       const response = await httpPost<any, any>(url, body, headers);
+      console.log({ response });
       if (response.responseCode !== 0) {
         throw new BadGatewayException(
           response.message ?? `Failed to fund betting wallet`,
@@ -217,7 +218,7 @@ export class BillService implements OnModuleInit {
       return {
         success: true,
         code: HttpStatus.OK,
-        message: response.message ?? 'Funding betting wallet was successful',
+        message: response.message ?? 'Betting wallet funded successfully',
         data: {
           amount: payload.amount,
           flw_ref: response.transactionId,
@@ -429,7 +430,9 @@ export class BillService implements OnModuleInit {
   ): Promise<PagaMerchantPlanPartial> {
     try {
       const plans = await this.findMerchantPlans(providerId);
-      const plan = plans.data.find((item) => item.shortCode === planCode);
+      const plan = plans.data.find(
+        ({ name, shortCode }) => shortCode === planCode || name === planCode,
+      );
       if (!plan) {
         throw new NotFoundException('Could not find plan');
       }
