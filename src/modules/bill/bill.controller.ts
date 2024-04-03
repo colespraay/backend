@@ -97,7 +97,10 @@ export class BillController {
   }
 
   @ApiParam({ enum: CableProvider, name: 'provider' })
-  @ApiOperation({ description: 'View plans for cable providers', deprecated: true })
+  @ApiOperation({
+    description: 'View plans for cable providers',
+    deprecated: true,
+  })
   @ApiProduces('json')
   @ApiConsumes('application/json')
   @ApiResponse({ type: FlutterwaveCableBillingOptionResponseDTO })
@@ -195,6 +198,20 @@ export class BillController {
   }
 
   @ApiOperation({
+    summary: 'Find plans for a electricity merchants',
+    description: 'Find plans for a electricity merchants',
+  })
+  @ApiProduces('json')
+  @ApiConsumes('application/json')
+  @ApiResponse({ type: PagaMerchantPlanResponseDTO })
+  @Get('/merchants/electricity/find-plans/:merchantPublicId')
+  async findPlansForElectricityProvider(
+    @Param('merchantPublicId', ParseUUIDPipe) merchantPublicId: string,
+  ): Promise<PagaMerchantPlanResponseDTO> {
+    return await this.billSrv.findPlansForElectricityProvider(merchantPublicId);
+  }
+
+  @ApiOperation({
     summary:
       'Find plans for a specific merchant. I.E plans for betting provider',
     description:
@@ -206,7 +223,7 @@ export class BillController {
   @Get('/merchants/betting/find-plans/:merchantPublicId')
   async findBettingMerchantPlans(
     @Param('merchantPublicId', ParseUUIDPipe) merchantPublicId: string,
-  ): Promise<PagaMerchantPlanResponseDTO> { 
+  ): Promise<PagaMerchantPlanResponseDTO> {
     return await this.billSrv.findBettingMerchantPlans(merchantPublicId);
   }
 

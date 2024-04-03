@@ -116,6 +116,49 @@ export class BillService implements OnModuleInit {
     }
   }
 
+  async findPlansForElectricityProvider(
+    providerId: string,
+  ): Promise<PagaMerchantPlanResponseDTO> {
+    try {
+      checkForRequiredFields(['providerId'], { providerId });
+      const provider = await this.findProvider(providerId);
+      const providerPlans = await this.findMerchantPlans(providerId);
+      const providerName = provider.displayName.toLowerCase();
+      const names = ['PREPAID', 'POSTPAID'];
+      let plans = [];
+      switch (providerName) {
+        case 'aedc':
+          const plan = providerPlans.data.find(
+            (item) => item.shortCode === 'MY003',
+          );
+          plans = [{ ...plan, name: names[0] }];
+          break;
+        case 'eko electricity (ekedc)':
+          const ekoPlans = providerPlans.data.filter(
+            (item) => item.code !== 'ORDER_PAYMENT',
+          );
+          plans = ekoPlans;
+          break;
+        default:
+          plans = providerPlans.data;
+          break;
+      }
+      plans = plans.map((item) => ({
+        ...item,
+        name: item.name.toUpperCase(),
+      }));
+      return {
+        success: true,
+        code: HttpStatus.OK,
+        message: 'Records found',
+        data: plans,
+      };
+    } catch (ex) {
+      this.logger.error(ex);
+      throw ex;
+    }
+  }
+
   async findDataPlansForProvider(providerId: string): Promise<PagaDataPlanDTO> {
     try {
       const url = `${process.env.PAGA_BASE_URL}/getDataBundleByOperator`;
@@ -689,6 +732,22 @@ export class BillService implements OnModuleInit {
     }
   }
 
+  private async findProvider(providerId: string): Promise<BillProviderPartial> {
+    try {
+      const providerData = await this.findElectricityProviders();
+      const provider = providerData.data.find(
+        (item) => item.code === providerId,
+      );
+      if (!provider) {
+        throw new NotFoundException('Provider not found');
+      }
+      return provider;
+    } catch (ex) {
+      this.logger.error(ex);
+      throw ex;
+    }
+  }
+
   private async getMerchants(): Promise<BillProviderDTO> {
     try {
       const url = `${process.env.PAGA_BASE_URL}/getMerchants`;
@@ -833,26 +892,6 @@ export class BillService implements OnModuleInit {
     return await this.findAirtimeProviders();
   }
 
-  // async findInternetProviders(): Promise<BillProviderDTO> {
-  //   try {
-  //     const url =
-  //       'https://api.flutterwave.com/v3/bill-categories?internet=1&country=NG';
-  //     const data = await httpGet<any>(url, {
-  //       Authorization: `Bearer ${this.flutterwaveSecretKey}`,
-  //     });
-  //     const providers = data?.data.map(({ name }) => name);
-  //     return {
-  //       success: true,
-  //       code: HttpStatus.OK,
-  //       message: 'Records found',
-  //       data: [...new Set(providers)] as string[],
-  //     };
-  //   } catch (ex) {
-  //     this.logger.error(ex);
-  //     throw ex;
-  //   }
-  // }
-
   async verifyElectricityMeter(
     deviceNumber: string,
     providerId: string,
@@ -893,133 +932,4 @@ export class BillService implements OnModuleInit {
       throw ex;
     }
   }
-
-  async verifyBillItem(
-    itemCode: string,
-    meterNumber: string,
-    billerCode: string,
-  ): Promise<FlutterwaveBillItemVerificationResponseDTO> {
-    try {
-      const headers = { Authorization: `Bearer ${this.flutterwaveSecretKey}` };
-      const url = `https://api.flutterwave.com/v3/bill-items/${itemCode}/validate?customer=${meterNumber}&code=${billerCode}`;
-      const verification = await httpGet<any>(url, headers);
-      return {
-        success: true,
-        code: HttpStatus.OK,
-        message: verification.message,
-        data: { ...verification.data },
-      };
-    } catch (ex) {
-      this.logger.error(ex);
-      throw ex;
-    }
-  }
-
-  // Find all electricity provider
-  // Use the plan to find which plan (Prepaid / postpaid)
-  // If you cannot find prepaid plan, throw a 404 error
-  // async verifyElectricityPlan(
-  //   payload: VerifyElectricityPurchaseDTO,
-  //   env = 'PROD',
-  // ): Promise<FlutterwaveBillItemVerificationResponseDTO> {
-  //   try {
-  //     const headers = { Authorization: `Bearer ${this.flutterwaveSecretKey}` };
-  //     const url =
-  //       'https://api.flutterwave.com/v3/bill-categories?power=1&country=NG';
-  //     const electricityProviders =
-  //       this.electricityProviders ?? (await httpGet<any>(url, headers));
-  //     if (electricityProviders.data?.length <= 0) {
-  //       throw new NotFoundException('Could not verify provider');
-  //     }
-  //     let tag: string;
-  //     if (payload.provider === ElectricityProvider.PHED) {
-  //       tag = 'PORT HARCOURT';
-  //     }
-  //     switch (payload.provider) {
-  //       case ElectricityProvider.PHED:
-  //         tag = 'PORT HARCOURT';
-  //         break;
-  //       case ElectricityProvider.AEDC:
-  //         tag = 'ABUJA';
-  //         break;
-  //       case ElectricityProvider.BEDC:
-  //         tag = 'BENIN';
-  //         break;
-  //       case ElectricityProvider.EEDC:
-  //         tag = 'ENUGU';
-  //         break;
-  //       case ElectricityProvider.IBEDC:
-  //         tag = 'IBADAN';
-  //         break;
-  //       case ElectricityProvider.JEDC:
-  //         tag = 'JOS';
-  //         break;
-  //       case ElectricityProvider.KAEDCO:
-  //         tag = 'KADUNA';
-  //         break;
-  //       case ElectricityProvider.KEDCO:
-  //         tag = 'KANO';
-  //         break;
-  //       case ElectricityProvider.EKEDC:
-  //         tag = 'EKO';
-  //         break;
-  //       case ElectricityProvider.IKEDC:
-  //         tag = 'IKEJA';
-  //         break;
-  //       default:
-  //         throw new BadRequestException(
-  //           `Could not find tag with provider: ${payload.provider}`,
-  //         );
-  //         break;
-  //     }
-  //     const selectedOne = electricityProviders.data.find((item) => {
-  //       const name = String(item.name)?.toUpperCase();
-  //       const shortName = String(item.short_name)?.toUpperCase();
-  //       const billerName = String(item.biller_name)?.toUpperCase();
-  //       return (
-  //         (shortName.includes(tag) ||
-  //           billerName.includes(tag) ||
-  //           name.includes(tag)) &&
-  //         billerName.includes(payload.plan)
-  //       );
-  //     });
-  //     this.logger.log({ selectedOne });
-  //     if (!selectedOne) {
-  //       throw new NotFoundException(
-  //         `We do not yet offer this service for '${payload.provider}'`,
-  //       );
-  //     }
-  //     if (env === 'TEST') {
-  //       return {
-  //         success: true,
-  //         code: HttpStatus.OK,
-  //         message: 'Item verified successfully',
-  //         selectedOne,
-  //         data: {
-  //           response_code: '00',
-  //           address: null,
-  //           response_message: 'Successful',
-  //           name: ElectricityProvider.EEDC,
-  //           biller_code: 'BIL099',
-  //           customer: '08109328188',
-  //           product_code: 'AT099',
-  //           email: null,
-  //           fee: 0,
-  //           maximum: 0,
-  //           minimum: 0,
-  //         },
-  //       };
-  //     }
-  //     // Verify the meter number
-  //     const verification = await this.verifyBillItem(
-  //       selectedOne.item_code,
-  //       payload.meterNumber,
-  //       selectedOne.biller_code,
-  //     );
-  //     return { ...verification, selectedOne };
-  //   } catch (ex) {
-  //     this.logger.error(ex);
-  //     throw ex;
-  //   }
-  // }
 }
