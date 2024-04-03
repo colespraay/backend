@@ -1,7 +1,7 @@
 import { ApiProperty, OmitType } from '@nestjs/swagger';
-import { VerifyElectricityPurchaseDTO } from '@modules/electricity-purchase/dto/electricity-purchase.dto';
 import { BettingPurchase } from '@entities/index';
 import { BaseResponseTypeDTO } from '@utils/index';
+import { VerifyElectricityPurchaseDTO } from '@modules/electricity-purchase/dto/electricity-purchase.dto';
 
 export class VerifyBettingPurchaseDTO extends OmitType(
   VerifyElectricityPurchaseDTO,
@@ -11,9 +11,15 @@ export class VerifyBettingPurchaseDTO extends OmitType(
   bettingWalletId: string;
 }
 
-export class CreateBettingPurchaseDTO extends VerifyBettingPurchaseDTO {
+export class CreateBettingPurchaseDTO extends OmitType(
+  VerifyBettingPurchaseDTO,
+  ['merchantPlan'] as const,
+) {
   @ApiProperty()
   transactionPin: string;
+
+  @ApiProperty({ nullable: true })
+  merchantPlan?: string;
 }
 
 export class BettingPurchaseResponseDTO extends BaseResponseTypeDTO {

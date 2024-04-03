@@ -37,20 +37,17 @@ export class BettingPurchaseService extends GenericService(BettingPurchase) {
   ): Promise<BettingPurchaseResponseDTO> {
     try {
       checkForRequiredFields(
-        [
-          'amount',
-          'transactionPin',
-          'providerId',
-          'merchantPlan',
-          'bettingWalletId',
-        ],
+        ['amount', 'transactionPin', 'providerId', 'bettingWalletId'],
         payload,
       );
       await this.userSrv.verifyTransactionPin(user.id, payload.transactionPin);
-      const plan = await this.billSrv.findMerchantPlan(
-        payload.providerId,
-        payload.merchantPlan,
-      );
+      if (payload?.merchantPlan) {
+        const plan = await this.billSrv.findMerchantPlan(
+          payload.providerId,
+          payload.merchantPlan,
+        );
+        this.logger.debug({ plan });
+      }
       await this.userSrv.checkAccountBalance(payload.amount, user.id);
       const { availableBalance } = await this.walletSrv.getAccountBalance();
       if (availableBalance < Number(payload.amount)) {

@@ -230,14 +230,16 @@ export class BillService implements OnModuleInit {
   ): Promise<FlutterwaveBillPaymentResponseDTO> {
     try {
       const url = `${process.env.PAGA_BASE_URL}/merchantPayment`;
-      const body = {
+      const body: any = {
         referenceNumber: reference,
         amount: String(payload.amount),
         currency: 'NGN',
         merchantAccount: payload.providerId,
         merchantReferenceNumber: payload.bettingWalletId,
-        merchantService: [payload.merchantPlan],
       };
+      if (payload.merchantPlan) {
+        body.merchantService = [payload.merchantPlan];
+      }
       const hashKey = [
         'referenceNumber',
         'amount',
@@ -252,7 +254,6 @@ export class BillService implements OnModuleInit {
         'Content-Type': 'application/json',
       };
       const response = await httpPost<any, any>(url, body, headers);
-      console.log({ response });
       if (response.responseCode !== 0) {
         throw new BadGatewayException(
           response.message ?? `Failed to fund betting wallet`,
@@ -640,17 +641,41 @@ export class BillService implements OnModuleInit {
         'better nature travel and tours',
         'grooming people for better lifehood',
       ];
-      const bettingProviders: BillProviderPartial[] = values.data.filter(
+      let bettingProviders: BillProviderPartial[] = values.data.filter(
         (item) => {
           const itemName = item.name.toLowerCase();
+          const itemDisplayName = item.displayName.toLowerCase();
           if (
-            searchValues.some((value) => itemName.includes(value.trim())) &&
+            searchValues.some(
+              (value) =>
+                itemName.includes(value.trim()) ||
+                searchValues.some((value) =>
+                  itemDisplayName.includes(value.trim()),
+                ),
+            ) &&
             !excludeValues.some((value) => itemName.includes(value.trim()))
           ) {
             return item;
           }
         },
       );
+      /* Extra filter added cause Paga only offer 3 betting providers at this time. 
+        Lines 665 - 678 can be removed later
+      */
+      const list = ['bangbet', 'betway', 'bet9ja'];
+      bettingProviders = bettingProviders.filter((item) => {
+        const itemName = item.name.toLowerCase();
+        const itemDisplayName = item.displayName.toLowerCase();
+        if (
+          list.some(
+            (value) =>
+              itemName.includes(value.trim()) ||
+              itemDisplayName.includes(value.trim()),
+          )
+        ) {
+          return item;
+        }
+      });
       return {
         ...values,
         data: bettingProviders,

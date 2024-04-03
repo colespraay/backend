@@ -56,8 +56,8 @@ import {
   BettingPurchaseResponseDTO,
 } from '@modules/betting-purchase/dto/betting-purchase.dto';
 
-@ApiBearerAuth('JWT')
-@UseGuards(RolesGuard)
+// @ApiBearerAuth('JWT')
+// @UseGuards(RolesGuard)
 @ApiTags('bill')
 @Controller('bill')
 export class BillController {
