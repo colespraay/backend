@@ -35,6 +35,7 @@ import {
   PagaMeterDetailDTO,
 } from './dto/bill.dto';
 import { CreateBettingPurchaseDTO } from '@modules/betting-purchase/dto/betting-purchase.dto';
+import { Between } from 'typeorm';
 
 @Injectable()
 export class BillService implements OnModuleInit {
@@ -1007,4 +1008,61 @@ export class BillService implements OnModuleInit {
   //     throw ex;
   //   }
   // }
+
+
+
+
+
+  async aggregateBillingPerDay(services: any[]): Promise<any> {
+    try {
+      const currentDate = new Date();
+      const startDate = new Date(currentDate.getTime() - 10 * 24 * 60 * 60 * 1000); // 10 days ago
+  
+      const aggregatedData = {};
+  
+      // Aggregate data for each service
+      for (const service of services) {
+        const data = await service.getRepo().find({
+          where: {
+            dateCreated: Between(startDate, currentDate),
+          },
+        });
+  
+        data.forEach((item) => {
+          const dateKey = item.dateCreated.toISOString().split('T')[0];
+  
+          if (!aggregatedData[dateKey]) {
+            aggregatedData[dateKey] = 0;
+          }
+  
+          aggregatedData[dateKey] += item.amount;
+        });
+      }
+  
+      // Fill in 0 for days with no data in the past 10 days
+      for (let i = 0; i < 10; i++) {
+        const dateKey = new Date(currentDate.getTime() - i * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+  
+        if (!aggregatedData[dateKey]) {
+          aggregatedData[dateKey] = 0;
+        }
+      }
+  
+      return {
+        success: true,
+        message: 'Total bill sum aggregated per day for the past 10 days',
+        code: HttpStatus.OK,
+        data: aggregatedData,
+      };
+    } catch (error) {
+      console.error('Error in aggregateBillingPerDay:', error);
+  
+      return {
+        success: false,
+        message: 'Failed to aggregate total bill sum per day',
+        code: HttpStatus.INTERNAL_SERVER_ERROR,
+        error: error.message,
+      };
+    }
+  }
 }

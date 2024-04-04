@@ -8,7 +8,7 @@ import {
   forwardRef,
 } from '@nestjs/common';
 import { EventEmitter2 } from '@nestjs/event-emitter';
-import { FindManyOptions } from 'typeorm';
+import { Between, FindManyOptions } from 'typeorm';
 import { EventSpraay, User } from '@entities/index';
 import { GenericService } from '@schematics/index';
 import {
@@ -367,4 +367,115 @@ export class EventSpraayService extends GenericService(EventSpraay) {
       throw ex;
     }
   }
+
+  // async aggregateTotalEventSpraaySumPerDay(): Promise<any> {
+  //   try {
+  //     const currentDate = new Date();
+  //     const startDate = new Date(currentDate.getTime() - 10 * 24 * 60 * 60 * 1000); // 10 days ago
+
+  //     // Format start and end dates to match the transaction date format
+  //     const startDateISO = startDate.toISOString().split('T')[0];
+  //     const currentDateISO = currentDate.toISOString().split('T')[0];
+
+  //     const eventSpraays = await this.eventSpraayRepository.find({
+  //       where: {
+  //         createdAt: Between(startDateISO, currentDateISO),
+  //       },
+  //     });
+
+  //     const aggregatedData = {};
+
+  //     eventSpraays.forEach((eventSpraay) => {
+  //       // Get the date part from the eventSpraay createdAt timestamp
+  //       const dateKey = eventSpraay.createdAt.toISOString().split('T')[0];
+
+  //       if (!aggregatedData[dateKey]) {
+  //         aggregatedData[dateKey] = 0;
+  //       }
+
+  //       aggregatedData[dateKey] += eventSpraay.amount;
+  //     });
+
+  //     // Fill in 0 for days with no data in the past 10 days
+  //     for (let i = 0; i < 10; i++) {
+  //       const dateKey = new Date(currentDate.getTime() - i * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+
+  //       if (!aggregatedData[dateKey]) {
+  //         aggregatedData[dateKey] = 0;
+  //       }
+  //     }
+
+  //     return {
+  //       success: true,
+  //       message: 'Total event spraay sum aggregated per day for the past 10 days',
+  //       code: HttpStatus.OK,
+  //       data: aggregatedData,
+  //     };
+  //   } catch (error) {
+  //     console.error('Error in aggregateTotalEventSpraaySumPerDay:', error);
+
+  //     return {
+  //       success: false,
+  //       message: 'Failed to aggregate total event spraay sum per day',
+  //       code: HttpStatus.INTERNAL_SERVER_ERROR,
+  //       error: error.message,
+  //     };
+  //   }
+  // }
+
+  async aggregateTotalEventSpraaySumPerDay(): Promise<any> {
+    try {
+      const currentDate = new Date();
+      const startDate = new Date(currentDate.getTime() - 10 * 24 * 60 * 60 * 1000); // 10 days ago
+
+      // Format start and end dates to match the transaction date format
+
+
+      const eventSpraays = await this.getRepo().find({
+        where: {
+          dateCreated: Between(startDate, currentDate),
+        },
+      });
+
+      const aggregatedData = {};
+
+      eventSpraays.forEach((eventSpraay) => {
+        // Get the date part from the eventSpraay dateCreated timestamp
+        const dateKey = eventSpraay.dateCreated.toISOString().split('T')[0];
+
+        if (!aggregatedData[dateKey]) {
+          aggregatedData[dateKey] = 0;
+        }
+
+        aggregatedData[dateKey] += eventSpraay.amount;
+      });
+
+      // Fill in 0 for days with no data in the past 10 days
+      for (let i = 0; i < 10; i++) {
+        const dateKey = new Date(currentDate.getTime() - i * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+
+        if (!aggregatedData[dateKey]) {
+          aggregatedData[dateKey] = 0;
+        }
+      }
+      
+
+      return {
+        success: true,
+        message: 'Total event spraay sum aggregated per day for the past 10 days',
+        code: HttpStatus.OK,
+        data: aggregatedData,
+      };
+    } catch (error) {
+      console.error('Error in aggregateTotalEventSpraaySumPerDay:', error);
+
+      return {
+        success: false,
+        message: 'Failed to aggregate total event spraay sum per day',
+        code: HttpStatus.INTERNAL_SERVER_ERROR,
+        error: error.message,
+      };
+    }
+  }
+
 }

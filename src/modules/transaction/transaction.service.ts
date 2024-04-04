@@ -9,6 +9,7 @@ import { FindManyOptions, ILike, In, IsNull, Not } from 'typeorm';
 import { createReadStream, unlinkSync } from 'fs';
 import { GenericService } from '@schematics/index';
 import { TransactionRecord, User } from '@entities/index';
+import { Repository, Between, LessThanOrEqual, MoreThanOrEqual } from 'typeorm';
 import {
   TransactionType,
   calculatePaginationControls,
@@ -40,6 +41,7 @@ import {
   TransactionListHistoryFilter,
   TransactionListHistoryGraphDTO,
   TransactionListHistoryGraphPartial,
+  TransPaginationDto,
 } from './dto/transaction.dto';
 
 @Injectable()
@@ -1060,4 +1062,166 @@ export class TransactionService extends GenericService(TransactionRecord) {
     `;
     return html.trim();
   }
+
+
+
+  
+  // async aggregateTotalTransactionSumPerMonth(): Promise<any> {
+  //   try {
+  //     const currentDate = new Date();
+  //     const startDate = new Date(currentDate.getTime() - 10 * 24 * 60 * 60 * 1000); // 10 days ago
+
+  //     const transactions = await this.getRepo().find({
+  //       where: {
+  //         transactionDate: Between(startDate.toISOString(), currentDate.toISOString()),
+  //       },
+  //     });
+
+  //     const aggregatedData = {};
+
+  //     transactions.forEach((transaction) => {
+  //       const transactionDate = new Date(transaction.transactionDate);
+  //       const monthKey = `${transactionDate.getFullYear()}-${transactionDate.getMonth() + 1}`;
+
+  //       if (!aggregatedData[monthKey]) {
+  //         aggregatedData[monthKey] = 0;
+  //       }
+
+  //       aggregatedData[monthKey] += transaction.amount;
+  //     });
+
+  //     // Fill in 0 for days with no data in the past 10 days
+  //     for (let i = 0; i < 10; i++) {
+  //       const dateKey = new Date(currentDate.getTime() - i * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+  //       const monthKey = dateKey.slice(0, 7); // Extract YYYY-MM from dateKey
+
+  //       if (!aggregatedData[monthKey]) {
+  //         aggregatedData[monthKey] = 0;
+  //       }
+  //     }
+
+  //     return {
+  //       success: true,
+  //       message: 'Total transaction sum aggregated per month for the past 10 days',
+  //       code: HttpStatus.OK,
+  //       data: aggregatedData,
+  //     };
+  //   } catch (error) {
+  //     return {
+  //       success: false,
+  //       message: 'Failed to aggregate total transaction sum per month',
+  //       code: HttpStatus.INTERNAL_SERVER_ERROR,
+  //       error: error.message,
+  //     };
+  //   }
+  // }
+  async calculateTotalTransactionAmount(): Promise<any> {
+    try {
+      const transactions = await this.getRepo().find();
+
+      let totalAmount = 0;
+      transactions.forEach((transaction) => {
+        totalAmount += transaction.amount;
+      });
+
+      return {
+        success: true,
+        message: 'Total transaction amount calculated',
+        code: HttpStatus.OK,
+        data: { totalAmount: totalAmount },
+      };
+    } catch (error) {
+      return {
+        success: false,
+        message: 'Failed to calculate total transaction amount',
+        code: HttpStatus.INTERNAL_SERVER_ERROR,
+        error: error.message,
+      };
+    }
+  }
+
+  async aggregateTotalTransactionSumPerDay(): Promise<any> {
+    try {
+      const currentDate = new Date();
+      const startDate = new Date(
+        currentDate.getTime() - 10 * 24 * 60 * 60 * 1000,
+      ); // 10 days ago
+
+      const transactions = await this.getRepo().find({
+        where: {
+          dateCreated: Between(startDate, currentDate),
+        },
+      });
+
+      const aggregatedData = {};
+
+      transactions.forEach((transaction) => {
+        // Get the date part from the transaction date string
+        const dateKey = transaction.dateCreated.toISOString().split('T')[0];
+
+        if (!aggregatedData[dateKey]) {
+          aggregatedData[dateKey] = 0;
+        }
+
+        aggregatedData[dateKey] += transaction.amount;
+      });
+
+      // Fill in 0 for days with no data in the past 10 days
+      for (let i = 0; i < 10; i++) {
+        const dateKey = new Date(
+          currentDate.getTime() - i * 24 * 60 * 60 * 1000,
+        )
+          .toISOString()
+          .split('T')[0];
+
+        if (!aggregatedData[dateKey]) {
+          aggregatedData[dateKey] = 0;
+        }
+      }
+
+      return {
+        success: true,
+        message:
+          'Total transaction sum aggregated per day for the past 10 days',
+        code: HttpStatus.OK,
+        data: aggregatedData,
+      };
+    } catch (error) {
+      console.error('Error in aggregateTotalTransactionSumPerDay:', error);
+
+      return {
+        success: false,
+        message: 'Failed to aggregate total transaction sum per day',
+        code: HttpStatus.INTERNAL_SERVER_ERROR,
+        error: error.message,
+      };
+    }
+  }
+  async getAllTransactions(paginationDto: TransPaginationDto): Promise<any> {
+    try {
+      const { page, limit } = paginationDto;
+      const [transactions, totalCount] = await this.getRepo().findAndCount({
+        skip: (page - 1) * limit,
+        take: limit,
+      });
+
+      return {
+        success: true,
+        message: 'Transactions retrieved successfully',
+        code: HttpStatus.OK,
+        data: {
+          transactions: transactions,
+          totalCount: totalCount,
+        },
+      };
+    } catch (error) {
+      return {
+        success: false,
+        message: 'Failed to retrieve transactions',
+        code: HttpStatus.INTERNAL_SERVER_ERROR,
+        error: error.message,
+      };
+    }
+  }
+
 }

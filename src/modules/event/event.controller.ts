@@ -36,7 +36,9 @@ import {
   FilterEventDTO,
   EventCategoryResponseDTO,
   EventAttendanceSummaryDTO,
+  EventPaginationDto,
 } from './dto/event.dto';
+import { EventRecord } from '@entities/event.entity';
 
 @ApiBearerAuth('JWT')
 @UseGuards(RolesGuard)
@@ -77,19 +79,7 @@ export class EventController {
     return await this.eventSrv.findEvents(payload, pagination);
   }
 
-  @ApiQuery({ name: 'pageNumber', required: false })
-  @ApiQuery({ name: 'pageSize', required: false })
-  @ApiOperation({ description: 'Find events for currently logged in user' })
-  @ApiProduces('json')
-  @ApiConsumes('application/json')
-  @ApiResponse({ type: EventsResponseDTO })
-  @Get('/events-for-current-user')
-  async findEventsForCurrentUser(
-    @CurrentUser(DecodedTokenKey.USER_ID) userId: string,
-    @Query() pagination?: PaginationRequestType,
-  ): Promise<EventsResponseDTO> {
-    return await this.eventSrv.findEventsForCurrentUser(userId, pagination);
-  }
+
 
   @ApiQuery({ name: 'pageNumber', required: false })
   @ApiQuery({ name: 'pageSize', required: false })
@@ -246,5 +236,37 @@ export class EventController {
   })
   async sendNotificationToInvitees(): Promise<void> {
     return await this.eventSrv.sendNotificationToInvitees();
+  }
+
+  // @Get()
+  // @ApiOperation({ summary: 'Get all events with pagination' })
+  // @ApiQuery({ name: 'page', type: 'number', example: 1 })
+  // @ApiQuery({ name: 'limit', type: 'number', example: 10 })
+  // @ApiResponse({ status: 200, description: 'Events retrieved successfully' })
+  // async getAllEvents(@Query() paginationDto: EventPaginationDto): Promise<{ data: EventRecord[]; totalCount: number }> {
+  //   return this.eventService.getAllEvents(paginationDto);
+  // }
+
+  @ApiQuery({ name: 'pageNumber', required: false })
+  @ApiQuery({ name: 'pageSize', required: false })
+  @ApiOperation({ description: 'Find events for currently logged in user' })
+  @ApiProduces('json')
+  @ApiConsumes('application/json')
+  @ApiResponse({ type: EventsResponseDTO })
+  @Get('admin/get-events-created-by-adimin')
+  async findEventsForCurrentUser(
+    @CurrentUser(DecodedTokenKey.USER_ID) userId: string,
+    @Query() pagination?: PaginationRequestType,
+  ): Promise<EventsResponseDTO> {
+    return await this.eventSrv.findEventsForCurrentUser(userId, pagination);
+  }
+
+  @Get('admin/get-all-events')
+  @ApiOperation({ summary: 'Get all events with pagination' })
+  @ApiQuery({ name: 'page', type: 'number', example: 1 })
+  @ApiQuery({ name: 'limit', type: 'number', example: 10 })
+  @ApiResponse({ status: 200, description: 'Events retrieved successfully' })
+  async getAllEvents(@Query() paginationDto: EventPaginationDto): Promise<{ data: EventRecord[]; totalCount: number }> {
+    return this.eventSrv.getAllEvents(paginationDto);
   }
 }

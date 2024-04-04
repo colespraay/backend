@@ -11,6 +11,7 @@ import {
   UseGuards,
   ParseIntPipe,
   Req,
+  HttpStatus,
 } from '@nestjs/common';
 import {
   ApiBearerAuth,
@@ -46,6 +47,7 @@ import {
 } from './dto/user.dto';
 import { UserService } from './user.service';
 import { Request } from 'express';
+import { User } from '@entities/user.entity';
 
 @ApiTags('user')
 @Controller('user')
@@ -347,5 +349,61 @@ export class UserController {
     @Param('phoneNumber') phoneNumber: string,
   ): Promise<BaseResponseTypeDTO> {
     return await this.userSrv.deleteUserByPhoneNumber(phoneNumber);
+  }
+
+  // @Get()
+  // @ApiQuery({ name: 'page', type: Number, required: false })
+  // @ApiQuery({ name: 'limit', type: Number, required: false })
+  // @ApiResponse({
+  //   status: HttpStatus.OK,
+  //   description: 'Users retrieved successfully',
+  //   type: [User],
+  // })
+  // @ApiResponse({
+  //   status: HttpStatus.INTERNAL_SERVER_ERROR,
+  //   description: 'Failed to retrieve users',
+  // })
+  // async getAllUsers(
+  //   @Query('page') page: number = 1,
+  //   @Query('limit') limit: number = 10,
+  // ): Promise<{ data: User[]; totalCount: number }> {
+  //   try {
+  //     const result = await this.userService.getAllUsers(page, limit);
+  //     return { data: result.data, totalCount: result.totalCount };
+  //   } catch (error) {
+  //     console.error('Error in getAllUsers:', error);
+  //     throw new Error('Failed to retrieve users');
+  //   }
+  // }
+
+  @Get("admin/get-all-users")
+  @ApiQuery({ name: 'page', type: Number, required: false })
+  @ApiQuery({ name: 'limit', type: Number, required: false })
+  @ApiResponse({
+    status: HttpStatus.OK,
+    description: 'Users retrieved successfully',
+    type: [User],
+  })
+  @ApiResponse({
+    status: HttpStatus.INTERNAL_SERVER_ERROR,
+    description: 'Failed to retrieve users',
+  })
+  async getAllUsers(
+    @Query('page') page: number = 1,
+    @Query('limit') limit: number = 10,
+  ): Promise<{
+    success: boolean;
+    message: string;
+    error?: string;
+    code: number;
+    data: { users: User[]; totalCount: number };
+  }> {
+    try {
+      const result = await this.userSrv.getAllUsers(page, limit);
+      return result;
+    } catch (error) {
+      console.error('Error in getAllUsers:', error);
+      throw new Error('Failed to retrieve users');
+    }
   }
 }

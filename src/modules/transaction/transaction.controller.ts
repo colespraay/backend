@@ -6,8 +6,13 @@ import {
   Get,
   Res,
   UseGuards,
+  HttpStatus,
+  Post,
+  Body,
+  BadRequestException,
 } from '@nestjs/common';
 import {
+  ApiBadRequestResponse,
   ApiBearerAuth,
   ApiOkResponse,
   ApiOperation,
@@ -29,13 +34,16 @@ import { UsersResponseDTO } from '@modules/user/dto/user.dto';
 import { FindStatementOfAccountDTO } from '@modules/wallet/dto/wallet.dto';
 import { TransactionService } from './transaction.service';
 import {
+  CreateTransactionDTO,
   FindTransactionDTO,
+  TransPaginationDto,
   TransactionListHistoryDTO,
   TransactionListHistoryFilter,
   TransactionListHistoryGraphDTO,
   TransactionResponseDTO,
   TransactionsResponseDTO,
 } from './dto/transaction.dto';
+import { TransactionRecord } from '@entities/transaction-record.entity';
 
 @ApiTags('transaction')
 @Controller('transaction')
@@ -213,4 +221,75 @@ export class TransactionController {
       userId,
     );
   }
+
+
+  // @Post('dummy/create')
+  // @ApiResponse({
+  //   status: HttpStatus.CREATED,
+  //   description: 'Transaction logged successfully',
+  //   type: TransactionResponseDTO,
+  // })
+  // @ApiBadRequestResponse({
+  //   description: 'Bad request. Check the request payload.',
+  // })
+  // async createTransaction(
+  //   @Body() payload: CreateTransactionDTO,
+  // ): Promise<TransactionResponseDTO> {
+  //   try {
+  //     const result = await this.transactionSrv.createTransaction(payload);
+  //     return result;
+  //   } catch (error) {
+  //     if (error instanceof BadRequestException) {
+  //       throw error;
+  //     } else {
+  //       throw new BadRequestException('Failed to create transaction.');
+  //     }
+  //   }
+  // }
+
+  @Get('/admin/total-amount')
+  @ApiResponse({
+    status: HttpStatus.OK,
+    description: 'Total transaction amount calculated successfully',
+  })
+  @ApiResponse({
+    status: HttpStatus.INTERNAL_SERVER_ERROR,
+    description: 'Failed to calculate total transaction amount',
+  })
+  async getTotalTransactionAmount(): Promise<any> {
+    return await this.transactionSrv.calculateTotalTransactionAmount();
+  }
+
+  @Get('/admin/aggregate-total')
+  @ApiResponse({
+    status: HttpStatus.OK,
+    description: 'Total transaction sum aggregated per day for the past 10 days',
+  })
+  @ApiResponse({
+    status: HttpStatus.INTERNAL_SERVER_ERROR,
+    description: 'Failed to aggregate total transaction sum per day',
+  })
+  async aggregateTotalTransactionSumPerDay(): Promise<any> {
+    return await this.transactionSrv.aggregateTotalTransactionSumPerDay();
+  }
+
+
+  @Get("admin/get-all-transaction")
+  @ApiOperation({ summary: 'Get all transactions with pagination' })
+  @ApiResponse({
+    status: HttpStatus.OK,
+    description: 'Returns all transactions with pagination',
+    type: [TransactionRecord],
+  })
+  @ApiResponse({
+    status: HttpStatus.INTERNAL_SERVER_ERROR,
+    description: 'Internal server error',
+  })
+  async getAllTransactions(
+    @Query() paginationDto: TransPaginationDto,
+  ): Promise<any> {
+    return await this.transactionSrv.getAllTransactions(paginationDto);
+  }
+
+
 }

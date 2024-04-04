@@ -19,6 +19,7 @@ import {
 } from '@utils/index';
 import { GiftingResponseDTO, SendGiftDTO } from './dto/gifting.dto';
 import { UserService } from '../index';
+import { Between } from 'typeorm';
 
 @Injectable()
 export class GiftingService extends GenericService(Gifting) {
@@ -116,4 +117,105 @@ export class GiftingService extends GenericService(Gifting) {
       throw ex;
     }
   }
+
+
+  // async aggregateTotalGiftingumPerDay(): Promise<any> {
+  //   try {
+  //     const currentDate = new Date();
+  //     const startDate = new Date(currentDate.getTime() - 10 * 24 * 60 * 60 * 1000); // 10 days ago
+  
+  //     // Fetch gifts within the past 10 days
+  //     const gifts = await this.getRepo().find({
+  //       where: {
+  //         dateCreated: Between(startDate, currentDate),
+  //       },
+  //     });
+  
+  //     const aggregatedData = {};
+  
+  //     gifts.forEach((gift) => {
+  //       const dateKey = gift.dateCreated.toISOString().split('T')[0];
+  
+  //       if (!aggregatedData[dateKey]) {
+  //         aggregatedData[dateKey] = 0;
+  //       }
+  
+  //       aggregatedData[dateKey] += gift.amount;
+  //     });
+  
+  //     // Fill in 0 for days with no data in the past 10 days
+  //     for (let i = 0; i < 10; i++) {
+  //       const dateKey = new Date(currentDate.getTime() - i * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+  
+  //       if (!aggregatedData[dateKey]) {
+  //         aggregatedData[dateKey] = 0;
+  //       }
+  //     }
+  
+  //     return {
+  //       success: true,
+  //       message: 'Total gifting sum aggregated per day for the past 10 days',
+  //       code: HttpStatus.OK,
+  //       data: aggregatedData,
+  //     };
+  //   } catch (error) {
+  //     return {
+  //       success: false,
+  //       message: 'Failed to aggregate total gifting sum per day',
+  //       code: HttpStatus.INTERNAL_SERVER_ERROR,
+  //       error: error.message,
+  //     };
+  //   }
+  // }
+
+  
+  async aggregateTotalGiftingumPerDay(): Promise<any> {
+    try {
+      const currentDate = new Date();
+      const startDate = new Date(currentDate.getTime() - 10 * 24 * 60 * 60 * 1000); // 10 days ago
+  
+      // Fetch gifts within the past 10 days
+      const gifts = await this.getRepo().find({
+        where: {
+          dateCreated: Between(startDate, currentDate),
+        },
+      });
+  
+      const aggregatedData = {};
+  
+      gifts.forEach((gift) => {
+        const dateKey = gift.dateCreated.toISOString().split('T')[0];
+  
+        if (!aggregatedData[dateKey]) {
+          aggregatedData[dateKey] = 0;
+        }
+  
+        aggregatedData[dateKey] += gift.amount;
+      });
+  
+      // Fill in 0 for days with no data in the past 10 days
+      for (let i = 0; i < 10; i++) {
+        const dateKey = new Date(currentDate.getTime() - i * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+  
+        if (!aggregatedData[dateKey]) {
+          aggregatedData[dateKey] = 0;
+        }
+      }
+  
+      return {
+        success: true,
+        message: 'Total gifting sum aggregated per day for the past 10 days',
+        code: HttpStatus.OK,
+        data: aggregatedData,
+      };
+    } catch (error) {
+      return {
+        success: false,
+        message: 'Failed to aggregate total gifting sum per day',
+        code: HttpStatus.INTERNAL_SERVER_ERROR,
+        error: error.message,
+      };
+    }
+  }
+  
 }

@@ -39,6 +39,8 @@ import {
 import { AppService } from './app.service';
 import { AppProfitModule } from './modules/app-profit/app-profit.module';
 import { BettingPurchaseModule } from './modules/betting-purchase/betting-purchase.module';
+import { AdminDashboardModule } from './modules/admin-dashboard/admin-dashboard.module';
+
 import ormConfig from './orm.config';
 
 @Module({
@@ -71,6 +73,8 @@ import ormConfig from './orm.config';
     NotificationModule,
     AppProfitModule,
     BettingPurchaseModule,
+    AdminDashboardModule,
+    // AdmindashboardModule,
   ],
   controllers: [AppController],
   providers: [

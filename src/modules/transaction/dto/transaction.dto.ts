@@ -8,6 +8,7 @@ import {
   PaymentStatus,
   TransactionType,
 } from '@utils/index';
+import { IsInt, Min } from 'class-validator';
 
 export class TransactionResponseDTO extends BaseResponseTypeDTO {
   @ApiProperty({ type: () => TransactionRecord })
@@ -20,6 +21,18 @@ export class TransactionsResponseDTO extends BaseResponseTypeDTO {
 
   @ApiProperty({ type: () => PaginationResponseType })
   paginationControl?: PaginationResponseType;
+}
+
+export class TransPaginationDto {
+  @ApiProperty({ default: 1 })
+  @IsInt()
+  @Min(1)
+  page: number;
+
+  @ApiProperty({ default: 10 })
+  @IsInt()
+  @Min(1)
+  limit: number;
 }
 
 export class CreateTransactionDTO {

@@ -37,6 +37,7 @@ import {
   UpdateEventDTO,
   EventCategoryResponseDTO,
   EventAttendanceSummaryDTO,
+  EventPaginationDto,
 } from './dto/event.dto';
 import { EventInviteService } from '../index';
 
@@ -1036,6 +1037,56 @@ export class EventService extends GenericService(EventRecord) {
     } catch (ex) {
       this.logger.error(ex);
       throw ex;
+    }
+  }
+
+
+
+
+  // async getAllEvents(paginationDto: EventPaginationDto): Promise<any> {
+  //   try {
+  //     const { page, limit } = paginationDto;
+  //     const [events, totalCount] = await this.eventRecordRepository.findAndCount({
+  //       skip: (page - 1) * limit,
+  //       take: limit,
+  //     });
+  
+  //     return {
+  //       success: true,
+  //       message: 'Events retrieved successfully',
+  //       code: HttpStatus.OK,
+  //       data: { events: events, totalCount: totalCount },
+  //     };
+  //   } catch (error) {
+  //     return {
+  //       success: false,
+  //       message: 'Failed to retrieve events',
+  //       code: HttpStatus.INTERNAL_SERVER_ERROR,
+  //       error: error.message,
+  //     };
+  //   }
+
+  async getAllEvents(paginationDto: EventPaginationDto): Promise<any> {
+    try {
+      const { page, limit } = paginationDto;
+      const [events, totalCount] = await this.getRepo().findAndCount({
+        skip: (page - 1) * limit,
+        take: limit,
+      });
+  
+      return {
+        success: true,
+        message: 'Events retrieved successfully',
+        code: HttpStatus.OK,
+        data: { events: events, totalCount: totalCount },
+      };
+    } catch (error) {
+      return {
+        success: false,
+        message: 'Failed to retrieve events',
+        code: HttpStatus.INTERNAL_SERVER_ERROR,
+        error: error.message,
+      };
     }
   }
 }

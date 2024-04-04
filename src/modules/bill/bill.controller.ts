@@ -97,7 +97,10 @@ export class BillController {
   }
 
   @ApiParam({ enum: CableProvider, name: 'provider' })
-  @ApiOperation({ description: 'View plans for cable providers', deprecated: true })
+  @ApiOperation({
+    description: 'View plans for cable providers',
+    deprecated: true,
+  })
   @ApiProduces('json')
   @ApiConsumes('application/json')
   @ApiResponse({ type: FlutterwaveCableBillingOptionResponseDTO })
@@ -206,7 +209,7 @@ export class BillController {
   @Get('/merchants/betting/find-plans/:merchantPublicId')
   async findBettingMerchantPlans(
     @Param('merchantPublicId', ParseUUIDPipe) merchantPublicId: string,
-  ): Promise<PagaMerchantPlanResponseDTO> { 
+  ): Promise<PagaMerchantPlanResponseDTO> {
     return await this.billSrv.findBettingMerchantPlans(merchantPublicId);
   }
 
@@ -256,5 +259,25 @@ export class BillController {
   @Get('/internet-providers')
   async findInternetProviders(): Promise<BillProviderDTO> {
     return await this.billSrv.findElectricityProviders();
+  }
+  // @ApiOperation({ description: 'Find internet providers' })
+  // @ApiProduces('json')
+  // @ApiConsumes('application/json')
+  // @ApiResponse({ type: BillProviderDTO })
+  // @Get('/internet-providers')
+  // async findInternetProviders(): Promise<BillProviderDTO> {
+  //   return await this.billSrv.findElectricityProviders();
+  // }
+
+  @Get('admin/admin/aggregate-total-sum-per-day')
+  async gettoatlsumedupbillingperday(): Promise<any> {
+    const services = [
+      this.electricityPurchaseSrv,
+      this.dataPurchaseSrv,
+      this.airtimePurchaseSrv,
+      this.cablePurchaseSrv,
+      this.bettingPurchaseSrv,
+    ];
+    return await this.billSrv.aggregateBillingPerDay(services);
   }
 }

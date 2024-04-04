@@ -11,7 +11,15 @@ import {
   NotFoundException,
   HttpException,
 } from '@nestjs/common';
-import { DataSource, FindManyOptions, ILike, In, Not, createConnection, getConnection } from 'typeorm';
+import {
+  DataSource,
+  FindManyOptions,
+  ILike,
+  In,
+  Not,
+  createConnection,
+  getConnection,
+} from 'typeorm';
 import axios, { AxiosError } from 'axios';
 import { GenericService } from '@schematics/index';
 import { User } from '@entities/index';
@@ -81,8 +89,6 @@ export class UserService extends GenericService(User) {
     // // console.log({ tl });
     // const userData = await this.resolveUserBvn(bvn, userId);
     // console.log({ userData  });
-
-
     // ========== Clear DB tables ========== //
     // const { connection, tables } = await this.getAllTables();
     // console.log({ tables });
@@ -90,7 +96,10 @@ export class UserService extends GenericService(User) {
     // ========== Clear DB tables ========== //
   }
 
-  private async getAllTables(): Promise<{ connection: DataSource; tables: string[] }> {
+  private async getAllTables(): Promise<{
+    connection: DataSource;
+    tables: string[];
+  }> {
     const connection = await createConnection(ormConfig);
     try {
       const tableNames = getConnection().entityMetadatas.map(
@@ -856,7 +865,10 @@ export class UserService extends GenericService(User) {
     }
   }
 
-  async updateUser(payload: UpdateUserDTO, req: Request): Promise<BaseResponseTypeDTO> {
+  async updateUser(
+    payload: UpdateUserDTO,
+    req: Request,
+  ): Promise<BaseResponseTypeDTO> {
     try {
       checkForRequiredFields(['userId'], payload);
       const record = await this.findOne({ id: payload.userId });
@@ -1375,6 +1387,58 @@ export class UserService extends GenericService(User) {
         }
       }
       throw ex;
+    }
+  }
+
+  // async getAllUsers(page: number, limit: number): Promise<{ success: boolean; message: string; code: number; data: { users: User[]; totalCount: number } }> {
+  //   try {
+  //     const skip = (page - 1) * limit;
+  //     const [users, totalCount] = await this.userRepository.findAndCount({
+  //       skip,
+  //       take: limit,
+  //     });
+  //     return {
+  //       success: true,
+  //       message: 'Users retrieved successfully',
+  //       code: HttpStatus.OK,
+  //       data: { users, totalCount },
+  //     };
+  //   } catch (error) {
+  //     console.error('Error in getAllUsers:', error);
+  //     return {
+  //       success: false,
+  //       message: 'Failed to retrieve users',
+  //       code: HttpStatus.INTERNAL_SERVER_ERROR,
+  //       error: error.message,
+  //     };
+  //   }
+  // }
+
+  async getAllUsers(
+    page: number,
+    limit: number,
+  ): Promise<{
+    success: boolean;
+    message: string;
+    error?: string;
+    code: number;
+    data: { users: User[]; totalCount: number };
+  }> {
+    try {
+      const skip = (page - 1) * limit;
+      const [users, totalCount] = await this.getRepo().findAndCount({
+        skip,
+        take: limit,
+      });
+      return {
+        success: true,
+        message: 'Users retrieved successfully',
+        code: HttpStatus.OK,
+        data: { users, totalCount },
+      };
+    } catch (error) {
+      console.error('Error in getAllUsers:', error);
+      new NotFoundException('Users not found');
     }
   }
 }

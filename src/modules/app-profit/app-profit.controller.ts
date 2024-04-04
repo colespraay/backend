@@ -1,4 +1,4 @@
-import { Controller, Get, UseGuards } from '@nestjs/common';
+import { Controller, Get, HttpStatus, UseGuards } from '@nestjs/common';
 import {
     ApiResponse, 
     ApiTags,
@@ -35,5 +35,36 @@ export class AppProfitController {
     @Get('/profits/available-for-withdrawal')
     async getCurrentAppProfitsAvailableForWithdrawal(): Promise<CurrentAppProfitDTO> {
         return await this.appProfitSrv.getCurrentAppProfitsAvailableForWithdrawal();
+    }
+
+    // @Get('sum-up')
+    // @ApiResponse({
+    //   status: HttpStatus.OK,
+    //   description: 'Summed up app profit retrieved successfully',
+    //   type: Number,
+    // })
+    // @ApiResponse({
+    //   status: HttpStatus.INTERNAL_SERVER_ERROR,
+    //   description: 'Failed to sum up app profit',
+    // })
+    // async sumUpAppProfitAndReturn(): Promise<number> {
+    //   const totalAppProfit = await this.appProfitService.sumUpAppProfit();
+    //   return totalAppProfit;
+    // }
+
+
+    @Get('admin/get-total-revenue')
+    @ApiResponse({
+      status: HttpStatus.OK,
+      description: 'Summed up app profit retrieved successfully',
+      type: Number,
+    })
+    @ApiResponse({
+      status: HttpStatus.INTERNAL_SERVER_ERROR,
+      description: 'Failed to sum up app profit',
+    })
+    async sumUpAppProfitAndReturn(): Promise<number> {
+      const totalAppProfit = await this.appProfitSrv.sumUpAppProfitAndReturn();
+      return totalAppProfit;
     }
 }

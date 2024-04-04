@@ -15,6 +15,14 @@ export class GeoCoordinateDTO {
   latitude: number;
 }
 
+export class EventPaginationDto {
+  @ApiProperty({ default: 1 })
+  page: number;
+
+  @ApiProperty({ default: 10 })
+  limit: number;
+}
+
 export class CreateEventDTO {
   @ApiProperty()
   eventName: string;
