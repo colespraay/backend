@@ -1,3 +1,4 @@
+import { EventEmitter2 } from '@nestjs/event-emitter';
 import {
   BadGatewayException,
   ConflictException,
@@ -7,7 +8,6 @@ import {
   Injectable,
   forwardRef,
 } from '@nestjs/common';
-import { EventEmitter2 } from '@nestjs/event-emitter';
 import { AxiosError } from 'axios';
 import { UserAccount, Withdrawal } from '@entities/index';
 import { GenericService } from '@schematics/index';
@@ -23,11 +23,11 @@ import {
   validateUUIDField,
 } from '@utils/index';
 import { TransactionService } from '@modules/transaction/transaction.service';
+import { UserAccountService, UserService, WalletService } from '../index';
 import {
   WithdrawalResponseDTO,
   CreateWithdrawalDTO,
 } from './dto/withdrawal.dto';
-import { UserAccountService, UserService, WalletService } from '../index';
 
 @Injectable()
 export class WithdrawalService extends GenericService(Withdrawal) {
@@ -105,8 +105,8 @@ export class WithdrawalService extends GenericService(Withdrawal) {
       const appCut = Number(payload.amount) - amountSettled;
 
       const hashKeys = [
-        'amount',
         'referenceNumber',
+        'amount',
         'destinationBankUUID',
         'destinationBankAccountNumber',
       ];
@@ -168,7 +168,9 @@ export class WithdrawalService extends GenericService(Withdrawal) {
       if (ex instanceof AxiosError) {
         const errorObject = ex.response.data;
         const message =
-          typeof errorObject === 'string' ? errorObject : errorObject.error;
+          typeof errorObject === 'string'
+            ? errorObject
+            : errorObject.errorMessage;
         this.logger.error(message);
         throw new HttpException(message, ex.response.status);
       } else {
@@ -177,112 +179,4 @@ export class WithdrawalService extends GenericService(Withdrawal) {
       }
     }
   }
-
-  // async makeWithdrawal2(
-  //   payload: CreateWithdrawalDTO,
-  //   userId: string,
-  // ): Promise<WithdrawalResponseDTO> {
-  //   try {
-  //     checkForRequiredFields(
-  //       [
-  //         'userId',
-  //         'bankCode',
-  //         'bankName',
-  //         'amount',
-  //         'transactionPin',
-  //         'accountNumber',
-  //       ],
-  //       { ...payload, userId },
-  //     );
-  //     validateUUIDField(userId, 'userId');
-  //     payload.amount = Number(payload.amount);
-  //     await this.userSrv.checkAccountBalance(payload.amount, userId);
-
-  //     // Verify account existence
-  //     const destinationAccount =
-  //       await this.walletSrv.verifyExternalAccountNumber(
-  //         payload.bankCode,
-  //         payload.accountNumber,
-  //       );
-  //     this.logger.log({ destinationAccount });
-  //     await this.userSrv.verifyTransactionPin(userId, payload.transactionPin);
-
-  //     let bank = await this.userAccountSrv.findOne({
-  //       bankCode: payload.bankCode,
-  //       bankName: payload.bankName,
-  //       accountNumber: payload.accountNumber,
-  //       userId,
-  //     });
-  //     if (!bank?.id) {
-  //       bank = await this.userAccountSrv.create<Partial<UserAccount>>({
-  //         bankCode: payload.bankCode,
-  //         bankName: payload.bankName,
-  //         accountName: destinationAccount.accountName,
-  //         accountNumber: payload.accountNumber,
-  //         userId,
-  //       });
-  //     }
-  //     const user = await this.userSrv.findUserById(userId);
-
-  //     const amountSettled = calculateAppCut(
-  //       this.percentageAppFee,
-  //       payload.amount,
-  //     );
-  //     const appCut = Number(payload.amount) - amountSettled;
-
-  //     const headers = {
-  //       Authorization: `Bearer ${String(process.env.FLUTTERWAVE_SECRET_KEY)}`,
-  //     };
-  //     const reference = `Spraay-payout-${generateUniqueCode(10)}`;
-  //     const narration = `Wallet payout of ₦${formatAmount(payload.amount)} to ${
-  //       user.data.firstName
-  //     } ${user.data.lastName}`;
-  //     const url = 'https://api.flutterwave.com/v3/transfers';
-  //     const requestPayload = {
-  //       narration,
-  //       reference,
-  //       currency: 'NGN',
-  //       debit_currency: 'NGN',
-  //       amount: amountSettled,
-  //       account_number: payload.accountNumber,
-  //       account_bank: payload.bankCode,
-  //       // callback_url: 'https://spraay-api-577f3dc0a0fe.herokuapp.com/wallet/webhook',
-  //     };
-  //     const flutterwaveResponse = await httpPost<any, any>(
-  //       url,
-  //       requestPayload,
-  //       headers,
-  //     );
-  //     this.logger.debug({ wtFlutterwaveResponse: flutterwaveResponse });
-  //     if (flutterwaveResponse?.status === 'success') {
-  //       const createdWithdrawal = await this.create<Partial<Withdrawal>>({
-  //         userId,
-  //         reference,
-  //         amount: payload.amount,
-  //         userAccountId: bank.id,
-  //         transferId: Number(flutterwaveResponse.data.id),
-  //       });
-  //       const newWithdrawal = await this.getRepo().findOne({
-  //         where: { id: createdWithdrawal.id },
-  //         relations: ['transaction'],
-  //       });
-  //       return {
-  //         success: true,
-  //         code: HttpStatus.CREATED,
-  //         data: newWithdrawal,
-  //         message: 'Withdrawal successful',
-  //       };
-  //     }
-  //     throw new BadGatewayException('Withdrawal failed');
-  //   } catch (ex) {
-  //     if (ex instanceof AxiosError) {
-  //       const errorObject = ex.response?.data;
-  //       this.logger.error(errorObject.message);
-  //       throw new HttpException(errorObject.message, ex.response.status);
-  //     } else {
-  //       this.logger.error(ex);
-  //       throw ex;
-  //     }
-  //   }
-  // }
 }

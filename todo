@@ -195,3 +195,11 @@ Name: Spraay Software Limited - DANIEL ESIVUE
 Bank: PAGA
 Aza: 3396313211
 
+
+{
+ "bankName": "United Bank for Africa",
+ "bankCode": "C5A55AC4-86F8-4EAA-A979-56B47989BD0F",
+ "accountNumber": "2069629918",
+ "transactionPin": "1234",
+ "amount": 500
+}
