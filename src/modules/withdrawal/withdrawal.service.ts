@@ -103,7 +103,6 @@ export class WithdrawalService extends GenericService(Withdrawal) {
         payload.amount,
       );
       const appCut = Number(payload.amount) - amountSettled;
-
       const hashKeys = [
         'referenceNumber',
         'amount',
@@ -135,6 +134,7 @@ export class WithdrawalService extends GenericService(Withdrawal) {
         'Content-Type': 'application/json',
       };
       const response = await httpPost<any, any>(url, requestBody, headers);
+      this.logger.debug({ response, requestBody });
       if (!response?.destinationAccountHolderNameAtBank) {
         throw new BadGatewayException('Withdrawal failed');
       }

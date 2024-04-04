@@ -670,7 +670,7 @@ export class WalletService {
       throw ex;
     }
   }
-
+  
   // ===== Paga response
   // {
   //   statusCode: '0',
