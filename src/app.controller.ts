@@ -6,13 +6,13 @@ import {
   UploadedFiles,
   UseInterceptors,
 } from '@nestjs/common';
+import { Cron, CronExpression } from '@nestjs/schedule';
 import { ApiResponse, ApiBody, ApiConsumes } from '@nestjs/swagger';
 import { FilesInterceptor } from '@nestjs/platform-express';
-import { Response } from 'express';
 import { diskStorage } from 'multer';
+import { Response } from 'express';
 import { FileResponseDTO, MulterValidators } from '@utils/index';
 import { AppService } from './app.service';
-import { Cron, CronExpression } from '@nestjs/schedule';
 
 @Controller()
 export class AppController {
