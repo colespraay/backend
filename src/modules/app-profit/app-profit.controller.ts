@@ -53,18 +53,18 @@ export class AppProfitController {
     // }
 
 
-    @Get('admin/get-total-revenue')
-    @ApiResponse({
-      status: HttpStatus.OK,
-      description: 'Summed up app profit retrieved successfully',
-      type: Number,
-    })
-    @ApiResponse({
-      status: HttpStatus.INTERNAL_SERVER_ERROR,
-      description: 'Failed to sum up app profit',
-    })
-    async sumUpAppProfitAndReturn(): Promise<number> {
-      const totalAppProfit = await this.appProfitSrv.sumUpAppProfitAndReturn();
-      return totalAppProfit;
-    }
+    // @Get('admin/get-total-revenue')
+    // @ApiResponse({
+    //   status: HttpStatus.OK,
+    //   description: 'Summed up app profit retrieved successfully',
+    //   type: Number,
+    // })
+    // @ApiResponse({
+    //   status: HttpStatus.INTERNAL_SERVER_ERROR,
+    //   description: 'Failed to sum up app profit',
+    // })
+    // async sumUpAppProfitAndReturn(): Promise<number> {
+    //   const totalAppProfit = await this.appProfitSrv.sumUpAppProfitAndReturn();
+    //   return totalAppProfit;
+    // }
 }

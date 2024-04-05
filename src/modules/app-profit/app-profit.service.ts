@@ -12,6 +12,7 @@ import {
   CreateAppProfitDTO,
   CurrentAppProfitDTO,
 } from './dto/app-profit.dto';
+import { TransactionDateRangeDto } from '@modules/transaction/dto/transaction.dto';
 
 @Injectable()
 export class AppProfitService extends GenericService(AppProfit) {
@@ -129,4 +130,89 @@ export class AppProfitService extends GenericService(AppProfit) {
       };
     }
   }
+
+  // async getTotalTransactionsPerDay(dateRange: TransactionDateRangeDto): Promise<{ date: string; count: number }[]> {
+  //   const { startDate, endDate } = dateRange;
+  //   const results = await this.getRepo()
+  //     .createQueryBuilder('AppProfit')
+  //     .select('DATE(AppProfit.dateCreated) AS date')
+  //     .addSelect('COUNT(*) AS count')
+  //     .where('DATE(AppProfit.dateCreated) BETWEEN :startDate AND :endDate', { startDate, endDate })
+  //     .groupBy('DATE(AppProfit.dateCreated)')
+  //     .getRawMany();
+
+  //   return results.map(({ date, count }) => ({ date, count: parseInt(count) }));
+  // }
+
+  // async getTotalTransactionSumPerDay(dateRange: TransactionDateRangeDto): Promise<{ date: string; sum: number }[]> {
+  //   const { startDate, endDate } = dateRange;
+  //   const results = await this.getRepo()
+  //     .createQueryBuilder('AppProfit')
+  //     .select('DATE(AppProfit.dateCreated) AS date')
+  //     .addSelect('SUM(amount) AS sum')
+  //     .where('DATE(AppProfit.dateCreated) BETWEEN :startDate AND :endDate', { startDate, endDate })
+  //     .groupBy('DATE(AppProfit.dateCreated)')
+  //     .getRawMany();
+
+  //   return results.map(({ date, sum }) => ({ date, sum: parseFloat(sum) }));
+  // }
+
+  async getTotalTransactionsPerDay(dateRange: TransactionDateRangeDto): Promise<{ date: string; count: number }[]> {
+    const { startDate, endDate } = dateRange;
+    const results = await this.getRepo()
+      .createQueryBuilder('AppProfit')
+      .select("DATE(AppProfit.dateCreated) AS date")
+      .addSelect('COUNT(*) AS count')
+      .where('DATE(AppProfit.dateCreated) BETWEEN :startDate AND :endDate', { startDate, endDate })
+      .groupBy("DATE(AppProfit.dateCreated)")
+      .getRawMany();
+  
+    const currentDate = new Date(startDate);
+    const endDateObj = new Date(endDate);
+    const aggregatedData = [];
+  
+    while (currentDate <= endDateObj) {
+      const dateKey = currentDate.toISOString().split('T')[0];
+      const result = results.find((item) => {
+        const itemDate = item.date instanceof Date ? item.date.toISOString().split('T')[0] : item.date;
+        return itemDate === dateKey;
+      });
+  
+      aggregatedData.push({ date: dateKey, count: result ? parseInt(result.count) : 0 });
+  
+      currentDate.setDate(currentDate.getDate() + 1);
+    }
+  
+    return aggregatedData;
+  }
+  
+  async getTotalTransactionSumPerDay(dateRange: TransactionDateRangeDto): Promise<{ date: string; sum: number }[]> {
+    const { startDate, endDate } = dateRange;
+    const results = await this.getRepo()
+      .createQueryBuilder('AppProfit')
+      .select("DATE(AppProfit.dateCreated) AS date")
+      .addSelect('SUM(amount) AS sum')
+      .where('DATE(AppProfit.dateCreated) BETWEEN :startDate AND :endDate', { startDate, endDate })
+      .groupBy("DATE(AppProfit.dateCreated)")
+      .getRawMany();
+  
+    const currentDate = new Date(startDate);
+    const endDateObj = new Date(endDate);
+    const aggregatedData = [];
+  
+    while (currentDate <= endDateObj) {
+      const dateKey = currentDate.toISOString().split('T')[0];
+      const result = results.find((item) => {
+        const itemDate = item.date instanceof Date ? item.date.toISOString().split('T')[0] : item.date;
+        return itemDate === dateKey;
+      });
+  
+      aggregatedData.push({ date: dateKey, sum: result ? parseFloat(result.sum) : 0 });
+  
+      currentDate.setDate(currentDate.getDate() + 1);
+    }
+  
+    return aggregatedData;
+  }
+  
 }

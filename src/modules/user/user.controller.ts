@@ -376,34 +376,34 @@ export class UserController {
   //   }
   // }
 
-  @Get("admin/get-all-users")
-  @ApiQuery({ name: 'page', type: Number, required: false })
-  @ApiQuery({ name: 'limit', type: Number, required: false })
-  @ApiResponse({
-    status: HttpStatus.OK,
-    description: 'Users retrieved successfully',
-    type: [User],
-  })
-  @ApiResponse({
-    status: HttpStatus.INTERNAL_SERVER_ERROR,
-    description: 'Failed to retrieve users',
-  })
-  async getAllUsers(
-    @Query('page') page: number = 1,
-    @Query('limit') limit: number = 10,
-  ): Promise<{
-    success: boolean;
-    message: string;
-    error?: string;
-    code: number;
-    data: { users: User[]; totalCount: number };
-  }> {
-    try {
-      const result = await this.userSrv.getAllUsers(page, limit);
-      return result;
-    } catch (error) {
-      console.error('Error in getAllUsers:', error);
-      throw new Error('Failed to retrieve users');
-    }
-  }
+  // @Get("admin/get-all-users")
+  // @ApiQuery({ name: 'page', type: Number, required: false })
+  // @ApiQuery({ name: 'limit', type: Number, required: false })
+  // @ApiResponse({
+  //   status: HttpStatus.OK,
+  //   description: 'Users retrieved successfully',
+  //   type: [User],
+  // })
+  // @ApiResponse({
+  //   status: HttpStatus.INTERNAL_SERVER_ERROR,
+  //   description: 'Failed to retrieve users',
+  // })
+  // async getAllUsers(
+  //   @Query('page') page: number = 1,
+  //   @Query('limit') limit: number = 10,
+  // ): Promise<{
+  //   success: boolean;
+  //   message: string;
+  //   error?: string;
+  //   code: number;
+  //   data: { users: User[]; totalCount: number };
+  // }> {
+  //   try {
+  //     const result = await this.userSrv.getAllUsers(page, limit);
+  //     return result;
+  //   } catch (error) {
+  //     console.error('Error in getAllUsers:', error);
+  //     throw new Error('Failed to retrieve users');
+  //   }
+  // }
 }

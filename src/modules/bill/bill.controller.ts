@@ -269,15 +269,15 @@ export class BillController {
   //   return await this.billSrv.findElectricityProviders();
   // }
 
-  @Get('admin/admin/aggregate-total-sum-per-day')
-  async gettoatlsumedupbillingperday(): Promise<any> {
-    const services = [
-      this.electricityPurchaseSrv,
-      this.dataPurchaseSrv,
-      this.airtimePurchaseSrv,
-      this.cablePurchaseSrv,
-      this.bettingPurchaseSrv,
-    ];
-    return await this.billSrv.aggregateBillingPerDay(services);
-  }
+  // @Get('admin/admin/aggregate-total-sum-per-day')
+  // async gettoatlsumedupbillingperday(): Promise<any> {
+  //   const services = [
+  //     this.electricityPurchaseSrv,
+  //     this.dataPurchaseSrv,
+  //     this.airtimePurchaseSrv,
+  //     this.cablePurchaseSrv,
+  //     this.bettingPurchaseSrv,
+  //   ];
+  //   return await this.billSrv.aggregateBillingPerDay(services);
+  // }
 }

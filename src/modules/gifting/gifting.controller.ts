@@ -37,11 +37,11 @@ export class GiftingController {
   //   return this.giftingService.aggregateTotalGiftingumPerDay();
   // }
 
-  @Get('admin/aggregateTotalGiftingumPerDay')
-  @ApiOperation({ summary: 'Aggregate Total Gifting Sum Per Day for the Past 10 Days' })
-  @ApiResponse({ status: HttpStatus.OK, description: 'Success', type: Object })
-  @ApiResponse({ status: HttpStatus.INTERNAL_SERVER_ERROR, description: 'Internal Server Error' })
-  async aggregateTotalGiftingumPerDay(): Promise<any> {
-    return this.giftingSrv.aggregateTotalGiftingumPerDay();
-  }
+  // @Get('admin/aggregateTotalGiftingumPerDay')
+  // @ApiOperation({ summary: 'Aggregate Total Gifting Sum Per Day for the Past 10 Days' })
+  // @ApiResponse({ status: HttpStatus.OK, description: 'Success', type: Object })
+  // @ApiResponse({ status: HttpStatus.INTERNAL_SERVER_ERROR, description: 'Internal Server Error' })
+  // async aggregateTotalGiftingumPerDay(): Promise<any> {
+  //   return this.giftingSrv.aggregateTotalGiftingumPerDay();
+  // }
 }

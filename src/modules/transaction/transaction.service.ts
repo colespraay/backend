@@ -42,6 +42,7 @@ import {
   TransactionListHistoryGraphDTO,
   TransactionListHistoryGraphPartial,
   TransPaginationDto,
+  TransactionDateRangeDto,
 } from './dto/transaction.dto';
 
 @Injectable()
@@ -1223,5 +1224,90 @@ export class TransactionService extends GenericService(TransactionRecord) {
       };
     }
   }
+
+
+  // async getTotalTransactionsPerDay(dateRange: TransactionDateRangeDto): Promise<{ date: string; count: number }[]> {
+  //   const { startDate, endDate } = dateRange;
+  //   const results = await this.getRepo()
+  //     .createQueryBuilder('transaction')
+  //     .select('DATE(transaction.dateCreated) AS date')
+  //     .addSelect('COUNT(*) AS count')
+  //     .where('DATE(transaction.dateCreated) BETWEEN :startDate AND :endDate', { startDate, endDate })
+  //     .groupBy('DATE(transaction.dateCreated)')
+  //     .getRawMany();
+
+  //   return results.map(({ date, count }) => ({ date, count: parseInt(count) }));
+  // }
+
+  // async getTotalTransactionSumPerDay(dateRange: TransactionDateRangeDto): Promise<{ date: string; sum: number }[]> {
+  //   const { startDate, endDate } = dateRange;
+  //   const results = await this.getRepo()
+  //     .createQueryBuilder('transaction')
+  //     .select('DATE(transaction.dateCreated) AS date')
+  //     .addSelect('SUM(amount) AS sum')
+  //     .where('DATE(transaction.dateCreated) BETWEEN :startDate AND :endDate', { startDate, endDate })
+  //     .groupBy('DATE(transaction.dateCreated)')
+  //     .getRawMany();
+
+  //   return results.map(({ date, sum }) => ({ date, sum: parseFloat(sum) }));
+  // }
+  async getTotalTransactionsPerDay(dateRange: TransactionDateRangeDto): Promise<{ date: string; count: number }[]> {
+    const { startDate, endDate } = dateRange;
+    const results = await this.getRepo()
+      .createQueryBuilder('transaction')
+      .select('DATE(transaction.dateCreated) AS date')
+      .addSelect('COUNT(*) AS count')
+      .where('DATE(transaction.dateCreated) BETWEEN :startDate AND :endDate', { startDate, endDate })
+      .groupBy('DATE(transaction.dateCreated)')
+      .getRawMany();
+  
+    const currentDate = new Date(startDate);
+    const endDateObj = new Date(endDate);
+    const aggregatedData = [];
+  
+    while (currentDate <= endDateObj) {
+      const dateKey = currentDate.toISOString().split('T')[0];
+      const result = results.find((item) => {
+        const itemDate = item.date instanceof Date ? item.date.toISOString().split('T')[0] : item.date;
+        return itemDate === dateKey;
+      });
+  
+      aggregatedData.push({ date: dateKey, count: result ? parseInt(result.count) : 0 });
+  
+      currentDate.setDate(currentDate.getDate() + 1);
+    }
+  
+    return aggregatedData;
+  }
+  
+  async getTotalTransactionSumPerDay(dateRange: TransactionDateRangeDto): Promise<{ date: string; sum: number }[]> {
+    const { startDate, endDate } = dateRange;
+    const results = await this.getRepo()
+      .createQueryBuilder('transaction')
+      .select('DATE(transaction.dateCreated) AS date')
+      .addSelect('SUM(amount) AS sum')
+      .where('DATE(transaction.dateCreated) BETWEEN :startDate AND :endDate', { startDate, endDate })
+      .groupBy('DATE(transaction.dateCreated)')
+      .getRawMany();
+  
+    const currentDate = new Date(startDate);
+    const endDateObj = new Date(endDate);
+    const aggregatedData = [];
+  
+    while (currentDate <= endDateObj) {
+      const dateKey = currentDate.toISOString().split('T')[0];
+      const result = results.find((item) => {
+        const itemDate = item.date instanceof Date ? item.date.toISOString().split('T')[0] : item.date;
+        return itemDate === dateKey;
+      });
+  
+      aggregatedData.push({ date: dateKey, sum: result ? parseFloat(result.sum) : 0 });
+  
+      currentDate.setDate(currentDate.getDate() + 1);
+    }
+  
+    return aggregatedData;
+  }
+  
 
 }

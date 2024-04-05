@@ -32,6 +32,7 @@ import {
   FindEventSpraaysDTO,
   NumberResponseDTO,
 } from './dto/event-spraay.dto';
+import { TransactionDateRangeDto } from '@modules/transaction/dto/transaction.dto';
 
 @Injectable()
 export class EventSpraayService extends GenericService(EventSpraay) {
@@ -476,6 +477,41 @@ export class EventSpraayService extends GenericService(EventSpraay) {
         error: error.message,
       };
     }
+  }
+
+  async getTotalEventSpraayAmountAndCount(dateRange: TransactionDateRangeDto): Promise<{
+    totalAmount: number;
+    totalCount: number;
+    totalCountCurrentDay: number;
+  }> {
+    const { startDate, endDate } = dateRange;
+
+    // Calculate total amount and total count within the date range
+    const totalData = await this.getRepo()
+      .createQueryBuilder('eventSpraay')
+      .select('SUM(eventSpraay.amount) AS totalAmount')
+      .addSelect('COUNT(eventSpraay.id) AS totalCount')
+      .where('eventSpraay.dateCreated BETWEEN :startDate AND :endDate', { startDate, endDate })
+      .getRawOne();
+
+    // Calculate total count for the current day
+    const currentDate = new Date();
+    const currentDateStart = new Date(currentDate.getFullYear(), currentDate.getMonth(), currentDate.getDate());
+    const currentDateEnd = new Date(currentDate.getFullYear(), currentDate.getMonth(), currentDate.getDate() + 1);
+
+    const totalCountCurrentDay = await this.getRepo()
+      .createQueryBuilder('eventSpraay')
+      .where('eventSpraay.dateCreated BETWEEN :startDate AND :endDate', {
+        startDate: currentDateStart,
+        endDate: currentDateEnd,
+      })
+      .getCount();
+
+    return {
+      totalAmount: totalData.totalAmount || 0,
+      totalCount: totalData.totalCount || 0,
+      totalCountCurrentDay,
+    };
   }
 
 }

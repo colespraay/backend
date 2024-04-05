@@ -95,16 +95,16 @@ export class EventSpraayController {
   //   return this.eventSpraayService.aggregateTotalEventSpraaySumPerDay();
   // }
 
-  @Get('admin/aggregate-total-sum-per-day')
-  @ApiResponse({
-    status: 200,
-    description: 'Successfully aggregated total event spraay sum per day for the past 10 days',
-  })
-  @ApiResponse({
-    status: 500,
-    description: 'Failed to aggregate total event spraay sum per day',
-  })
-  async aggregateTotalEventSpraaySumPerDay(): Promise<any> {
-    return this.eventSpraaySrv.aggregateTotalEventSpraaySumPerDay();
-  }
+  // @Get('admin/aggregate-total-sum-per-day')
+  // @ApiResponse({
+  //   status: 200,
+  //   description: 'Successfully aggregated total event spraay sum per day for the past 10 days',
+  // })
+  // @ApiResponse({
+  //   status: 500,
+  //   description: 'Failed to aggregate total event spraay sum per day',
+  // })
+  // async aggregateTotalEventSpraaySumPerDay(): Promise<any> {
+  //   return this.eventSpraaySrv.aggregateTotalEventSpraaySumPerDay();
+  // }
 }

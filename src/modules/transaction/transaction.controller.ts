@@ -247,49 +247,49 @@ export class TransactionController {
   //   }
   // }
 
-  @Get('/admin/total-amount')
-  @ApiResponse({
-    status: HttpStatus.OK,
-    description: 'Total transaction amount calculated successfully',
-  })
-  @ApiResponse({
-    status: HttpStatus.INTERNAL_SERVER_ERROR,
-    description: 'Failed to calculate total transaction amount',
-  })
-  async getTotalTransactionAmount(): Promise<any> {
-    return await this.transactionSrv.calculateTotalTransactionAmount();
-  }
+  // @Get('/admin/total-amount')
+  // @ApiResponse({
+  //   status: HttpStatus.OK,
+  //   description: 'Total transaction amount calculated successfully',
+  // })
+  // @ApiResponse({
+  //   status: HttpStatus.INTERNAL_SERVER_ERROR,
+  //   description: 'Failed to calculate total transaction amount',
+  // })
+  // async getTotalTransactionAmount(): Promise<any> {
+  //   return await this.transactionSrv.calculateTotalTransactionAmount();
+  // }
 
-  @Get('/admin/aggregate-total')
-  @ApiResponse({
-    status: HttpStatus.OK,
-    description: 'Total transaction sum aggregated per day for the past 10 days',
-  })
-  @ApiResponse({
-    status: HttpStatus.INTERNAL_SERVER_ERROR,
-    description: 'Failed to aggregate total transaction sum per day',
-  })
-  async aggregateTotalTransactionSumPerDay(): Promise<any> {
-    return await this.transactionSrv.aggregateTotalTransactionSumPerDay();
-  }
+  // @Get('/admin/aggregate-total')
+  // @ApiResponse({
+  //   status: HttpStatus.OK,
+  //   description: 'Total transaction sum aggregated per day for the past 10 days',
+  // })
+  // @ApiResponse({
+  //   status: HttpStatus.INTERNAL_SERVER_ERROR,
+  //   description: 'Failed to aggregate total transaction sum per day',
+  // })
+  // async aggregateTotalTransactionSumPerDay(): Promise<any> {
+  //   return await this.transactionSrv.aggregateTotalTransactionSumPerDay();
+  // }
 
 
-  @Get("admin/get-all-transaction")
-  @ApiOperation({ summary: 'Get all transactions with pagination' })
-  @ApiResponse({
-    status: HttpStatus.OK,
-    description: 'Returns all transactions with pagination',
-    type: [TransactionRecord],
-  })
-  @ApiResponse({
-    status: HttpStatus.INTERNAL_SERVER_ERROR,
-    description: 'Internal server error',
-  })
-  async getAllTransactions(
-    @Query() paginationDto: TransPaginationDto,
-  ): Promise<any> {
-    return await this.transactionSrv.getAllTransactions(paginationDto);
-  }
+  // @Get("admin/get-all-transaction")
+  // @ApiOperation({ summary: 'Get all transactions with pagination' })
+  // @ApiResponse({
+  //   status: HttpStatus.OK,
+  //   description: 'Returns all transactions with pagination',
+  //   type: [TransactionRecord],
+  // })
+  // @ApiResponse({
+  //   status: HttpStatus.INTERNAL_SERVER_ERROR,
+  //   description: 'Internal server error',
+  // })
+  // async getAllTransactions(
+  //   @Query() paginationDto: TransPaginationDto,
+  // ): Promise<any> {
+  //   return await this.transactionSrv.getAllTransactions(paginationDto);
+  // }
 
 
 }

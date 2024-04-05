@@ -8,7 +8,7 @@ import {
   PaymentStatus,
   TransactionType,
 } from '@utils/index';
-import { IsInt, Min } from 'class-validator';
+import { IsDate, IsInt, IsOptional, Min } from 'class-validator';
 
 export class TransactionResponseDTO extends BaseResponseTypeDTO {
   @ApiProperty({ type: () => TransactionRecord })
@@ -21,6 +21,18 @@ export class TransactionsResponseDTO extends BaseResponseTypeDTO {
 
   @ApiProperty({ type: () => PaginationResponseType })
   paginationControl?: PaginationResponseType;
+}
+
+export class TransactionDateRangeDto {
+  @ApiProperty({ default: new Date().toISOString() }) // Default value for startDate
+  @IsDate()
+  @IsOptional()
+  startDate?: Date = new Date();
+
+  @ApiProperty({ default: new Date().toISOString() }) // Default value for endDate
+  @IsDate()
+  @IsOptional()
+  endDate?: Date = new Date();
 }
 
 export class TransPaginationDto {
