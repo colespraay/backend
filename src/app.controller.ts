@@ -12,6 +12,7 @@ import { Response } from 'express';
 import { diskStorage } from 'multer';
 import { FileResponseDTO, MulterValidators } from '@utils/index';
 import { AppService } from './app.service';
+import { Cron, CronExpression } from '@nestjs/schedule';
 
 @Controller()
 export class AppController {
@@ -67,5 +68,15 @@ export class AppController {
     @UploadedFiles() files: Array<Express.Multer.File>,
   ): Promise<FileResponseDTO> {
     return await this.appSrv.uploadMultipleFiles(files);
+  }
+
+  @Cron(CronExpression.EVERY_30_SECONDS)
+  async keepServerActive(): Promise<void> {
+    const today = new Date().toLocaleDateString();
+    console.log({
+      today,
+      time: Date.now(),
+      message: 'keep server active for 30 more seconds 😊 ',
+    });
   }
 }
