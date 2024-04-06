@@ -76,7 +76,7 @@ export class AppController {
     console.log({
       today,
       time: Date.now(),
-      message: 'keep server active for 30 more seconds 😊 ',
+      message: 'keep server active for 30 more seconds 😊',
     });
   }
 }

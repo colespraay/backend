@@ -121,10 +121,7 @@ export class WalletService {
   }
 
   @OnEvent('create-wallet', { async: true })
-  async createWallet(payload: {
-    userId: string;
-    req: Request;
-  }): Promise<void> {
+  async createWallet(payload: { userId: string; req: Request }): Promise<void> {
     try {
       checkForRequiredFields(['userId', 'req'], payload);
       validateUUIDField(payload.userId, 'userId');
@@ -670,7 +667,7 @@ export class WalletService {
       throw ex;
     }
   }
-  
+
   // ===== Paga response
   // {
   //   statusCode: '0',
@@ -706,6 +703,11 @@ export class WalletService {
           const narration =
             payload.payerDetails?.narration ??
             `${payload.fundingPaymentReference} - Wallet Funded`;
+          payload.amount = payload.amount.replace(/,/g, '');
+          payload.clearingFeeAmount = payload.clearingFeeAmount.replace(
+            /,/g,
+            '',
+          );
           const pagaCharge = parseFloat(payload.clearingFeeAmount);
           const amount = parseFloat(payload.amount) - pagaCharge;
           const transactionDate = new Date().toLocaleString();
