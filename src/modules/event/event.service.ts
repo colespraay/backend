@@ -1,3 +1,4 @@
+import { EventEmitter2, OnEvent } from '@nestjs/event-emitter';
 import {
   BadRequestException,
   NotFoundException,
@@ -7,10 +8,9 @@ import {
   forwardRef,
   ForbiddenException,
 } from '@nestjs/common';
-import { EventEmitter2, OnEvent } from '@nestjs/event-emitter';
 import { FindManyOptions, In, ILike } from 'typeorm';
-import { GenericService } from '@schematics/index';
 import { EventRSVP, EventRecord } from '@entities/index';
+import { GenericService } from '@schematics/index';
 import {
   BaseResponseTypeDTO,
   EventCategory,
@@ -29,6 +29,7 @@ import {
   validateUUIDField,
 } from '@utils/index';
 import { EventRSVPService } from '@modules/event-rsvp/event-rsvp.service';
+import { EventInviteService } from '../index';
 import {
   EventResponseDTO,
   CreateEventDTO,
@@ -38,7 +39,6 @@ import {
   EventCategoryResponseDTO,
   EventAttendanceSummaryDTO,
 } from './dto/event.dto';
-import { EventInviteService } from '../index';
 
 @Injectable()
 export class EventService extends GenericService(EventRecord) {
