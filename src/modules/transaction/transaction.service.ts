@@ -682,7 +682,7 @@ export class TransactionService extends GenericService(TransactionRecord) {
                     <span style="font-weight: 400;">
                         <a style="color: inherit;" href="mailto:hello@spraay.ng?subject=Problem with transaction: '${
                           transaction.reference
-                        }'">hi@spraay.ng</a>
+                        }'">hello@spraay.ng</a>
                     </span>
                 </p>
             </section>
@@ -752,7 +752,7 @@ export class TransactionService extends GenericService(TransactionRecord) {
                     <span style="font-weight: 400;">
                         <a style="color: inherit;" href="mailto:hello@spraay.ng?subject=Problem with transaction: '${
                           transaction.reference
-                        }'">hi@spraay.ng</a>
+                        }'">hello@spraay.ng</a>
                     </span>
                 </p>
             </section>
