@@ -20,6 +20,7 @@ import {
 import { GiftingResponseDTO, SendGiftDTO } from './dto/gifting.dto';
 import { UserService } from '../index';
 import { Between } from 'typeorm';
+import { TransactionDateRangeDto } from '@modules/transaction/dto/transaction.dto';
 
 @Injectable()
 export class GiftingService extends GenericService(Gifting) {
@@ -169,15 +170,63 @@ export class GiftingService extends GenericService(Gifting) {
   // }
 
   
-  async aggregateTotalGiftingumPerDay(): Promise<any> {
-    try {
-      const currentDate = new Date();
-      const startDate = new Date(currentDate.getTime() - 10 * 24 * 60 * 60 * 1000); // 10 days ago
+  // async aggregateTotalGiftingumPerDay(dateRange: TransactionDateRangeDto): Promise<any> {
+  //   try {
+  //     const currentDate = new Date();
+  //     const startDate = new Date(currentDate.getTime() - 10 * 24 * 60 * 60 * 1000); // 10 days ago
   
-      // Fetch gifts within the past 10 days
+  //     // Fetch gifts within the past 10 days
+  //     const gifts = await this.getRepo().find({
+  //       where: {
+  //         dateCreated: Between(startDate, currentDate),
+  //       },
+  //     });
+  
+  //     const aggregatedData = {};
+  
+  //     gifts.forEach((gift) => {
+  //       const dateKey = gift.dateCreated.toISOString().split('T')[0];
+  
+  //       if (!aggregatedData[dateKey]) {
+  //         aggregatedData[dateKey] = 0;
+  //       }
+  
+  //       aggregatedData[dateKey] += gift.amount;
+  //     });
+  
+  //     // Fill in 0 for days with no data in the past 10 days
+  //     for (let i = 0; i < 10; i++) {
+  //       const dateKey = new Date(currentDate.getTime() - i * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+  
+  //       if (!aggregatedData[dateKey]) {
+  //         aggregatedData[dateKey] = 0;
+  //       }
+  //     }
+  
+  //     return {
+  //       success: true,
+  //       message: 'Total gifting sum aggregated per day for the past 10 days',
+  //       code: HttpStatus.OK,
+  //       data: aggregatedData,
+  //     };
+  //   } catch (error) {
+  //     return {
+  //       success: false,
+  //       message: 'Failed to aggregate total gifting sum per day',
+  //       code: HttpStatus.INTERNAL_SERVER_ERROR,
+  //       error: error.message,
+  //     };
+  //   }
+  // }
+
+  async aggregateTotalGiftingPerDay(dateRange: TransactionDateRangeDto): Promise<any> {
+    try {
+      const { startDate, endDate } = dateRange;
+  
+      // Fetch gifts within the specified date range
       const gifts = await this.getRepo().find({
         where: {
-          dateCreated: Between(startDate, currentDate),
+          dateCreated: Between(startDate, endDate),
         },
       });
   
@@ -193,20 +242,33 @@ export class GiftingService extends GenericService(Gifting) {
         aggregatedData[dateKey] += gift.amount;
       });
   
-      // Fill in 0 for days with no data in the past 10 days
-      for (let i = 0; i < 10; i++) {
-        const dateKey = new Date(currentDate.getTime() - i * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+      // Fill in 0 for days with no data in the date range
+      const currentDate = new Date(endDate);
+      const start = new Date(startDate);
+      const daysInRange = Math.floor((currentDate.getTime() - start.getTime()) / (24 * 60 * 60 * 1000));
+      
+      for (let i = 0; i <= daysInRange; i++) {
+        const dateKey = new Date(start.getTime() + i * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
   
         if (!aggregatedData[dateKey]) {
           aggregatedData[dateKey] = 0;
         }
       }
   
+      // Sort the date keys chronologically
+      const sortedKeys = Object.keys(aggregatedData).sort();
+  
+      // Format the date keys in the expected format "YYYY-MM-DD"
+      const formattedData = {};
+      sortedKeys.forEach((date) => {
+        formattedData[date] = aggregatedData[date];
+      });
+  
       return {
         success: true,
-        message: 'Total gifting sum aggregated per day for the past 10 days',
+        message: 'Total gifting sum aggregated per day for the specified date range',
         code: HttpStatus.OK,
-        data: aggregatedData,
+        data: formattedData,
       };
     } catch (error) {
       return {

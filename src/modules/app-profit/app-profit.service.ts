@@ -13,6 +13,7 @@ import {
   CurrentAppProfitDTO,
 } from './dto/app-profit.dto';
 import { TransactionDateRangeDto } from '@modules/transaction/dto/transaction.dto';
+import { Between } from 'typeorm';
 
 @Injectable()
 export class AppProfitService extends GenericService(AppProfit) {
@@ -106,18 +107,24 @@ export class AppProfitService extends GenericService(AppProfit) {
   //     }
   //   }
 
-  async sumUpAppProfitAndReturn(): Promise<any> {
+  async sumUpAppProfitAndReturn(dateRangeDto: TransactionDateRangeDto): Promise<any> {
     try {
-      const appProfits = await this.getRepo().find();
+      const { startDate, endDate } = dateRangeDto;
+  
+      const appProfits = await this.getRepo().find({
+        where: {
+          dateCreated: Between(startDate, endDate),
+        },
+      });
+  
       let totalProfit = 0;
-
       appProfits.forEach((profit) => {
         totalProfit += profit.amount;
       });
-
+  
       return {
         success: true,
-        message: 'Total app profit summed up successfully',
+        message: 'Total app profit summed up successfully for the specified date range',
         code: HttpStatus.OK,
         data: { totalProfit },
       };

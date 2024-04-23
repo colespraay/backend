@@ -1116,18 +1116,49 @@ export class TransactionService extends GenericService(TransactionRecord) {
   //     };
   //   }
   // }
-  async calculateTotalTransactionAmount(): Promise<any> {
-    try {
-      const transactions = await this.getRepo().find();
+  // async calculateTotalTransactionAmount(dateRangeDto: TransactionDateRangeDto): Promise<any> {
+  //   try {
+  //     const transactions = await this.getRepo().find();
 
+  //     let totalAmount = 0;
+  //     transactions.forEach((transaction) => {
+  //       totalAmount += transaction.amount;
+  //     });
+
+  //     return {
+  //       success: true,
+  //       message: 'Total transaction amount calculated',
+  //       code: HttpStatus.OK,
+  //       data: { totalAmount: totalAmount },
+  //     };
+  //   } catch (error) {
+  //     return {
+  //       success: false,
+  //       message: 'Failed to calculate total transaction amount',
+  //       code: HttpStatus.INTERNAL_SERVER_ERROR,
+  //       error: error.message,
+  //     };
+  //   }
+  // }
+
+  async calculateTotalTransactionAmount(dateRangeDto: TransactionDateRangeDto): Promise<any> {
+    try {
+      const { startDate, endDate } = dateRangeDto;
+  
+      const transactions = await this.getRepo().find({
+        where: {
+          dateCreated: Between(startDate, endDate),
+        },
+      });
+  
       let totalAmount = 0;
       transactions.forEach((transaction) => {
         totalAmount += transaction.amount;
       });
-
+  
       return {
         success: true,
-        message: 'Total transaction amount calculated',
+        message: 'Total transaction amount calculated for the specified date range',
         code: HttpStatus.OK,
         data: { totalAmount: totalAmount },
       };

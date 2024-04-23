@@ -1089,4 +1089,71 @@ export class EventService extends GenericService(EventRecord) {
       };
     }
   }
+
+
+  // async getTotalEventsByVenue(): Promise<{ [state: string]: number }> {
+  //   console.log("getTotalEventsByVenue")
+  //   const events = await this.getRepo().find();
+  //   const totalEventsByVenue: { [state: string]: number } = {};
+
+  //   events.forEach((event) => {
+  //     const venue = event.venue.toLowerCase();
+  //     const state = this.extractStateFromVenue(venue);
+  //     if (state) {
+  //       totalEventsByVenue[state] = (totalEventsByVenue[state] || 0) + 1;
+  //     }
+  //   });
+
+  //   return totalEventsByVenue;
+  // }
+
+
+  async getTotalEventsByVenue(): Promise<{ [state: string]: number }> {
+    console.log("getTotalEventsByVenue");
+    const events = await this.getRepo().find();
+    const totalEventsByVenue: { [state: string]: number } = {};
+  
+    events.forEach((event) => {
+      const venue = event.venue.toLowerCase();
+      const state = this.extractStateFromVenue(venue);
+      if (state) {
+        totalEventsByVenue[state] = (totalEventsByVenue[state] || 0) + 1;
+      }
+    });
+  
+    // Fill in 0 for states with no events
+    const statesInNigeria = [
+      'abia', 'adamawa', 'akwa ibom', 'anambra', 'bauchi', 'bayelsa', 'benue',
+      'borno', 'cross river', 'delta', 'ebonyi', 'edo', 'ekiti', 'enugu', 'gombe',
+      'imo', 'jigawa', 'kaduna', 'kano', 'katsina', 'kebbi', 'kogi', 'kwara', 'lagos',
+      'nasarawa', 'niger', 'ogun', 'ondo', 'osun', 'oyo', 'plateau', 'rivers',
+      'sokoto', 'taraba', 'yobe', 'zamfara',
+    ];
+  
+    statesInNigeria.forEach((state) => {
+      if (!totalEventsByVenue[state]) {
+        totalEventsByVenue[state] = 0;
+      }
+    });
+  
+    return totalEventsByVenue;
+  }
+  private extractStateFromVenue(venue: string): string | undefined {
+    const statesInNigeria = [
+      'abia', 'adamawa', 'akwa ibom', 'anambra', 'bauchi', 'bayelsa', 'benue',
+      'borno', 'cross river', 'delta', 'ebonyi', 'edo', 'ekiti', 'enugu', 'gombe',
+      'imo', 'jigawa', 'kaduna', 'kano', 'katsina', 'kebbi', 'kogi', 'kwara', 'lagos',
+      'nasarawa', 'niger', 'ogun', 'ondo', 'osun', 'oyo', 'plateau', 'rivers',
+      'sokoto', 'taraba', 'yobe', 'zamfara',
+    ];
+
+    for (const state of statesInNigeria) {
+      if (venue.includes(state)) {
+        return state;
+      }
+    }
+
+    return undefined;
+  }
+  
 }

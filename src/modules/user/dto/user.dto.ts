@@ -8,6 +8,7 @@ import {
   PaginationRequestType,
   PaginationResponseType,
 } from '@utils/index';
+import { IsEmail, IsEnum, IsNotEmpty, IsString } from 'class-validator';
 
 export enum OTPMedium {
   PHONE_NUMBER = 'PHONE_NUMBER',
@@ -245,4 +246,37 @@ export class UserContactsDTO {
 export class UserContactsQueryDTO extends PaginationRequestType {
   @ApiProperty({ nullable: true })
   searchTerm: string;
+}
+
+export class CreateAdminDto{
+  @ApiProperty()
+  @IsEmail()
+  email: string;
+
+  @ApiProperty()
+  @IsNotEmpty()
+  @IsString()
+  firstName: string;
+
+  @ApiProperty()
+  @IsNotEmpty()
+  @IsString()
+  lastName: string;
+
+  @ApiProperty()
+  @IsNotEmpty()
+  @IsString()
+  password: string;
+
+  @ApiProperty({ enum: Gender })
+  @IsEnum(Gender)
+  gender: Gender;
+
+  // @ApiProperty({ enum: AppRole })
+  // @IsEnum(AppRole)
+  // role: AppRole;
+
+  @ApiProperty()
+  @IsString()
+  profileImageUrl: string;
 }

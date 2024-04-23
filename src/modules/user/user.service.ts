@@ -68,6 +68,7 @@ import {
   AccountBalanceDTO,
   UserContactsDTO,
   UserContactsQueryDTO,
+  CreateAdminDto,
 } from './dto/user.dto';
 import ormConfig from '../../orm.config';
 import { Request } from 'express';
@@ -592,6 +593,7 @@ export class UserService extends GenericService(User) {
       const user = await this.getRepo().findOne({
         where: { email: email.toUpperCase() },
       });
+      console.log(user)
       if (user?.id && (await verifyPasswordHash(password, user.password))) {
         return {
           success: true,
@@ -1440,5 +1442,31 @@ export class UserService extends GenericService(User) {
       console.error('Error in getAllUsers:', error);
       new NotFoundException('Users not found');
     }
+  }
+
+  async createAdminAndEmployees(createUserDto: CreateAdminDto): Promise<User> {
+
+    checkForRequiredFields(['email', 'password'], createUserDto);
+    validateEmailField(createUserDto.email);
+
+    const existingUser = await this.getRepo().findOne({
+      where: { email: createUserDto.email.toUpperCase() },
+    });
+    if (existingUser) {
+      throw new NotFoundException('User with this email already exists');
+    }
+
+    // const hashedPassword = await hashPassword(createUserDto.password);
+    const newUser = this.getRepo().create({
+      gender: createUserDto.gender,
+      email: createUserDto.email.toUpperCase(),
+      lastName: createUserDto.lastName,
+      password:createUserDto.password,
+      firstName: createUserDto.firstName,
+      role: AppRole.ADMIN,
+      profileImageUrl:createUserDto.profileImageUrl
+    });
+
+    return this.getRepo().save(newUser);
   }
 }

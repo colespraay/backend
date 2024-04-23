@@ -36,6 +36,7 @@ import {
 } from './dto/bill.dto';
 import { CreateBettingPurchaseDTO } from '@modules/betting-purchase/dto/betting-purchase.dto';
 import { Between } from 'typeorm';
+import { TransactionDateRangeDto } from '@modules/transaction/dto/transaction.dto';
 
 @Injectable()
 export class BillService implements OnModuleInit {
@@ -1013,10 +1014,62 @@ export class BillService implements OnModuleInit {
 
 
 
-  async aggregateBillingPerDay(services: any[]): Promise<any> {
+  // async aggregateBillingPerDay(services: any[],DateRange:TransactionDateRangeDto): Promise<any> {
+  //   try {
+  //     const currentDate = new Date();
+  //     const startDate = new Date(currentDate.getTime() - 10 * 24 * 60 * 60 * 1000); // 10 days ago
+  
+  //     const aggregatedData = {};
+  
+  //     // Aggregate data for each service
+  //     for (const service of services) {
+  //       const data = await service.getRepo().find({
+  //         where: {
+  //           dateCreated: Between(startDate, currentDate),
+  //         },
+  //       });
+  
+  //       data.forEach((item) => {
+  //         const dateKey = item.dateCreated.toISOString().split('T')[0];
+  
+  //         if (!aggregatedData[dateKey]) {
+  //           aggregatedData[dateKey] = 0;
+  //         }
+  
+  //         aggregatedData[dateKey] += item.amount;
+  //       });
+  //     }
+  
+  //     // Fill in 0 for days with no data in the past 10 days
+  //     for (let i = 0; i < 10; i++) {
+  //       const dateKey = new Date(currentDate.getTime() - i * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+  
+  //       if (!aggregatedData[dateKey]) {
+  //         aggregatedData[dateKey] = 0;
+  //       }
+  //     }
+  
+  //     return {
+  //       success: true,
+  //       message: 'Total bill sum aggregated per day for the past 10 days',
+  //       code: HttpStatus.OK,
+  //       data: aggregatedData,
+  //     };
+  //   } catch (error) {
+  //     console.error('Error in aggregateBillingPerDay:', error);
+  
+  //     return {
+  //       success: false,
+  //       message: 'Failed to aggregate total bill sum per day',
+  //       code: HttpStatus.INTERNAL_SERVER_ERROR,
+  //       error: error.message,
+  //     };
+  //   }
+  // }
+
+  async aggregateBillingPerDay(services: any[], dateRange: TransactionDateRangeDto): Promise<any> {
     try {
-      const currentDate = new Date();
-      const startDate = new Date(currentDate.getTime() - 10 * 24 * 60 * 60 * 1000); // 10 days ago
+      const { startDate, endDate } = dateRange;
   
       const aggregatedData = {};
   
@@ -1024,7 +1077,7 @@ export class BillService implements OnModuleInit {
       for (const service of services) {
         const data = await service.getRepo().find({
           where: {
-            dateCreated: Between(startDate, currentDate),
+            dateCreated: Between(startDate, endDate),
           },
         });
   
@@ -1039,20 +1092,33 @@ export class BillService implements OnModuleInit {
         });
       }
   
-      // Fill in 0 for days with no data in the past 10 days
-      for (let i = 0; i < 10; i++) {
-        const dateKey = new Date(currentDate.getTime() - i * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+      // Fill in 0 for days with no data in the date range
+      const currentDate = new Date(endDate);
+      const start = new Date(startDate);
+      const daysInRange = Math.floor((currentDate.getTime() - start.getTime()) / (24 * 60 * 60 * 1000));
+      
+      for (let i = 0; i <= daysInRange; i++) {
+        const dateKey = new Date(start.getTime() + i * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
   
         if (!aggregatedData[dateKey]) {
           aggregatedData[dateKey] = 0;
         }
       }
   
+      // Sort the date keys chronologically
+      const sortedKeys = Object.keys(aggregatedData).sort();
+  
+      // Format the date keys in the expected format "YYYY-MM-DD"
+      const formattedData = {};
+      sortedKeys.forEach((date) => {
+        formattedData[date] = aggregatedData[date];
+      });
+  
       return {
         success: true,
-        message: 'Total bill sum aggregated per day for the past 10 days',
+        message: 'Total bill sum aggregated per day for the specified date range',
         code: HttpStatus.OK,
-        data: aggregatedData,
+        data: formattedData,
       };
     } catch (error) {
       console.error('Error in aggregateBillingPerDay:', error);

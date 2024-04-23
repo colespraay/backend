@@ -20,10 +20,14 @@ import {
   TransactionDateRangeDto,
 } from '@modules/transaction/dto/transaction.dto';
 import { TransactionService } from '@modules/transaction/transaction.service';
+import { CreateAdminDto } from '@modules/user/dto/user.dto';
 import { UserService } from '@modules/user/user.service';
-import { Controller, Get, HttpStatus, Query } from '@nestjs/common';
+import { Body, Controller, Get, HttpStatus, Post, Query } from '@nestjs/common';
 import {
+  ApiBadRequestResponse,
   ApiConsumes,
+  ApiCreatedResponse,
+  ApiNotFoundResponse,
   ApiOperation,
   ApiProduces,
   ApiQuery,
@@ -51,6 +55,17 @@ export class AdminDashboardController {
     private readonly giftingSrv: GiftingService,
     private readonly userSrv: UserService,
   ) {}
+
+  @Post('createAdminAndEmployees')
+  @ApiOperation({ summary: 'Create Admin and Employees' })
+  @ApiBadRequestResponse({ description: 'Invalid input data' })
+  @ApiNotFoundResponse({ description: 'User with this email already exists' })
+  @ApiCreatedResponse({ type: User, description: 'Successfully created user' })
+  async createAdminAndEmployees(
+    @Body() createUserDto: CreateAdminDto,
+  ): Promise<User> {
+    return this.userSrv.createAdminAndEmployees(createUserDto);
+  }
 
   @Get('transaction/get-all-transaction')
   @ApiOperation({ summary: 'Get all transactions with pagination' })
@@ -147,22 +162,9 @@ export class AdminDashboardController {
     status: HttpStatus.INTERNAL_SERVER_ERROR,
     description: 'Failed to calculate total transaction amount',
   })
-  async getTotalTransactionAmount(): Promise<any> {
-    return await this.transactionSrv.calculateTotalTransactionAmount();
-  }
-
-  @Get('/transaction/aggregate-total')
-  @ApiResponse({
-    status: HttpStatus.OK,
-    description:
-      'Total transaction sum aggregated per day for the past 10 days',
-  })
-  @ApiResponse({
-    status: HttpStatus.INTERNAL_SERVER_ERROR,
-    description: 'Failed to aggregate total transaction sum per day',
-  })
-  async aggregateTotalTransactionSumPerDay(): Promise<any> {
-    return await this.transactionSrv.aggregateTotalTransactionSumPerDay();
+  // @Query() dateRangeDto: TransactionDateRangeDto,
+  async getTotalTransactionAmount(@Query() dateRangeDto: TransactionDateRangeDto): Promise<any> {
+    return await this.transactionSrv.calculateTotalTransactionAmount(dateRangeDto);
   }
 
   @Get('app-revenue/get-total-revenue')
@@ -175,39 +177,59 @@ export class AdminDashboardController {
     status: HttpStatus.INTERNAL_SERVER_ERROR,
     description: 'Failed to sum up app profit',
   })
-  async sumUpAppProfitAndReturn(): Promise<number> {
-    const totalAppProfit = await this.appProfitSrv.sumUpAppProfitAndReturn();
+  // @Query() dateRangeDto: TransactionDateRangeDto,
+  async sumUpAppProfitAndReturn(@Query() dateRangeDto: TransactionDateRangeDto): Promise<number> {
+    const totalAppProfit = await this.appProfitSrv.sumUpAppProfitAndReturn( dateRangeDto);
     return totalAppProfit;
   }
+
+  // @Get('/transaction/aggregate-total')
+  // @ApiResponse({
+  //   status: HttpStatus.OK,
+  //   description:
+  //     'Total transaction sum aggregated per day ',
+  // })
+  // @ApiResponse({
+  //   status: HttpStatus.INTERNAL_SERVER_ERROR,
+  //   description: 'Failed to aggregate total transaction sum per day',
+  // })
+  // // @Query() dateRangeDto: TransactionDateRangeDto,
+  // async aggregateTotalTransactionSumPerDay(): Promise<any> {
+  //   return await this.transactionSrv.aggregateTotalTransactionSumPerDay();
+  // }
+
   @Get('eventspray/aggregate-total-sum-per-day')
   @ApiResponse({
     status: 200,
     description:
-      'Successfully aggregated total event spraay sum per day for the past 10 days',
+      'Successfully aggregated total event spraay sum per day ',
   })
   @ApiResponse({
     status: 500,
     description: 'Failed to aggregate total event spraay sum per day',
   })
-  async aggregateTotalEventSpraaySumPerDay(): Promise<any> {
-    return this.eventspraaySrv.aggregateTotalEventSpraaySumPerDay();
+  // @Query() dateRangeDto: TransactionDateRangeDto,
+  async aggregateTotalEventSpraaySumPerDay(@Query() dateRangeDto: TransactionDateRangeDto): Promise<any> {
+    return this.eventspraaySrv.aggregateTotalEventSpraaySumPerDay(dateRangeDto);
   }
 
   @Get('gifting/aggregateTotalGiftingumPerDay')
   @ApiOperation({
-    summary: 'Aggregate Total Gifting Sum Per Day for the Past 10 Days',
+    summary: 'Aggregate Total Gifting Sum Per Day',
   })
   @ApiResponse({ status: HttpStatus.OK, description: 'Success', type: Object })
   @ApiResponse({
     status: HttpStatus.INTERNAL_SERVER_ERROR,
     description: 'Internal Server Error',
   })
-  async aggregateTotalGiftingumPerDay(): Promise<any> {
-    return this.giftingSrv.aggregateTotalGiftingumPerDay();
+  // @Query() dateRangeDto: TransactionDateRangeDto,
+  async aggregateTotalGiftingumPerDay(@Query() dateRangeDto: TransactionDateRangeDto): Promise<any> {
+    return this.giftingSrv.aggregateTotalGiftingPerDay(dateRangeDto);
   }
 
   @Get('/bills/aggregate-total-sum-per-day')
-  async gettoatlsumedupbillingperday(): Promise<any> {
+  // @Query() dateRangeDto: TransactionDateRangeDto,
+  async gettoatlsumedupbillingperday(@Query() dateRangeDto: TransactionDateRangeDto): Promise<any> {
     const services = [
       this.electricityPurchaseSrv,
       this.dataPurchaseSrv,
@@ -215,7 +237,7 @@ export class AdminDashboardController {
       this.cablePurchaseSrv,
       this.bettingPurchaseSrv,
     ];
-    return await this.billSrv.aggregateBillingPerDay(services);
+    return await this.billSrv.aggregateBillingPerDay(services,dateRangeDto);
   }
   ////////////////////////////////////////USE DATE RANGE PLEASE////////////////////////////////////
   ////////////////////////////////////////USE DATE RANGE PLEASE////////////////////////////////////
@@ -371,5 +393,13 @@ export class AdminDashboardController {
     return results;
   }
 
+  @Get('total-by-venue')
+  @ApiResponse({
+    status: HttpStatus.OK,
+    description: 'Returns the total events grouped by venue state',
+  })
+  async getTotalEventsByVenue(): Promise<{ [state: string]: number }> {
+    return this.eventSrv.getTotalEventsByVenue();
+  }
   //Custom date , Today Yseterday, last 7 days, last 3 days, this month, last month,
 }
