@@ -37,35 +37,27 @@ export class BettingPurchaseService extends GenericService(BettingPurchase) {
   ): Promise<BettingPurchaseResponseDTO> {
     try {
       checkForRequiredFields(
-        [
-          'amount',
-          'transactionPin',
-          'providerId',
-          'merchantPlan',
-          'bettingWalletId',
-        ],
+        ['amount', 'transactionPin', 'providerId', 'bettingWalletId'],
         payload,
       );
       await this.userSrv.verifyTransactionPin(user.id, payload.transactionPin);
-      const plan = await this.billSrv.findMerchantPlan(
-        payload.providerId,
-        payload.merchantPlan,
-      );
+      if (payload?.merchantPlan) {
+        const plan = await this.billSrv.findMerchantPlan(
+          payload.providerId,
+          payload.merchantPlan,
+        );
+        this.logger.debug({ plan });
+      }
       await this.userSrv.checkAccountBalance(payload.amount, user.id);
       const { availableBalance } = await this.walletSrv.getAccountBalance();
-      if (availableBalance < Number(plan.price)) {
+      if (availableBalance < Number(payload.amount)) {
         throw new ConflictException('Insufficient balance');
       }
-      const narration = `Betting wallet funded with (₦${plan.price})`;
+      const narration = `Betting wallet funded with (₦${payload.amount})`;
       const transactionDate = new Date().toLocaleString();
       const reference = `Spraay-betting-${generateUniqueCode(10)}`;
       const bettingPurchaseResponse = await this.billSrv.fundBettingWallet(
-        {
-          amount: payload.amount,
-          bettingWalletId: payload.bettingWalletId,
-          merchantPlan: payload.merchantPlan,
-          providerId: payload.providerId,
-        },
+        { ...payload },
         reference,
       );
       this.logger.log({ bettingPurchaseResponse });
@@ -76,7 +68,7 @@ export class BettingPurchaseService extends GenericService(BettingPurchase) {
         narration,
         userId: user.id,
         transactionDate,
-        amount: plan.price,
+        amount: payload.amount,
         type: TransactionType.DEBIT,
         reference: bettingPurchaseResponse.data.reference,
         currentBalanceBeforeTransaction: user.walletBalance,
@@ -84,12 +76,13 @@ export class BettingPurchaseService extends GenericService(BettingPurchase) {
       const createdBettingPurchase = await this.create<
         Partial<BettingPurchase>
       >({
-        amount: plan.price,
+        amount: payload.amount,
         userId: user.id,
         providerId: payload.providerId,
         bettingWalletId: payload.bettingWalletId,
         transactionId: newTransaction.data.id,
       });
+      this.logger.debug({ createdBettingPurchase });
       return {
         success: true,
         code: HttpStatus.CREATED,

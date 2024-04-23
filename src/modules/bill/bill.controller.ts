@@ -198,6 +198,20 @@ export class BillController {
   }
 
   @ApiOperation({
+    summary: 'Find plans for a electricity merchants',
+    description: 'Find plans for a electricity merchants',
+  })
+  @ApiProduces('json')
+  @ApiConsumes('application/json')
+  @ApiResponse({ type: PagaMerchantPlanResponseDTO })
+  @Get('/merchants/electricity/find-plans/:merchantPublicId')
+  async findPlansForElectricityProvider(
+    @Param('merchantPublicId', ParseUUIDPipe) merchantPublicId: string,
+  ): Promise<PagaMerchantPlanResponseDTO> {
+    return await this.billSrv.findPlansForElectricityProvider(merchantPublicId);
+  }
+
+  @ApiOperation({
     summary:
       'Find plans for a specific merchant. I.E plans for betting provider',
     description:

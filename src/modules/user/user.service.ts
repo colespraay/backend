@@ -959,30 +959,30 @@ export class UserService extends GenericService(User) {
       }
       if (payload.bvn && record.bvn !== payload.bvn) {
         validateBvn(payload.bvn, 'bvn');
-        const bvnValidationResponse = await this.resolveUserBvn(
-          payload.bvn,
-          record.id,
-        );
-        if (bvnValidationResponse?.success && bvnValidationResponse.data) {
-          if (record.profileImageUrl === DefaultPassportLink.male) {
-            record.profileImageUrl = bvnValidationResponse.data.pixBase64;
-          }
-          if (!record.phoneNumber) {
-            record.phoneNumber = bvnValidationResponse.data.phoneNo;
-          }
-          if (!record.firstName) {
-            record.firstName = bvnValidationResponse.data.firstName;
-          }
-          if (!record.lastName) {
-            record.lastName = bvnValidationResponse.data.lastName;
-          }
-          if (!record.virtualAccountNumber) {
+        // const bvnValidationResponse = await this.resolveUserBvn(
+        //   payload.bvn,
+        //   record.id,
+        // );
+        // if (bvnValidationResponse?.success && bvnValidationResponse.data) {
+        //   if (record.profileImageUrl === DefaultPassportLink.male) {
+        //     record.profileImageUrl = bvnValidationResponse.data.pixBase64;
+        //   }
+        //   if (!record.phoneNumber) {
+        //     record.phoneNumber = bvnValidationResponse.data.phoneNo;
+        //   }
+        //   if (!record.firstName) {
+        //     record.firstName = bvnValidationResponse.data.firstName;
+        //   }
+        //   if (!record.lastName) {
+        //     record.lastName = bvnValidationResponse.data.lastName;
+        //   }
+        //   if (!record.virtualAccountNumber) {
             this.eventEmitterSrv.emit('create-wallet', {
               userId: record.id,
               req,
             });
-          }
-        }
+          // }
+        // }
         record.bvn = payload.bvn;
       }
       const updatedRecord: Partial<User> = {

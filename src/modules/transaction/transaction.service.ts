@@ -685,7 +685,7 @@ export class TransactionService extends GenericService(TransactionRecord) {
                     <span style="font-weight: 400;">
                         <a style="color: inherit;" href="mailto:hello@spraay.ng?subject=Problem with transaction: '${
                           transaction.reference
-                        }'">hi@spraay.ng</a>
+                        }'">hello@spraay.ng</a>
                     </span>
                 </p>
             </section>
@@ -755,7 +755,7 @@ export class TransactionService extends GenericService(TransactionRecord) {
                     <span style="font-weight: 400;">
                         <a style="color: inherit;" href="mailto:hello@spraay.ng?subject=Problem with transaction: '${
                           transaction.reference
-                        }'">hi@spraay.ng</a>
+                        }'">hello@spraay.ng</a>
                     </span>
                 </p>
             </section>
@@ -780,10 +780,7 @@ export class TransactionService extends GenericService(TransactionRecord) {
       }
       if (html) {
         const subject = `Spraay Receipt for: ${transaction.reference}`;
-        await sendEmail(html, subject, [
-          user.data.email,
-          'abelanico6@gmail.com',
-        ]);
+        await sendEmail(html, subject, [user.data.email]);
       }
     } catch (ex) {
       this.logger.error(ex);

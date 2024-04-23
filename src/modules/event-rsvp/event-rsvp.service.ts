@@ -175,7 +175,7 @@ export class EventRSVPService extends GenericService(EventRSVP) {
           </section>
   
           <section style="width: 100%; height: auto; font-size: 18px; text-align: justify;">
-              <p style="font-weight:300">Hi Odafe,</p>
+              <p style="font-weight:300">Hi ${event.user.firstName},</p>
               <p style="font-weight:300">
                  Great news! Your friend <b>${rsvpUserFullName}(${
         rsvpRecord.data.user.userTag

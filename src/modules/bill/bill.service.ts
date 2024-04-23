@@ -118,6 +118,49 @@ export class BillService implements OnModuleInit {
     }
   }
 
+  async findPlansForElectricityProvider(
+    providerId: string,
+  ): Promise<PagaMerchantPlanResponseDTO> {
+    try {
+      checkForRequiredFields(['providerId'], { providerId });
+      const provider = await this.findProvider(providerId);
+      const providerPlans = await this.findMerchantPlans(providerId);
+      const providerName = provider.displayName.toLowerCase();
+      const names = ['PREPAID', 'POSTPAID'];
+      let plans = [];
+      switch (providerName) {
+        case 'aedc':
+          const plan = providerPlans.data.find(
+            (item) => item.shortCode === 'MY003',
+          );
+          plans = [{ ...plan, name: names[0] }];
+          break;
+        case 'eko electricity (ekedc)':
+          const ekoPlans = providerPlans.data.filter(
+            (item) => item.code !== 'ORDER_PAYMENT',
+          );
+          plans = ekoPlans;
+          break;
+        default:
+          plans = providerPlans.data;
+          break;
+      }
+      plans = plans.map((item) => ({
+        ...item,
+        name: item.name.toUpperCase(),
+      }));
+      return {
+        success: true,
+        code: HttpStatus.OK,
+        message: 'Records found',
+        data: plans,
+      };
+    } catch (ex) {
+      this.logger.error(ex);
+      throw ex;
+    }
+  }
+
   async findDataPlansForProvider(providerId: string): Promise<PagaDataPlanDTO> {
     try {
       const url = `${process.env.PAGA_BASE_URL}/getDataBundleByOperator`;
@@ -189,14 +232,16 @@ export class BillService implements OnModuleInit {
   ): Promise<FlutterwaveBillPaymentResponseDTO> {
     try {
       const url = `${process.env.PAGA_BASE_URL}/merchantPayment`;
-      const body = {
+      const body: any = {
         referenceNumber: reference,
-        amount: payload.amount,
+        amount: String(payload.amount),
         currency: 'NGN',
         merchantAccount: payload.providerId,
         merchantReferenceNumber: payload.bettingWalletId,
-        merchantService: [payload.merchantPlan],
       };
+      if (payload.merchantPlan) {
+        body.merchantService = [payload.merchantPlan];
+      }
       const hashKey = [
         'referenceNumber',
         'amount',
@@ -219,7 +264,7 @@ export class BillService implements OnModuleInit {
       return {
         success: true,
         code: HttpStatus.OK,
-        message: response.message ?? 'Funding betting wallet was successful',
+        message: response.message ?? 'Betting wallet funded successfully',
         data: {
           amount: payload.amount,
           flw_ref: response.transactionId,
@@ -387,7 +432,8 @@ export class BillService implements OnModuleInit {
       const response = await httpPost<any, any>(url, body, headers);
       if (response?.responseCode !== 0) {
         throw new BadGatewayException(
-          `Failed to get data plans for provider: ${payload.operatorServiceId}`,
+          response.message ??
+            `Failed to get data plans for provider: ${payload.operatorServiceId}`,
         );
       }
       const transactionId = response.transactionId;
@@ -430,7 +476,9 @@ export class BillService implements OnModuleInit {
   ): Promise<PagaMerchantPlanPartial> {
     try {
       const plans = await this.findMerchantPlans(providerId);
-      const plan = plans.data.find((item) => item.shortCode === planCode);
+      const plan = plans.data.find(
+        ({ name, shortCode }) => shortCode === planCode || name === planCode,
+      );
       if (!plan) {
         throw new NotFoundException('Could not find plan');
       }
@@ -483,7 +531,7 @@ export class BillService implements OnModuleInit {
       return {
         success: true,
         code: HttpStatus.OK,
-        message: response.message ?? 'Cable recharge successful',
+        message: response.message ?? 'Cable-tv recharge successful',
         data: {
           decoderNumber: payload.decoderNumber,
           reference: response.referenceNumber,
@@ -539,6 +587,7 @@ export class BillService implements OnModuleInit {
       const url = `${process.env.PAGA_BASE_URL}/airtimePurchase`;
       const body = {
         referenceNumber: reference,
+        amount: payload.amount,
         isDataBundle: false,
         mobileOperatorPublicId: payload.providerId,
         destinationPhoneNumber: payload.phoneNumber,
@@ -594,17 +643,41 @@ export class BillService implements OnModuleInit {
         'better nature travel and tours',
         'grooming people for better lifehood',
       ];
-      const bettingProviders: BillProviderPartial[] = values.data.filter(
+      let bettingProviders: BillProviderPartial[] = values.data.filter(
         (item) => {
           const itemName = item.name.toLowerCase();
+          const itemDisplayName = item.displayName.toLowerCase();
           if (
-            searchValues.some((value) => itemName.includes(value.trim())) &&
+            searchValues.some(
+              (value) =>
+                itemName.includes(value.trim()) ||
+                searchValues.some((value) =>
+                  itemDisplayName.includes(value.trim()),
+                ),
+            ) &&
             !excludeValues.some((value) => itemName.includes(value.trim()))
           ) {
             return item;
           }
         },
       );
+      /* Extra filter added cause Paga only offer 3 betting providers at this time. 
+        Lines 665 - 678 can be removed later
+      */
+      const list = ['bangbet', 'betway', 'bet9ja'];
+      bettingProviders = bettingProviders.filter((item) => {
+        const itemName = item.name.toLowerCase();
+        const itemDisplayName = item.displayName.toLowerCase();
+        if (
+          list.some(
+            (value) =>
+              itemName.includes(value.trim()) ||
+              itemDisplayName.includes(value.trim()),
+          )
+        ) {
+          return item;
+        }
+      });
       return {
         ...values,
         data: bettingProviders,
@@ -686,6 +759,22 @@ export class BillService implements OnModuleInit {
     }
   }
 
+  private async findProvider(providerId: string): Promise<BillProviderPartial> {
+    try {
+      const providerData = await this.findElectricityProviders();
+      const provider = providerData.data.find(
+        (item) => item.code === providerId,
+      );
+      if (!provider) {
+        throw new NotFoundException('Provider not found');
+      }
+      return provider;
+    } catch (ex) {
+      this.logger.error(ex);
+      throw ex;
+    }
+  }
+
   private async getMerchants(): Promise<BillProviderDTO> {
     try {
       const url = `${process.env.PAGA_BASE_URL}/getMerchants`;
@@ -763,11 +852,21 @@ export class BillService implements OnModuleInit {
       if (response.responseCode !== 0) {
         throw new BadGatewayException('Could not find merchant plans');
       }
+      const services = (response.services as any[]).map((service) => {
+        const shortCode =
+          service.shortCode === '' || !service.shortCode
+            ? service.code
+            : service.shortCode;
+        return {
+          ...service,
+          shortCode,
+        };
+      });
       return {
         success: true,
         code: HttpStatus.OK,
         message: 'Records found',
-        data: response.services ?? [],
+        data: services ?? [],
       };
     } catch (ex) {
       if (ex instanceof AxiosError) {
@@ -819,26 +918,6 @@ export class BillService implements OnModuleInit {
   async findInternetProviders(): Promise<BillProviderDTO> {
     return await this.findAirtimeProviders();
   }
-
-  // async findInternetProviders(): Promise<BillProviderDTO> {
-  //   try {
-  //     const url =
-  //       'https://api.flutterwave.com/v3/bill-categories?internet=1&country=NG';
-  //     const data = await httpGet<any>(url, {
-  //       Authorization: `Bearer ${this.flutterwaveSecretKey}`,
-  //     });
-  //     const providers = data?.data.map(({ name }) => name);
-  //     return {
-  //       success: true,
-  //       code: HttpStatus.OK,
-  //       message: 'Records found',
-  //       data: [...new Set(providers)] as string[],
-  //     };
-  //   } catch (ex) {
-  //     this.logger.error(ex);
-  //     throw ex;
-  //   }
-  // }
 
   async verifyElectricityMeter(
     deviceNumber: string,
@@ -1131,4 +1210,5 @@ export class BillService implements OnModuleInit {
       };
     }
   }
+
 }

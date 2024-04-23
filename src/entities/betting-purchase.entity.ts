@@ -16,10 +16,6 @@ export class BettingPurchase extends Base {
   user: User;
 
   @ApiProperty()
-  @Column({ type: 'varchar', length: 20 })
-  phoneNumber: string;
-
-  @ApiProperty()
   @Column({ type: 'float', default: 0 })
   amount: number;
 

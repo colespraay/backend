@@ -1,11 +1,7 @@
 import { ApiProperty, OmitType } from '@nestjs/swagger';
-import { DataPurchase } from '@entities/index';
-import {
-  AirtimeProvider,
-  BaseResponseTypeDTO,
-  CableProvider,
-} from '@utils/index';
+import { BaseResponseTypeDTO, CableProvider } from '@utils/index';
 import { CreateAirtimePurchaseDTO } from '@modules/airtime-purchase/dto/airtime-purchase.dto';
+import { DataPurchase } from '@entities/index';
 
 export class CreateDataPurchaseDTO {
   @ApiProperty()

@@ -1,6 +1,6 @@
 import { BeforeInsert, Column, Entity, JoinColumn, ManyToOne } from 'typeorm';
 import { ApiProperty } from '@nestjs/swagger';
-import { AirtimeProvider, formatPhoneNumberWithPrefix } from '@utils/index';
+import { formatPhoneNumberWithPrefix } from '@utils/index';
 import { Base, TransactionRecord, User, uuidV4 } from './index';
 
 @Entity({ name: 'data_purchase' })
@@ -28,8 +28,9 @@ export class DataPurchase extends Base {
   @Column({ type: 'float' })
   amount: number;
 
-  @Column({ enum: AirtimeProvider })
-  provider: AirtimeProvider;
+  @ApiProperty()
+  @Column({ type: 'varchar', length: 255 })
+  providerId: string;
 
   @Column({ type: 'uuid', nullable: true })
   transactionId: string;

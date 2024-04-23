@@ -153,6 +153,7 @@ export class WalletService {
           'Content-Type': 'application/json',
         };
         const response = await httpPost<any, any>(url, requestBody, headers);
+        console.log({ callbackUrl, walletCreated: response });
         if (response?.statusMessage === 'success') {
           const updatedUser: Partial<User> = {
             bankName: 'PAGA',
@@ -659,27 +660,6 @@ export class WalletService {
     }
   }
 
-  // ===== Paga response
-  // {
-  //   statusCode: '0',
-  //   statusMessage: 'success',
-  //   transactionReference: 'DFB-U_20240325121426747_551681845_H3ZDQ_z456b',
-  //   fundingPaymentReference: 'S22607128',
-  //   accountNumber: '3206420520',
-  //   accountName: 'Abel Ani',
-  //   financialIdentificationNumber: null,
-  //   amount: '250.00',
-  //   clearingFeeAmount: '1.88',
-  //   payerDetails: {
-  //     paymentReferenceNumber: '000003240325121230002969709827 - S22607128',
-  //     narration: 'Appfund wallet To Paga Spraay Software Limited  Abel Ani',
-  //     paymentMethod: 'BANK_TRANSFER',
-  //     payerName: 'ANI ABEL CHIDIEBERE',
-  //     payerBankName: 'FCMB',
-  //     payerBankAccountNumber: '6881408019'
-  //   },
-  //   hash: 'a277843f58d1e3fe27f91045ae6a8a3fc889c596aa95ed7e6eeed407393b830fe66ab3bf86be50d2883fa463e8df120e3003efe34815a1211d20c419de1377ea'
-  // }
   async webhookHandler(payload: any): Promise<void> {
     try {
       this.logger.debug({ webhookPayload: payload });
@@ -694,6 +674,11 @@ export class WalletService {
           const narration =
             payload.payerDetails?.narration ??
             `${payload.fundingPaymentReference} - Wallet Funded`;
+          payload.amount = payload.amount.replace(/,/g, '');
+          payload.clearingFeeAmount = payload.clearingFeeAmount.replace(
+            /,/g,
+            '',
+          );
           const pagaCharge = parseFloat(payload.clearingFeeAmount);
           const amount = parseFloat(payload.amount) - pagaCharge;
           const transactionDate = new Date().toLocaleString();

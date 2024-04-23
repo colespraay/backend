@@ -6,10 +6,11 @@ import {
   UploadedFiles,
   UseInterceptors,
 } from '@nestjs/common';
+import { Cron, CronExpression } from '@nestjs/schedule';
 import { ApiResponse, ApiBody, ApiConsumes } from '@nestjs/swagger';
 import { FilesInterceptor } from '@nestjs/platform-express';
-import { Response } from 'express';
 import { diskStorage } from 'multer';
+import { Response } from 'express';
 import { FileResponseDTO, MulterValidators } from '@utils/index';
 import { AppService } from './app.service';
 
@@ -67,5 +68,15 @@ export class AppController {
     @UploadedFiles() files: Array<Express.Multer.File>,
   ): Promise<FileResponseDTO> {
     return await this.appSrv.uploadMultipleFiles(files);
+  }
+
+  @Cron(CronExpression.EVERY_30_SECONDS)
+  async keepServerActive(): Promise<void> {
+    const today = new Date().toLocaleDateString();
+    console.log({
+      today,
+      time: Date.now(),
+      message: 'keep server active for 30 more seconds 😊',
+    });
   }
 }

@@ -42,7 +42,7 @@ export class ElectricityPurchaseService extends GenericService(
   ): Promise<ElectricityPurchaseResponseDTO> {
     try {
       checkForRequiredFields(
-        ['provider', 'transactionPin', 'billerName', 'meterNumber', 'amount'],
+        ['providerId', 'transactionPin', 'meterNumber', 'amount'],
         payload,
       );
       await this.userSrv.verifyTransactionPin(user.id, payload.transactionPin);
