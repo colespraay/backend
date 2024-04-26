@@ -25,35 +25,35 @@ export class EventCategoryService
   extends GenericService(EventCategory)
   // implements OnModuleInit
 {
-  // async onModuleInit(): Promise<void> {
-  //   const categories = [
-  //     'WEDDINGS',
-  //     'CHILD DEDICATION',
-  //     'BIRTHDAY',
-  //     'ANNIVERSARY',
-  //     'CHURCH PROGRAM',
-  //     'OTHER',
-  //   ];
-  //   const categoriesFromDB = await this.getRepo().find({
-  //     where: { status: true },
-  //     select: ['id', 'name'],
-  //   });
-  //   const categoriesToCreate: Partial<EventCategory>[] = [];
-  //   for (const category of categories) {
-  //     const existingCategory = categoriesFromDB.find(
-  //       ({ name }) => name === category,
-  //     );
-  //     if (!existingCategory) {
-  //       // Bank does not exist in the database, insert a new record
-  //       categoriesToCreate.push({ name: category });
-  //     }
-  //   }
-  //   if (categoriesToCreate?.length > 0) {
-  //     await this.createMany<Partial<EventCategory>>(categoriesToCreate);
-  //     this.logger.log(`Inserted ${categoriesToCreate.length} new categories`);
-  //   }
-  //   this.logger.debug('Category-data synchronization completed.');
-  // }
+  async onModuleInit(): Promise<void> {
+    const categories = [
+      'WEDDINGS',
+      'CHILD DEDICATION',
+      'BIRTHDAY',
+      'ANNIVERSARY',
+      'CHURCH PROGRAM',
+      'OTHER',
+    ];
+    const categoriesFromDB = await this.getRepo().find({
+      where: { status: true },
+      select: ['id', 'name'],
+    });
+    const categoriesToCreate: Partial<EventCategory>[] = [];
+    for (const category of categories) {
+      const existingCategory = categoriesFromDB.find(
+        ({ name }) => name === category,
+      );
+      if (!existingCategory) {
+        // Bank does not exist in the database, insert a new record
+        categoriesToCreate.push({ name: category });
+      }
+    }
+    if (categoriesToCreate?.length > 0) {
+      await this.createMany<Partial<EventCategory>>(categoriesToCreate);
+      this.logger.log(`Inserted ${categoriesToCreate.length} new categories`);
+    }
+    this.logger.debug('Category-data synchronization completed.');
+  }
 
   async createEventCategory(
     payload: CreateEventCategoryDTO,
