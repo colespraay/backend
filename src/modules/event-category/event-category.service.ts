@@ -23,7 +23,7 @@ import {
 @Injectable()
 export class EventCategoryService
   extends GenericService(EventCategory)
-  // implements OnModuleInit
+  implements OnModuleInit
 {
   async onModuleInit(): Promise<void> {
     const categories = [
