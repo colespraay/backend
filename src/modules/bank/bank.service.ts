@@ -5,7 +5,7 @@ import { generatePagaHash, httpPost } from '@utils/index';
 import { GenericService } from '@schematics/index';
 
 @Injectable()
-export class BankService extends GenericService(Bank) implements OnModuleInit {
+export class BankService extends GenericService(Bank) {
   async onModuleInit() {
     try {
       const url = `${process.env.PAGA_BASE_URL}/getBanks`;
