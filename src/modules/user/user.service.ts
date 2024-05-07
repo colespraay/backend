@@ -1469,4 +1469,11 @@ export class UserService extends GenericService(User) {
 
     return this.getRepo().save(newUser);
   }
+
+  async getTotalUsersByIsNewUser(): Promise<{ activeUsers: number; inactiveUsers: number  }> {
+    const isNewUserTrueCount = await this.getRepo().count({ where: { isNewUser: true } });
+    const isNewUserFalseCount = await this.getRepo().count({ where: { isNewUser: false } });
+
+    return { activeUsers: isNewUserTrueCount, inactiveUsers: isNewUserFalseCount };
+  }
 }

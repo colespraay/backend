@@ -109,6 +109,12 @@ export class AdminDashboardController {
     return this.eventSrv.getAllEvents(paginationDto);
   }
 
+  @Get('users/total-users-pie-chart-data')
+  async getTotalUsersByIsNewUser(): Promise<{ activeUsers: number; inactiveUsers: number }> {
+    return this.userSrv.getTotalUsersByIsNewUser();
+  }
+
+
   @Get('users/get-all-users')
   @ApiQuery({ name: 'page', type: Number, required: false })
   @ApiQuery({ name: 'limit', type: Number, required: false })
