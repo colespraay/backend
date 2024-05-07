@@ -45,7 +45,7 @@ export class BankService extends GenericService(Bank) implements OnModuleInit {
       this.logger.debug('Bank-data synchronization completed.');
     } catch (ex) {
       if (ex instanceof AxiosError) {
-        const errorObject = ex.response;
+        const errorObject = ex.response.data;
         const message =
           typeof errorObject === 'string' ? errorObject : errorObject.error;
         this.logger.error(message);
