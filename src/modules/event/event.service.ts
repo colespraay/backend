@@ -1108,17 +1108,56 @@ export class EventService extends GenericService(EventRecord) {
   // }
 
 
-  async getTotalEventsByVenue(): Promise<{ [state: string]: number }> {
-    console.log("getTotalEventsByVenue");
+  // async getTotalEventsByVenue(): Promise<{ [state: string]: number }> {
+  //   console.log("getTotalEventsByVenue");
+  //   const events = await this.getRepo().find();
+  //   const totalEventsByVenue: { [state: string]: number } = {};
+  
+  //   events.forEach((event) => {
+  //     const venue = event.venue.toLowerCase();
+  //     const state = this.extractStateFromVenue(venue);
+  //     if (state) {
+  //       totalEventsByVenue[state] = (totalEventsByVenue[state] || 0) + 1;
+  //     }
+  //   });
+  
+  //   // Fill in 0 for states with no events
+  //   const statesInNigeria = [
+  //     'abia', 'adamawa', 'akwa ibom', 'anambra', 'bauchi', 'bayelsa', 'benue',
+  //     'borno', 'cross river', 'delta', 'ebonyi', 'edo', 'ekiti', 'enugu', 'gombe',
+  //     'imo', 'jigawa', 'kaduna', 'kano', 'katsina', 'kebbi', 'kogi', 'kwara', 'lagos',
+  //     'nasarawa', 'niger', 'ogun', 'ondo', 'osun', 'oyo', 'plateau', 'rivers',
+  //     'sokoto', 'taraba', 'yobe', 'zamfara',
+  //   ];
+  
+  //   statesInNigeria.forEach((state) => {
+  //     if (!totalEventsByVenue[state]) {
+  //       totalEventsByVenue[state] = 0;
+  //     }
+  //   });
+  
+  //   return totalEventsByVenue;
+  // }
+
+  async getTotalEventsByVenueWithPercentage(): Promise<{ [state: string]: { count: number; percentage: number } }> {
+    console.log("getTotalEventsByVenueWithPercentage");
     const events = await this.getRepo().find();
-    const totalEventsByVenue: { [state: string]: number } = {};
+    const totalEventsByVenue: { [state: string]: { count: number; percentage: number } } = {};
   
     events.forEach((event) => {
       const venue = event.venue.toLowerCase();
       const state = this.extractStateFromVenue(venue);
       if (state) {
-        totalEventsByVenue[state] = (totalEventsByVenue[state] || 0) + 1;
+        totalEventsByVenue[state] = totalEventsByVenue[state] || { count: 0, percentage: 0 };
+        totalEventsByVenue[state].count++;
       }
+    });
+  
+    // Calculate percentages
+    const totalCount = Object.values(totalEventsByVenue).reduce((acc, cur) => acc + cur.count, 0);
+    Object.keys(totalEventsByVenue).forEach((state) => {
+      const stateCount = totalEventsByVenue[state].count;
+      totalEventsByVenue[state].percentage = (stateCount / totalCount) * 100;
     });
   
     // Fill in 0 for states with no events
@@ -1132,12 +1171,15 @@ export class EventService extends GenericService(EventRecord) {
   
     statesInNigeria.forEach((state) => {
       if (!totalEventsByVenue[state]) {
-        totalEventsByVenue[state] = 0;
+        totalEventsByVenue[state] = { count: 0, percentage: 0 };
       }
     });
   
     return totalEventsByVenue;
   }
+  
+
+
   private extractStateFromVenue(venue: string): string | undefined {
     const statesInNigeria = [
       'abia', 'adamawa', 'akwa ibom', 'anambra', 'bauchi', 'bayelsa', 'benue',

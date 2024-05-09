@@ -110,8 +110,8 @@ export class AdminDashboardController {
   }
 
   @Get('users/total-users-pie-chart-data')
-  async getTotalUsersByIsNewUser(): Promise<{ activeUsers: number; inactiveUsers: number }> {
-    return this.userSrv.getTotalUsersByIsNewUser();
+  async getTotalUsersByIsNewUser(): Promise<{ activeUsers: number; activeUsersPercentage: number; inactiveUsers: number; inactiveUsersPercentage: number }> {
+    return this.userSrv.getTotalUsersByIsNewUserWithPercentage();
   }
 
 
@@ -404,8 +404,8 @@ export class AdminDashboardController {
     status: HttpStatus.OK,
     description: 'Returns the total events grouped by venue state',
   })
-  async getTotalEventsByVenue(): Promise<{ [state: string]: number }> {
-    return this.eventSrv.getTotalEventsByVenue();
+  async getTotalEventsByVenue(): Promise<{ [state: string]: { count: number; percentage: number } }> {
+    return this.eventSrv.getTotalEventsByVenueWithPercentage();
   }
   //Custom date , Today Yseterday, last 7 days, last 3 days, this month, last month,
 }
