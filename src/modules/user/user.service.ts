@@ -1478,8 +1478,8 @@ export class UserService extends GenericService(User) {
   // }
 
   async getTotalUsersByIsNewUserWithPercentage(): Promise<{ activeUsers: number; activeUsersPercentage: number; inactiveUsers: number; inactiveUsersPercentage: number }> {
-    const isNewUserTrueCount = await this.getRepo().count({ where: { isNewUser: true } });
-    const isNewUserFalseCount = await this.getRepo().count({ where: { isNewUser: false } });
+    const isNewUserTrueCount = await this.getRepo().count({ where: { status: true } });
+    const isNewUserFalseCount = await this.getRepo().count({ where: {status: false } });
     const totalUsersCount = isNewUserTrueCount + isNewUserFalseCount;
   
     const activeUsersPercentage = totalUsersCount !== 0 ? (isNewUserTrueCount / totalUsersCount) * 100 : 0;
