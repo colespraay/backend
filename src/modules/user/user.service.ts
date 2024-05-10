@@ -371,7 +371,7 @@ export class UserService extends GenericService(User) {
       }
       if (payload.email) {
         validateEmailField(payload.email);
-        record = await this.findOne({ id: payload.email.toUpperCase() });
+        record = await this.findOne({ email: payload.email.toUpperCase() });
       }
       if (payload.phoneNumber) {
         record = await this.findOne({ phoneNumber: payload.phoneNumber });
