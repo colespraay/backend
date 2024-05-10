@@ -72,12 +72,14 @@ import {
 } from './dto/user.dto';
 import ormConfig from '../../orm.config';
 import { Request } from 'express';
+import { UserActivityService } from '@modules/user-activity/user-activity.service';
 
 @Injectable()
 export class UserService extends GenericService(User) {
   constructor(
     @Inject(forwardRef(() => AuthService))
     private readonly authSrv: AuthService,
+    private readonly userActivitySrv: UserActivityService,
     private readonly eventEmitterSrv: EventEmitter2,
   ) {
     super();
@@ -593,8 +595,9 @@ export class UserService extends GenericService(User) {
       const user = await this.getRepo().findOne({
         where: { email: email.toUpperCase() },
       });
-      console.log(user)
+      console.log(user);
       if (user?.id && (await verifyPasswordHash(password, user.password))) {
+        await this.userActivitySrv.logUserActivity(user?.id, 'Login');
         return {
           success: true,
           code: HttpStatus.OK,
@@ -617,7 +620,9 @@ export class UserService extends GenericService(User) {
       const user = await this.getRepo().findOne({
         where: { phoneNumber },
       });
+
       if (user?.id && (await verifyPasswordHash(password, user.password))) {
+        await this.userActivitySrv.logUserActivity(user?.id, 'Login');
         return {
           success: true,
           code: HttpStatus.OK,
@@ -819,6 +824,7 @@ export class UserService extends GenericService(User) {
         { id: record.id },
         { password: newPasswordHash },
       );
+      await this.userActivitySrv.logUserActivity(record?.id, 'Pass Word Change');
       return {
         success: true,
         code: HttpStatus.OK,
@@ -977,11 +983,11 @@ export class UserService extends GenericService(User) {
         //     record.lastName = bvnValidationResponse.data.lastName;
         //   }
         //   if (!record.virtualAccountNumber) {
-            this.eventEmitterSrv.emit('create-wallet', {
-              userId: record.id,
-              req,
-            });
-          // }
+        this.eventEmitterSrv.emit('create-wallet', {
+          userId: record.id,
+          req,
+        });
+        // }
         // }
         record.bvn = payload.bvn;
       }
@@ -1011,6 +1017,7 @@ export class UserService extends GenericService(User) {
         userId: record.id,
         req,
       });
+      await this.userActivitySrv.logUserActivity(record?.id, 'Updates Account');
       return {
         success: true,
         code: HttpStatus.OK,
@@ -1445,7 +1452,6 @@ export class UserService extends GenericService(User) {
   }
 
   async createAdminAndEmployees(createUserDto: CreateAdminDto): Promise<User> {
-
     checkForRequiredFields(['email', 'password'], createUserDto);
     validateEmailField(createUserDto.email);
 
@@ -1461,10 +1467,10 @@ export class UserService extends GenericService(User) {
       gender: createUserDto.gender,
       email: createUserDto.email.toUpperCase(),
       lastName: createUserDto.lastName,
-      password:createUserDto.password,
+      password: createUserDto.password,
       firstName: createUserDto.firstName,
       role: AppRole.ADMIN,
-      profileImageUrl:createUserDto.profileImageUrl
+      profileImageUrl: createUserDto.profileImageUrl,
     });
 
     return this.getRepo().save(newUser);
@@ -1477,14 +1483,25 @@ export class UserService extends GenericService(User) {
   //   return { activeUsers: isNewUserTrueCount, inactiveUsers: isNewUserFalseCount };
   // }
 
-  async getTotalUsersByIsNewUserWithPercentage(): Promise<{ activeUsers: number; activeUsersPercentage: number; inactiveUsers: number; inactiveUsersPercentage: number }> {
-    const isNewUserTrueCount = await this.getRepo().count({ where: { status: true } });
-    const isNewUserFalseCount = await this.getRepo().count({ where: {status: false } });
+  async getTotalUsersByIsNewUserWithPercentage(): Promise<{
+    activeUsers: number;
+    activeUsersPercentage: number;
+    inactiveUsers: number;
+    inactiveUsersPercentage: number;
+  }> {
+    const isNewUserTrueCount = await this.getRepo().count({
+      where: { status: true },
+    });
+    const isNewUserFalseCount = await this.getRepo().count({
+      where: { status: false },
+    });
     const totalUsersCount = isNewUserTrueCount + isNewUserFalseCount;
-  
-    const activeUsersPercentage = totalUsersCount !== 0 ? (isNewUserTrueCount / totalUsersCount) * 100 : 0;
-    const inactiveUsersPercentage = totalUsersCount !== 0 ? (isNewUserFalseCount / totalUsersCount) * 100 : 0;
-  
+
+    const activeUsersPercentage =
+      totalUsersCount !== 0 ? (isNewUserTrueCount / totalUsersCount) * 100 : 0;
+    const inactiveUsersPercentage =
+      totalUsersCount !== 0 ? (isNewUserFalseCount / totalUsersCount) * 100 : 0;
+
     return {
       activeUsers: isNewUserTrueCount,
       activeUsersPercentage,
@@ -1492,5 +1509,4 @@ export class UserService extends GenericService(User) {
       inactiveUsersPercentage,
     };
   }
-  
 }
