@@ -37,6 +37,7 @@ import {
   ApiCreatedResponse,
   ApiNotFoundResponse,
   ApiOperation,
+  ApiParam,
   ApiProduces,
   ApiQuery,
   ApiResponse,
@@ -434,12 +435,24 @@ export class AdminDashboardController {
 
     return results;
   }
-  @Get('user/Transaction-charts')
+  @Get('user/Transaction-charts/:userId')
+  @ApiOperation({
+    summary: 'Get combined total sum and percentages by user ID',
+    description:
+      'Calculates the total sum and percentages of different purchases for a user.',
+  })
+  @ApiParam({
+    name: 'userId',
+    description:
+      'The ID of the user for whom to calculate the total sum and percentages.',
+    type: 'string',
+    required: true,
+  })
   async getCombinedTotalSumByUserId(
     @Param('userId') userId: string,
   ): Promise<any> {
     let totalbillSum = 0;
-console.log(userId)
+    console.log(userId);
     // Calculate total sum for electricityPurchaseSrv
     const electricitySum = await this.electricityPurchaseSrv
       .getRepo()
@@ -467,8 +480,6 @@ console.log(userId)
       .select('SUM(entity.amount)', 'sum')
       .where('entity.userId = :userId', { userId })
       .getRawOne();
-
-      console.log("airtime Sume:",airtimeSum)
 
     totalbillSum += parseFloat(airtimeSum.sum) || 0;
 
@@ -514,16 +525,17 @@ console.log(userId)
       (parseFloat(eventSum.sum) / totalbillSum) * 100 || 0;
     const giftingPercentage =
       (parseFloat(giftingSum.sum) / totalbillSum) * 100 || 0;
-    console.log(totalbillSum);
+    console.log('Toatl Bills:', totalbillSum);
+    console.log('BILLS', parseFloat(electricitySum.sum));
     const billspercentage =
-      ((parseFloat(electricitySum.sum) +
-        parseFloat(dataSum.sum) +
-        parseFloat(airtimeSum.sum) +
-        parseFloat(cableSum.sum) +
-        parseFloat(bettingSum.sum)) /
+      (((parseFloat(electricitySum.sum) || 0) +
+        (parseFloat(dataSum.sum) || 0) +
+        (parseFloat(airtimeSum.sum) || 0) +
+        (parseFloat(cableSum.sum) || 0) +
+        (parseFloat(bettingSum.sum) || 0)) /
         totalbillSum) *
         100 || 0;
-
+    console.log(totalbillSum);
     return {
       allBills: billspercentage,
       Events: eventsPercentage,
