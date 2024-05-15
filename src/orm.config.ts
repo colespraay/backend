@@ -27,7 +27,7 @@ switch (NODE_ENV) {
       // Run migrations automatically,
       // you can disable this if you prefer running migration manually.
       migrationsRun: false,
-      // ssl: { rejectUnauthorized: false },
+      ssl: { rejectUnauthorized: false },
     };
     break;
   case NODE_ENVIRONMENT.PRODUCTION:

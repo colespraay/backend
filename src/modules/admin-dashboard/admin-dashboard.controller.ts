@@ -439,7 +439,7 @@ export class AdminDashboardController {
     @Param('userId') userId: string,
   ): Promise<any> {
     let totalbillSum = 0;
-
+console.log(userId)
     // Calculate total sum for electricityPurchaseSrv
     const electricitySum = await this.electricityPurchaseSrv
       .getRepo()
