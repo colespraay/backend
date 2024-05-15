@@ -104,6 +104,9 @@ export class UpdateUserDTO extends PartialType(CreateUserDTO) {
   userTag?: string;
 
   @ApiProperty({ nullable: true })
+  Freeze: boolean;
+
+  @ApiProperty({ nullable: true })
   bvn?: string;
 
   @ApiProperty({ nullable: true })

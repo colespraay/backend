@@ -69,6 +69,12 @@ export class User extends Base {
   @Column({ type: 'boolean', default: false })
   isNewUser: boolean;
 
+
+  @ApiProperty()
+  @Column({ type: 'boolean', default: false })
+  Freeze: boolean;
+
+
   @ApiProperty({ enum: AppRole })
   @Column({ enum: AppRole, default: AppRole.CUSTOMER })
   role: AppRole;

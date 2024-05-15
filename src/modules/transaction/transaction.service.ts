@@ -1279,6 +1279,25 @@ export class TransactionService extends GenericService(TransactionRecord) {
 
   //   return results.map(({ date, sum }) => ({ date, sum: parseFloat(sum) }));
   // }
+
+  async getTransactionsByUserId(
+    userId: string,
+    page: number = 1,
+    limit: number = 10,
+  ): Promise<{ transactions: TransactionRecord[]; totalTransactions: number }> {
+    const skip = (page - 1) * limit;
+
+    const [transactions, totalTransactions] = await this.getRepo().findAndCount({
+      where: { userId },
+      skip,
+      take: limit,
+      order: { transactionDate: 'DESC' },
+    });
+
+    return { transactions, totalTransactions };
+  }
+
+
   async getTotalTransactionsPerDay(dateRange: TransactionDateRangeDto): Promise<{ date: string; count: number }[]> {
     const { startDate, endDate } = dateRange;
     const results = await this.getRepo()

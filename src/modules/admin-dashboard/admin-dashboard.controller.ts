@@ -22,7 +22,15 @@ import {
 import { TransactionService } from '@modules/transaction/transaction.service';
 import { CreateAdminDto } from '@modules/user/dto/user.dto';
 import { UserService } from '@modules/user/user.service';
-import { Body, Controller, Get, HttpStatus, Post, Query } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Get,
+  HttpStatus,
+  Param,
+  Post,
+  Query,
+} from '@nestjs/common';
 import {
   ApiBadRequestResponse,
   ApiConsumes,
@@ -110,10 +118,14 @@ export class AdminDashboardController {
   }
 
   @Get('users/total-users-pie-chart-data')
-  async getTotalUsersByIsNewUser(): Promise<{ activeUsers: number; activeUsersPercentage: number; inactiveUsers: number; inactiveUsersPercentage: number }> {
+  async getTotalUsersByIsNewUser(): Promise<{
+    activeUsers: number;
+    activeUsersPercentage: number;
+    inactiveUsers: number;
+    inactiveUsersPercentage: number;
+  }> {
     return this.userSrv.getTotalUsersByIsNewUserWithPercentage();
   }
-
 
   @Get('users/get-all-users')
   @ApiQuery({ name: 'page', type: Number, required: false })
@@ -169,8 +181,12 @@ export class AdminDashboardController {
     description: 'Failed to calculate total transaction amount',
   })
   // @Query() dateRangeDto: TransactionDateRangeDto,
-  async getTotalTransactionAmount(@Query() dateRangeDto: TransactionDateRangeDto): Promise<any> {
-    return await this.transactionSrv.calculateTotalTransactionAmount(dateRangeDto);
+  async getTotalTransactionAmount(
+    @Query() dateRangeDto: TransactionDateRangeDto,
+  ): Promise<any> {
+    return await this.transactionSrv.calculateTotalTransactionAmount(
+      dateRangeDto,
+    );
   }
 
   @Get('app-revenue/get-total-revenue')
@@ -184,8 +200,12 @@ export class AdminDashboardController {
     description: 'Failed to sum up app profit',
   })
   // @Query() dateRangeDto: TransactionDateRangeDto,
-  async sumUpAppProfitAndReturn(@Query() dateRangeDto: TransactionDateRangeDto): Promise<number> {
-    const totalAppProfit = await this.appProfitSrv.sumUpAppProfitAndReturn( dateRangeDto);
+  async sumUpAppProfitAndReturn(
+    @Query() dateRangeDto: TransactionDateRangeDto,
+  ): Promise<number> {
+    const totalAppProfit = await this.appProfitSrv.sumUpAppProfitAndReturn(
+      dateRangeDto,
+    );
     return totalAppProfit;
   }
 
@@ -207,15 +227,16 @@ export class AdminDashboardController {
   @Get('eventspray/aggregate-total-sum-per-day')
   @ApiResponse({
     status: 200,
-    description:
-      'Successfully aggregated total event spraay sum per day ',
+    description: 'Successfully aggregated total event spraay sum per day ',
   })
   @ApiResponse({
     status: 500,
     description: 'Failed to aggregate total event spraay sum per day',
   })
   // @Query() dateRangeDto: TransactionDateRangeDto,
-  async aggregateTotalEventSpraaySumPerDay(@Query() dateRangeDto: TransactionDateRangeDto): Promise<any> {
+  async aggregateTotalEventSpraaySumPerDay(
+    @Query() dateRangeDto: TransactionDateRangeDto,
+  ): Promise<any> {
     return this.eventspraaySrv.aggregateTotalEventSpraaySumPerDay(dateRangeDto);
   }
 
@@ -229,13 +250,17 @@ export class AdminDashboardController {
     description: 'Internal Server Error',
   })
   // @Query() dateRangeDto: TransactionDateRangeDto,
-  async aggregateTotalGiftingumPerDay(@Query() dateRangeDto: TransactionDateRangeDto): Promise<any> {
+  async aggregateTotalGiftingumPerDay(
+    @Query() dateRangeDto: TransactionDateRangeDto,
+  ): Promise<any> {
     return this.giftingSrv.aggregateTotalGiftingPerDay(dateRangeDto);
   }
 
   @Get('/bills/aggregate-total-sum-per-day')
   // @Query() dateRangeDto: TransactionDateRangeDto,
-  async gettoatlsumedupbillingperday(@Query() dateRangeDto: TransactionDateRangeDto): Promise<any> {
+  async gettoatlsumedupbillingperday(
+    @Query() dateRangeDto: TransactionDateRangeDto,
+  ): Promise<any> {
     const services = [
       this.electricityPurchaseSrv,
       this.dataPurchaseSrv,
@@ -243,7 +268,7 @@ export class AdminDashboardController {
       this.cablePurchaseSrv,
       this.bettingPurchaseSrv,
     ];
-    return await this.billSrv.aggregateBillingPerDay(services,dateRangeDto);
+    return await this.billSrv.aggregateBillingPerDay(services, dateRangeDto);
   }
   ////////////////////////////////////////USE DATE RANGE PLEASE////////////////////////////////////
   ////////////////////////////////////////USE DATE RANGE PLEASE////////////////////////////////////
@@ -307,6 +332,17 @@ export class AdminDashboardController {
     totalCountCurrentDay: number;
   }> {
     return this.eventspraaySrv.getTotalEventSpraayAmountAndCount(dateRangeDto);
+  }
+
+  @Get('total-by-venue')
+  @ApiResponse({
+    status: HttpStatus.OK,
+    description: 'Returns the total events grouped by venue state',
+  })
+  async getTotalEventsByVenue(): Promise<{
+    [state: string]: { count: number; percentage: number };
+  }> {
+    return this.eventSrv.getTotalEventsByVenueWithPercentage();
   }
 
   @Get('bill/total-amount-for-date-range')
@@ -398,14 +434,102 @@ export class AdminDashboardController {
 
     return results;
   }
+  @Get('user/Transaction-charts')
+  async getCombinedTotalSumByUserId(
+    @Param('userId') userId: string,
+  ): Promise<any> {
+    let totalbillSum = 0;
 
-  @Get('total-by-venue')
-  @ApiResponse({
-    status: HttpStatus.OK,
-    description: 'Returns the total events grouped by venue state',
-  })
-  async getTotalEventsByVenue(): Promise<{ [state: string]: { count: number; percentage: number } }> {
-    return this.eventSrv.getTotalEventsByVenueWithPercentage();
+    // Calculate total sum for electricityPurchaseSrv
+    const electricitySum = await this.electricityPurchaseSrv
+      .getRepo()
+      .createQueryBuilder('entity')
+      .select('SUM(entity.amount)', 'sum')
+      .where('entity.userId = :userId', { userId })
+      .getRawOne();
+
+    totalbillSum += parseFloat(electricitySum.sum) || 0;
+
+    // Calculate total sum for dataPurchaseSrv
+    const dataSum = await this.dataPurchaseSrv
+      .getRepo()
+      .createQueryBuilder('entity')
+      .select('SUM(entity.amount)', 'sum')
+      .where('entity.userId = :userId', { userId })
+      .getRawOne();
+
+    totalbillSum += parseFloat(dataSum.sum) || 0;
+
+    // Calculate total sum for airtimePurchaseSrv
+    const airtimeSum = await this.airtimePurchaseSrv
+      .getRepo()
+      .createQueryBuilder('entity')
+      .select('SUM(entity.amount)', 'sum')
+      .where('entity.userId = :userId', { userId })
+      .getRawOne();
+
+      console.log("airtime Sume:",airtimeSum)
+
+    totalbillSum += parseFloat(airtimeSum.sum) || 0;
+
+    // Calculate total sum for cablePurchaseSrv
+    const cableSum = await this.cablePurchaseSrv
+      .getRepo()
+      .createQueryBuilder('entity')
+      .select('SUM(entity.amount)', 'sum')
+      .where('entity.userId = :userId', { userId })
+      .getRawOne();
+
+    totalbillSum += parseFloat(cableSum.sum) || 0;
+
+    // Calculate total sum for bettingPurchaseSrv
+    const bettingSum = await this.bettingPurchaseSrv
+      .getRepo()
+      .createQueryBuilder('entity')
+      .select('SUM(entity.amount)', 'sum')
+      .where('entity.userId = :userId', { userId })
+      .getRawOne();
+
+    totalbillSum += parseFloat(bettingSum.sum) || 0;
+
+    // Calculate total sum for eventspraaySrv
+    const eventSum = await this.eventspraaySrv
+      .getRepo()
+      .createQueryBuilder('entity')
+      .select('SUM(entity.amount)', 'sum')
+      .where('entity.userId = :userId', { userId })
+      .getRawOne();
+    totalbillSum += parseFloat(eventSum.sum) || 0;
+
+    // Calculate total sum for giftingSrv
+    const giftingSum = await this.giftingSrv
+      .getRepo()
+      .createQueryBuilder('entity')
+      .select('SUM(entity.amount)', 'sum')
+      .where('entity.receiverUserId = :userId', { userId })
+      .getRawOne();
+    totalbillSum += parseFloat(giftingSum.sum) || 0;
+
+    const eventsPercentage =
+      (parseFloat(eventSum.sum) / totalbillSum) * 100 || 0;
+    const giftingPercentage =
+      (parseFloat(giftingSum.sum) / totalbillSum) * 100 || 0;
+    console.log(totalbillSum);
+    const billspercentage =
+      ((parseFloat(electricitySum.sum) +
+        parseFloat(dataSum.sum) +
+        parseFloat(airtimeSum.sum) +
+        parseFloat(cableSum.sum) +
+        parseFloat(bettingSum.sum)) /
+        totalbillSum) *
+        100 || 0;
+
+    return {
+      allBills: billspercentage,
+      Events: eventsPercentage,
+      Gifting: giftingPercentage,
+    };
   }
+
   //Custom date , Today Yseterday, last 7 days, last 3 days, this month, last month,
 }

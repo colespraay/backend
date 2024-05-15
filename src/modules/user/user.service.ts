@@ -924,6 +924,13 @@ export class UserService extends GenericService(User) {
       if (payload.lastName && payload.lastName !== record.lastName) {
         record.lastName = payload.lastName.toUpperCase();
       }
+
+      if (payload.Freeze && payload.Freeze !== record.Freeze) {
+        record.Freeze = payload.Freeze;
+      }
+
+
+      
       if (payload.gender && payload.gender !== record.gender) {
         compareEnumValueFields(payload.gender, Object.values(Gender), 'gender');
         record.gender = payload.gender;
@@ -998,6 +1005,7 @@ export class UserService extends GenericService(User) {
         email: record.email,
         status: record.status,
         userTag: record.userTag,
+        Freeze:record.Freeze,
         lastName: record.lastName,
         password: record.password,
         firstName: record.firstName,
