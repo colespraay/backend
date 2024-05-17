@@ -1517,4 +1517,12 @@ export class UserService extends GenericService(User) {
       inactiveUsersPercentage,
     };
   }
+
+  async getAdminUsers(): Promise<User[]> {
+    return await this.getRepo().find({
+      where: { role: AppRole.ADMIN },
+    });
+  }
+
+
 }
