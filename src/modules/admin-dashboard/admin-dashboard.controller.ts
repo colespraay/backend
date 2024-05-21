@@ -30,9 +30,11 @@ import {
   Param,
   Post,
   Query,
+  UseGuards,
 } from '@nestjs/common';
 import {
   ApiBadRequestResponse,
+  ApiBearerAuth,
   ApiConsumes,
   ApiCreatedResponse,
   ApiNotFoundResponse,
@@ -43,7 +45,7 @@ import {
   ApiResponse,
   ApiTags,
 } from '@nestjs/swagger';
-import { CurrentUser } from '@schematics/index';
+import { CurrentUser, RolesGuard } from '@schematics/index';
 import { DecodedTokenKey } from '@utils/index';
 import { PaginationRequestType } from '@utils/utils.types';
 
@@ -103,8 +105,10 @@ export class AdminDashboardController {
   @ApiOperation({ description: 'Find events for currently logged in user' })
   @ApiProduces('json')
   @ApiConsumes('application/json')
+  @ApiBearerAuth('JWT')
+@UseGuards(RolesGuard)
   @ApiResponse({ type: EventsResponseDTO })
-  @Get('events/get-events-created-by-adimin')
+  @Get('events/get-events-created-by-admin')
   async findEventsForCurrentUser(
     @CurrentUser(DecodedTokenKey.USER_ID) userId: string,
     @Query() pagination?: PaginationRequestType,
@@ -441,7 +445,6 @@ export class AdminDashboardController {
   //   return results;
   // }
 
-
   @Get('bill/total-amount-for-date-range')
   async getTotalSumPerRepo(
     @Query() dateRange: TransactionDateRangeDto,
@@ -467,26 +470,26 @@ export class AdminDashboardController {
     };
 
     // Calculate total sums for each service
-    const electricitySum = await calculateSum(this.electricityPurchaseSrv, 'electricity');
+    const electricitySum = await calculateSum(
+      this.electricityPurchaseSrv,
+      'electricity',
+    );
     const dataSum = await calculateSum(this.dataPurchaseSrv, 'data');
     const airtimeSum = await calculateSum(this.airtimePurchaseSrv, 'airtime');
     const cableSum = await calculateSum(this.cablePurchaseSrv, 'cable');
     const bettingSum = await calculateSum(this.bettingPurchaseSrv, 'betting');
 
     // Calculate total sum
-    const totalSum = electricitySum + dataSum + airtimeSum + cableSum + bettingSum;
+    const totalSum =
+      electricitySum + dataSum + airtimeSum + cableSum + bettingSum;
 
     // Calculate percentage for each repo
-    results.forEach(result => {
+    results.forEach((result) => {
       result.percentage = totalSum ? (result.sum / totalSum) * 100 : 0;
     });
 
     return results;
   }
-
-
-
-
 
   @Get('user/Transaction-charts/:userId')
   @ApiOperation({
@@ -578,8 +581,6 @@ export class AdminDashboardController {
       (parseFloat(eventSum.sum) / totalbillSum) * 100 || 0;
     const giftingPercentage =
       (parseFloat(giftingSum.sum) / totalbillSum) * 100 || 0;
-    console.log('Toatl Bills:', totalbillSum);
-    console.log('BILLS', parseFloat(electricitySum.sum));
     const billspercentage =
       (((parseFloat(electricitySum.sum) || 0) +
         (parseFloat(dataSum.sum) || 0) +

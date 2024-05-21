@@ -351,6 +351,18 @@ export class UserController {
     return await this.userSrv.deleteUserByPhoneNumber(phoneNumber);
   }
 
+  @Get('user-wildcard-search/search')
+  @ApiOperation({ summary: 'Search Users (Wildcard)' })
+  @ApiResponse({ status: 200, type: [User] })
+  async findUsersByWildcard(@Query('searchTerm') searchTerm: string) {
+    try {
+      const users = await this.userSrv.findUsersByWildcard(searchTerm);
+      return users
+    } catch (error) {
+      throw error; // Re-throw for global error handling
+    }
+  }
+
   // @Get()
   // @ApiQuery({ name: 'page', type: Number, required: false })
   // @ApiQuery({ name: 'limit', type: Number, required: false })

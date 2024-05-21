@@ -1524,5 +1524,25 @@ export class UserService extends GenericService(User) {
     });
   }
 
+  async findUsersByWildcard(searchTerm: string): Promise<User[]> {
+    const queryBuilder = this.getRepo().createQueryBuilder('user');
+
+    queryBuilder.where(
+      '(UPPER(user.firstName) LIKE UPPER(:searchTerm) OR UPPER(user.lastName) LIKE UPPER(:searchTerm) OR UPPER(user.email) LIKE UPPER(:searchTerm))',
+      { searchTerm: `%${searchTerm}%` },
+    );
+
+    return await queryBuilder.getMany();
+  }
+
+  async searchUsers(query: string): Promise<User[]> {
+    return await this.getRepo()
+      .createQueryBuilder('user')
+      .where('user.firstName LIKE :query', { query: `%${query}%` })
+      .orWhere('user.lastName LIKE :query', { query: `%${query}%` })
+      .orWhere('user.email LIKE :query', { query: `%${query}%` })
+      .getMany();
+  }
+
 
 }
