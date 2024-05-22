@@ -597,5 +597,25 @@ export class AdminDashboardController {
     };
   }
 
+  @Get('/events/totals-for-date-range')
+  @ApiOperation({ summary: 'Get total event spraay amount and count for a date range' })
+  @ApiQuery({ name: 'startDate', required: true, type: String, example: '2024-01-01' })
+  @ApiQuery({ name: 'endDate', required: true, type: String, example: '2024-01-31' })
+  @ApiResponse({
+    status: 200,
+    description: 'Total event spraay amount and count for the specified date range',
+    schema: {
+      properties: {
+        totalAmount: { type: 'number', example: 1000 },
+        totalCount: { type: 'number', example: 10 },
+      },
+    },
+  })
+  async getTotalevent_spraayAmountAndCount(
+    @Query() dateRange: TransactionDateRangeDto,
+  ): Promise<{ totalAmount: number; totalCount: number }> {
+    return this.eventSrv.getTotaleventAmountAndCount(dateRange);
+  }
+
   //Custom date , Today Yseterday, last 7 days, last 3 days, this month, last month,
 }
