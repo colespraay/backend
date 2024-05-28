@@ -36,6 +36,24 @@ export class DataPurchaseService extends GenericService(DataPurchase) {
     super();
   }
 
+  async createDataPurchaseDemo(
+    userId: string,
+    dataPlanId: number,
+    phoneNumber: string,
+    amount: number,
+    providerId: string,
+  ): Promise<DataPurchase> {
+    const dataPurchase = new DataPurchase();
+    dataPurchase.userId = userId;
+    dataPurchase.dataPlanId = dataPlanId;
+    dataPurchase.phoneNumber = phoneNumber; // Formatted in controller
+    dataPurchase.amount = amount;
+    dataPurchase.providerId = providerId;
+    transactionId: null; // Set transactionId later (optional)
+
+    return await this.create(dataPurchase);
+  }
+
   async createDataPurchase(
     payload: CreateDataPurchaseDTO,
     user: User,
