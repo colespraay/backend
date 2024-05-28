@@ -380,7 +380,7 @@ export class BillService implements OnModuleInit {
   async makeDataPurchase(
     payload: CreateFlutterwaveDataPurchaseDTO,
     reference: string,
-    env = 'PROD',
+    env = 'TEST',
   ): Promise<FlutterwaveBillPaymentResponseDTO> {
     try {
       if (env === 'TEST') {
