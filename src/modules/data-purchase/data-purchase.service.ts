@@ -78,11 +78,11 @@ export class DataPurchaseService extends GenericService(DataPurchase) {
         payload.providerId,
         payload.dataPlanId,
       );
-      // await this.userSrv.checkAccountBalance(plan.servicePrice, user.id);
-      // const { availableBalance } = await this.walletSrv.getAccountBalance();
-      // if (availableBalance < Number(plan.servicePrice)) {
-      //   throw new ConflictException('Insufficient balance');
-      // }
+      await this.userSrv.checkAccountBalance(plan.servicePrice, user.id);
+      const { availableBalance } = await this.walletSrv.getAccountBalance();
+      if (availableBalance < Number(plan.servicePrice)) {
+        throw new ConflictException('Insufficient balance');
+      }
       const reference = `Spraay-data-${generateUniqueCode(10)}`;
 
       const dataPurchaseResponse = await this.billSrv.makeDataPurchase(
