@@ -238,6 +238,16 @@ export class TransactionController {
   }
 
 
+  @Get('search/:reference')
+  @ApiOperation({ summary: 'Search transactions by reference (wildcard)' })
+  @ApiResponse({ status: 200, type: [TransactionRecord], description: 'Found transactions' })
+  async searchTransactionsByReference(
+    @Param('reference') reference: string,
+  ): Promise<TransactionRecord[]> {
+    const transactions = await this.transactionSrv.findTransactionsByWildcardReference(reference);
+    return transactions;
+  }
+
   // @Post('dummy/create')
   // @ApiResponse({
   //   status: HttpStatus.CREATED,

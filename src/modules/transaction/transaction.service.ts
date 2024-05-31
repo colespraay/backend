@@ -1355,6 +1355,14 @@ export class TransactionService extends GenericService(TransactionRecord) {
   
     return aggregatedData;
   }
-  
+
+
+
+  async findTransactionsByWildcardReference(reference: string): Promise<TransactionRecord[]> {
+    const queryBuilder = this.getRepo().createQueryBuilder('transactionRecord');
+    queryBuilder.where('transactionRecord.reference ILIKE :reference', { reference: `%${reference}%` });
+
+    return await queryBuilder.getMany();
+  }
 
 }

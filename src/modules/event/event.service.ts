@@ -1365,4 +1365,18 @@ export class EventService extends GenericService(EventRecord) {
 
     return undefined;
   }
+
+  // async findEventsByWildcardeventid(eventid: string): Promise<EventRecord[]> {
+  //   const queryBuilder = this.getRepo().createQueryBuilder('eventRecord');
+  //   queryBuilder.where('eventRecord.id ILIKE :eventid', { id: `%${eventid}%` });
+  //  // queryBuilder.where('transactionRecord.reference ILIKE :reference', { reference: `%${reference}%` });
+  //   return await queryBuilder.getMany();
+  // }
+
+  async findEventsByWildcardeventid(eventCode: string): Promise<EventRecord[]> {
+    const queryBuilder = this.getRepo().createQueryBuilder('eventRecord');
+    queryBuilder.where('eventRecord.eventCode ILIKE :eventCode', { eventCode: `%${eventCode}%` }); // Add semicolon here
+    return await queryBuilder.getMany();
+  }
+  
 }
