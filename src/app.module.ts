@@ -41,6 +41,7 @@ import { AppProfitModule } from './modules/app-profit/app-profit.module';
 import { BettingPurchaseModule } from './modules/betting-purchase/betting-purchase.module';
 import { AdminDashboardModule } from './modules/admin-dashboard/admin-dashboard.module';
 import { UserActivityModule } from './modules/user-activity/user-activity.module';
+import { SprayEmitterRealtimeModule } from './modules/spray-emitter-realtime/spray-emitter-realtime.module';
 
 import ormConfig from './orm.config';
 
@@ -76,6 +77,7 @@ import ormConfig from './orm.config';
     BettingPurchaseModule,
     AdminDashboardModule,
     UserActivityModule,
+    SprayEmitterRealtimeModule,
     // AdmindashboardModule,
   ],
   controllers: [AppController],
