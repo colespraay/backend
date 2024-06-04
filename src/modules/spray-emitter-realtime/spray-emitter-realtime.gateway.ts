@@ -36,6 +36,7 @@ export class SprayEmitterRealtimeGateway implements OnGatewayConnection {
     @ConnectedSocket() client: Socket,
     @MessageBody() payload: EmmitEventSpraayDTO,
   ): Promise<void> {
+    // console.log(payload);
     // Handle the incoming message and send it to the recipient
     const { receiver,sprayerId ,eventId} = payload;
     // const savedchat = await this.chatsService.sendChat(payload);
