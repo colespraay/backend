@@ -40,6 +40,7 @@ import {
   EventAttendanceSummaryDTO,
   EventPaginationDto,
 } from './dto/event.dto';
+import { TransactionDateRangeDto } from '@modules/transaction/dto/transaction.dto';
 
 @Injectable()
 export class EventService extends GenericService(EventRecord) {
@@ -1040,9 +1041,6 @@ export class EventService extends GenericService(EventRecord) {
     }
   }
 
-
-
-
   // async getAllEvents(paginationDto: EventPaginationDto): Promise<any> {
   //   try {
   //     const { page, limit } = paginationDto;
@@ -1050,7 +1048,7 @@ export class EventService extends GenericService(EventRecord) {
   //       skip: (page - 1) * limit,
   //       take: limit,
   //     });
-  
+
   //     return {
   //       success: true,
   //       message: 'Events retrieved successfully',
@@ -1073,7 +1071,7 @@ export class EventService extends GenericService(EventRecord) {
         skip: (page - 1) * limit,
         take: limit,
       });
-  
+
       return {
         success: true,
         message: 'Events retrieved successfully',
@@ -1089,7 +1087,6 @@ export class EventService extends GenericService(EventRecord) {
       };
     }
   }
-
 
   // async getTotalEventsByVenue(): Promise<{ [state: string]: number }> {
   //   console.log("getTotalEventsByVenue")
@@ -1107,44 +1104,257 @@ export class EventService extends GenericService(EventRecord) {
   //   return totalEventsByVenue;
   // }
 
+  // async getTotalEventsByVenue(): Promise<{ [state: string]: number }> {
+  //   console.log("getTotalEventsByVenue");
+  //   const events = await this.getRepo().find();
+  //   const totalEventsByVenue: { [state: string]: number } = {};
 
-  async getTotalEventsByVenue(): Promise<{ [state: string]: number }> {
-    console.log("getTotalEventsByVenue");
+  //   events.forEach((event) => {
+  //     const venue = event.venue.toLowerCase();
+  //     const state = this.extractStateFromVenue(venue);
+  //     if (state) {
+  //       totalEventsByVenue[state] = (totalEventsByVenue[state] || 0) + 1;
+  //     }
+  //   });
+
+  //   // Fill in 0 for states with no events
+  //   const statesInNigeria = [
+  //     'abia', 'adamawa', 'akwa ibom', 'anambra', 'bauchi', 'bayelsa', 'benue',
+  //     'borno', 'cross river', 'delta', 'ebonyi', 'edo', 'ekiti', 'enugu', 'gombe',
+  //     'imo', 'jigawa', 'kaduna', 'kano', 'katsina', 'kebbi', 'kogi', 'kwara', 'lagos',
+  //     'nasarawa', 'niger', 'ogun', 'ondo', 'osun', 'oyo', 'plateau', 'rivers',
+  //     'sokoto', 'taraba', 'yobe', 'zamfara',
+  //   ];
+
+  //   statesInNigeria.forEach((state) => {
+  //     if (!totalEventsByVenue[state]) {
+  //       totalEventsByVenue[state] = 0;
+  //     }
+  //   });
+
+  //   return totalEventsByVenue;
+  // }
+
+  // async getTotalEventsByVenueWithPercentage(): Promise<{ [state: string]: { count: number; percentage: number } }> {
+  //   console.log("getTotalEventsByVenueWithPercentage");
+  //   const events = await this.getRepo().find();
+  //   const totalEventsByVenue: { [state: string]: { count: number; percentage: number } } = {};
+
+  //   events.forEach((event) => {
+  //     const venue = event.venue.toLowerCase();
+  //     const state = this.extractStateFromVenue(venue);
+  //     if (state) {
+  //       totalEventsByVenue[state] = totalEventsByVenue[state] || { count: 0, percentage: 0 };
+  //       totalEventsByVenue[state].count++;
+  //     }
+  //   });
+
+  //   // Calculate percentages
+  //   const totalCount = Object.values(totalEventsByVenue).reduce((acc, cur) => acc + cur.count, 0);
+  //   Object.keys(totalEventsByVenue).forEach((state) => {
+  //     const stateCount = totalEventsByVenue[state].count;
+  //     totalEventsByVenue[state].percentage = (stateCount / totalCount) * 100;
+  //   });
+
+  //   // Fill in 0 for states with no events
+  //   const statesInNigeria = [
+  //     'abia', 'adamawa', 'akwa ibom', 'anambra', 'bauchi', 'bayelsa', 'benue',
+  //     'borno', 'cross river', 'delta', 'ebonyi', 'edo', 'ekiti', 'enugu', 'gombe',
+  //     'imo', 'jigawa', 'kaduna', 'kano', 'katsina', 'kebbi', 'kogi', 'kwara', 'lagos',
+  //     'nasarawa', 'niger', 'ogun', 'ondo', 'osun', 'oyo', 'plateau', 'rivers',
+  //     'sokoto', 'taraba', 'yobe', 'zamfara',
+  //   ];
+
+  //   statesInNigeria.forEach((state) => {
+  //     if (!totalEventsByVenue[state]) {
+  //       totalEventsByVenue[state] = { count: 0, percentage: 0 };
+  //     }
+  //   });
+
+  //   return totalEventsByVenue;
+  // }
+
+  // private extractStateFromVenue(venue: string): string | undefined {
+  //   const statesInNigeria = [
+  //     'abia', 'adamawa', 'akwa ibom', 'anambra', 'bauchi', 'bayelsa', 'benue',
+  //     'borno', 'cross river', 'delta', 'ebonyi', 'edo', 'ekiti', 'enugu', 'gombe',
+  //     'imo', 'jigawa', 'kaduna', 'kano', 'katsina', 'kebbi', 'kogi', 'kwara', 'lagos',
+  //     'nasarawa', 'niger', 'ogun', 'ondo', 'osun', 'oyo', 'plateau', 'rivers',
+  //     'sokoto', 'taraba', 'yobe', 'zamfara',
+  //   ];
+
+  //   for (const state of statesInNigeria) {
+  //     if (venue.includes(state)) {
+  //       return state;
+  //     }
+  //   }
+
+  //   return undefined;
+  // }
+
+  async getTotaleventAmountAndCount(
+    dateRange: TransactionDateRangeDto,
+  ): Promise<{ totalAmount: number; totalCount: number }> {
+    const { startDate, endDate } = dateRange;
+    
+    // const totalAmount = await this.getRepo()
+    //   .createQueryBuilder('event')
+    //   .select('SUM(event.amount)', 'totalAmount')
+    //   .where('event.dateCreated BETWEEN :startDate AND :endDate', {
+    //     startDate,
+    //     endDate,
+    //   })
+    //   .getRawOne();
+
+    const totalCount = await this.getRepo()
+      .createQueryBuilder('event')
+      .where('event.dateCreated BETWEEN :startDate AND :endDate', {
+        startDate,
+        endDate,
+      })
+      .getCount();
+
+    return {
+      totalAmount: totalCount,
+      totalCount,
+    };
+  }
+
+  async getTotalEventsByVenueWithPercentage(): Promise<{
+    [state: string]: {
+      count: number;
+      percentage: number;
+      latitude: number;
+      longitude: number;
+    };
+  }> {
+    console.log('getTotalEventsByVenueWithPercentage');
     const events = await this.getRepo().find();
-    const totalEventsByVenue: { [state: string]: number } = {};
-  
+    const totalEventsByVenue: {
+      [state: string]: {
+        count: number;
+        percentage: number;
+        latitude: number;
+        longitude: number;
+      };
+    } = {};
+
+    const statesCoordinates = {
+      abia: { latitude: 5.4527, longitude: 7.5248 },
+      adamawa: { latitude: 9.3265, longitude: 12.3984 },
+      akwaIbom: { latitude: 5.0389, longitude: 7.9092 },
+      anambra: { latitude: 6.2209, longitude: 7.0673 },
+      bauchi: { latitude: 10.3103, longitude: 9.8435 },
+      bayelsa: { latitude: 4.7719, longitude: 6.0699 },
+      benue: { latitude: 7.3369, longitude: 8.7405 },
+      borno: { latitude: 11.8333, longitude: 13.15 },
+      crossRiver: { latitude: 5.9631, longitude: 8.334 },
+      delta: { latitude: 5.7049, longitude: 5.9335 },
+      ebonyi: { latitude: 6.2649, longitude: 8.0135 },
+      edo: { latitude: 6.5244, longitude: 5.8987 },
+      ekiti: { latitude: 7.719, longitude: 5.311 },
+      enugu: { latitude: 6.5244, longitude: 7.5105 },
+      gombe: { latitude: 10.2897, longitude: 11.1711 },
+      imo: { latitude: 5.572, longitude: 7.0588 },
+      jigawa: { latitude: 12.2286, longitude: 9.5616 },
+      kaduna: { latitude: 10.5105, longitude: 7.4165 },
+      kano: { latitude: 12.0022, longitude: 8.5919 },
+      katsina: { latitude: 12.9882, longitude: 7.6171 },
+      kebbi: { latitude: 12.4608, longitude: 4.199 },
+      kogi: { latitude: 7.8004, longitude: 6.7333 },
+      kwara: { latitude: 8.9665, longitude: 4.6 },
+      lagos: { latitude: 6.5244, longitude: 3.3792 },
+      nasarawa: { latitude: 8.5378, longitude: 8.577 },
+      niger: { latitude: 9.0817, longitude: 6.5205 },
+      ogun: { latitude: 7.16, longitude: 3.35 },
+      ondo: { latitude: 7.25, longitude: 5.1931 },
+      osun: { latitude: 7.5629, longitude: 4.52 },
+      oyo: { latitude: 7.8606, longitude: 3.9324 },
+      plateau: { latitude: 9.25, longitude: 9.25 },
+      rivers: { latitude: 4.75, longitude: 7.0 },
+      sokoto: { latitude: 13.06, longitude: 5.24 },
+      taraba: { latitude: 7.8704, longitude: 9.78 },
+      yobe: { latitude: 12.0, longitude: 11.5 },
+      zamfara: { latitude: 12.16, longitude: 6.66 },
+    };
+
     events.forEach((event) => {
       const venue = event.venue.toLowerCase();
       const state = this.extractStateFromVenue(venue);
       if (state) {
-        totalEventsByVenue[state] = (totalEventsByVenue[state] || 0) + 1;
+        totalEventsByVenue[state] = totalEventsByVenue[state] || {
+          count: 0,
+          percentage: 0,
+          ...statesCoordinates[state],
+        };
+        totalEventsByVenue[state].count++;
       }
     });
-  
+
+    // Calculate percentages
+    const totalCount = Object.values(totalEventsByVenue).reduce(
+      (acc, cur) => acc + cur.count,
+      0,
+    );
+    Object.keys(totalEventsByVenue).forEach((state) => {
+      const stateCount = totalEventsByVenue[state].count;
+      totalEventsByVenue[state].percentage = (stateCount / totalCount) * 100;
+    });
+
     // Fill in 0 for states with no events
-    const statesInNigeria = [
-      'abia', 'adamawa', 'akwa ibom', 'anambra', 'bauchi', 'bayelsa', 'benue',
-      'borno', 'cross river', 'delta', 'ebonyi', 'edo', 'ekiti', 'enugu', 'gombe',
-      'imo', 'jigawa', 'kaduna', 'kano', 'katsina', 'kebbi', 'kogi', 'kwara', 'lagos',
-      'nasarawa', 'niger', 'ogun', 'ondo', 'osun', 'oyo', 'plateau', 'rivers',
-      'sokoto', 'taraba', 'yobe', 'zamfara',
-    ];
-  
+    const statesInNigeria = Object.keys(statesCoordinates);
+
     statesInNigeria.forEach((state) => {
       if (!totalEventsByVenue[state]) {
-        totalEventsByVenue[state] = 0;
+        totalEventsByVenue[state] = {
+          count: 0,
+          percentage: 0,
+          ...statesCoordinates[state],
+        };
       }
     });
-  
+
     return totalEventsByVenue;
   }
+
   private extractStateFromVenue(venue: string): string | undefined {
     const statesInNigeria = [
-      'abia', 'adamawa', 'akwa ibom', 'anambra', 'bauchi', 'bayelsa', 'benue',
-      'borno', 'cross river', 'delta', 'ebonyi', 'edo', 'ekiti', 'enugu', 'gombe',
-      'imo', 'jigawa', 'kaduna', 'kano', 'katsina', 'kebbi', 'kogi', 'kwara', 'lagos',
-      'nasarawa', 'niger', 'ogun', 'ondo', 'osun', 'oyo', 'plateau', 'rivers',
-      'sokoto', 'taraba', 'yobe', 'zamfara',
+      'abia',
+      'adamawa',
+      'akwa ibom',
+      'anambra',
+      'bauchi',
+      'bayelsa',
+      'benue',
+      'borno',
+      'cross river',
+      'delta',
+      'ebonyi',
+      'edo',
+      'ekiti',
+      'enugu',
+      'gombe',
+      'imo',
+      'jigawa',
+      'kaduna',
+      'kano',
+      'katsina',
+      'kebbi',
+      'kogi',
+      'kwara',
+      'lagos',
+      'nasarawa',
+      'niger',
+      'ogun',
+      'ondo',
+      'osun',
+      'oyo',
+      'plateau',
+      'rivers',
+      'sokoto',
+      'taraba',
+      'yobe',
+      'zamfara',
     ];
 
     for (const state of statesInNigeria) {
@@ -1154,6 +1364,19 @@ export class EventService extends GenericService(EventRecord) {
     }
 
     return undefined;
+  }
+
+  // async findEventsByWildcardeventid(eventid: string): Promise<EventRecord[]> {
+  //   const queryBuilder = this.getRepo().createQueryBuilder('eventRecord');
+  //   queryBuilder.where('eventRecord.id ILIKE :eventid', { id: `%${eventid}%` });
+  //  // queryBuilder.where('transactionRecord.reference ILIKE :reference', { reference: `%${reference}%` });
+  //   return await queryBuilder.getMany();
+  // }
+
+  async findEventsByWildcardeventid(eventCode: string): Promise<EventRecord[]> {
+    const queryBuilder = this.getRepo().createQueryBuilder('eventRecord');
+    queryBuilder.where('eventRecord.eventCode ILIKE :eventCode', { eventCode: `%${eventCode}%` }); // Add semicolon here
+    return await queryBuilder.getMany();
   }
   
 }

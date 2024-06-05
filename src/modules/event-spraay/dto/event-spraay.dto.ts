@@ -17,6 +17,26 @@ export class CreateEventSpraayDTO {
   transactionPin: string;
 }
 
+export class EmmitEventSpraayDTO {
+  @ApiProperty()
+  amount: number;
+
+  @ApiProperty()
+  sprayerName: number;
+
+  @ApiProperty()
+  receiver: string;
+
+  @ApiProperty()
+  sprayerId: string;
+
+  @ApiProperty()
+  eventId: string;
+
+  @ApiProperty()
+  transactionPin: string;
+}
+
 export class EventSpraayCreatedResponseDTO extends BaseResponseTypeDTO {
   @ApiProperty({ type: () => EventSpraay })
   data: EventSpraay;

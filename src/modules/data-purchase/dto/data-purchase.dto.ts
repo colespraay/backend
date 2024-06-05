@@ -17,6 +17,23 @@ export class CreateDataPurchaseDTO {
   transactionPin: string;
 }
 
+export class CreateDataPurchaseDtoDemo {
+  @ApiProperty()
+  userId: string;
+
+  @ApiProperty()
+  dataPlanId: number;
+
+  @ApiProperty()
+  phoneNumber: string;
+
+  @ApiProperty()
+  amount: number;
+
+  @ApiProperty()
+  providerId: string;
+}
+
 export class CreateFlutterwaveDataPurchaseDTO extends OmitType(
   CreateAirtimePurchaseDTO,
   ['providerId'] as const,

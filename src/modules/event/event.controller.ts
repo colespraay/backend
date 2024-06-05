@@ -269,4 +269,14 @@ export class EventController {
   // async getAllEvents(@Query() paginationDto: EventPaginationDto): Promise<{ data: EventRecord[]; totalCount: number }> {
   //   return this.eventSrv.getAllEvents(paginationDto);
   // }
+
+  @Get('search/:eventid')
+  @ApiOperation({ summary: 'Search transactions by eventid (wildcard)' })
+  @ApiResponse({ status: 200, type: [EventRecord], description: 'Found transactions' })
+  async searchTransactionsByeventid(
+    @Param('eventid') eventid: string,
+  ): Promise<EventRecord[]> {
+    const transactions = await this.eventSrv. findEventsByWildcardeventid(eventid);
+    return transactions;
+  }
 }

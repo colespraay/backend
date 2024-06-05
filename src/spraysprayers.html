@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <title>SPARAYER </title>
+</head>
+
+<body>
+  <h1>SPARAYER </h1>
+  <div>
+    <label for="userId">Sprayer ID:</label>
+    <input type="text" id="userId" placeholder="Enter Sprayer ID">
+  </div>
+  <div>
+    <label for="recipient">Recipient ID:</label>
+    <input type="text" id="recipient" placeholder="Enter Recipient ID">
+  </div>
+  <div>
+    <label for="amount">Amount:</label>
+    <input type="number" id="amount" placeholder="Enter Amount">
+  </div>
+  <div>
+    <label for="sprayerName">Sprayer Name:</label>
+    <input type="text" id="sprayerName" placeholder="Enter Sprayer Name">
+  </div>
+  <div>
+    <label for="eventId">Event ID:</label>
+    <input type="text" id="eventId" placeholder="Enter Event ID">
+  </div>
+  <div>
+    <label for="transactionPin">Transaction Pin (Optional):</label>
+    <input type="password" id="transactionPin" placeholder="Enter Transaction Pin">
+  </div>
+  <div>
+    <button id="sendButton">Send</button>
+  </div>
+  <div id="output"></div>
+
+  <script>
+    const userIdInput = document.getElementById('userId');
+    const recipientInput = document.getElementById('recipient');
+    const messageInput = document.getElementById('amount'); // Renamed to amount
+    const sprayerNameInput = document.getElementById('sprayerName');
+    const eventIdInput = document.getElementById('eventId');
+    const transactionPinInput = document.getElementById('transactionPin');
+    const sendButton = document.getElementById('sendButton');
+    const output = document.getElementById('output');
+    let socket;
+
+    sendButton.addEventListener('click', () => {
+      const userId = userIdInput.value;
+      const recipient = recipientInput.value;
+      const amount = parseFloat(messageInput.value); // Parse to number
+      const sprayerName = sprayerNameInput.value;
+      const eventId = eventIdInput.value;
+      const transactionPin = transactionPinInput.value;
+
+      if (!socket || socket.disconnected) {
+        // Connect to the WebSocket server
+        console.log(userId)
+        // socket = io('ws://localhost:8080', {
+          socket = io('ws://admin-test-app-527853a95e08.herokuapp.com', {
+          query: { userId },
+        });
+
+        // Listen for incoming messages
+        socket.on('newSpary', (data) => {
+          // output.innerHTML += `<p>${data.content.message}</p>`;
+          console.log(data)
+        });
+        socket.on('newNotification', (data) => {
+          console.log(data.content.message);
+        });
+
+        // Handle disconnect
+        socket.on('disconnect', () => {
+          output.innerHTML += `<p>Disconnected from the server.</p>`;
+        });
+      }
+
+      // Send data using EmmitEventSpraayDTO structure
+      socket.emit('sendSpray', {
+        amount,
+        sprayerName,
+        receiver: recipient,
+        sprayerId: userId,
+        eventId,
+        transactionPin: transactionPin || '', // Handle optional pin
+      });
+    });
+  </script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.3.2/socket.io.js"></script>
+
+</body>
+
+</html>

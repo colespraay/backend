@@ -21,6 +21,7 @@ import {
   Gifting,
   UserAccount,
   Withdrawal,
+  UserActivity,
   AirtimePurchase,
   DataPurchase,
   ElectricityPurchase,
@@ -67,6 +68,12 @@ export class User extends Base {
   @ApiProperty()
   @Column({ type: 'boolean', default: false })
   isNewUser: boolean;
+
+
+  @ApiProperty()
+  @Column({ type: 'boolean', default: false })
+  Freeze: boolean;
+
 
   @ApiProperty({ enum: AppRole })
   @Column({ enum: AppRole, default: AppRole.CUSTOMER })
@@ -194,6 +201,12 @@ export class User extends Base {
     cascade: true,
   })
   withdrawals: Withdrawal[];
+
+  @ApiProperty({ type: () => [UserActivity] })
+  @OneToMany(() => UserActivity, ({ user }) => user, {
+    cascade: true,
+  })
+  useractivity: UserActivity[];
 
   @ApiProperty({ type: () => [AirtimePurchase] })
   @OneToMany(() => AirtimePurchase, ({ user }) => user, {

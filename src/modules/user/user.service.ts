@@ -72,12 +72,14 @@ import {
 } from './dto/user.dto';
 import ormConfig from '../../orm.config';
 import { Request } from 'express';
+import { UserActivityService } from '@modules/user-activity/user-activity.service';
 
 @Injectable()
 export class UserService extends GenericService(User) {
   constructor(
     @Inject(forwardRef(() => AuthService))
     private readonly authSrv: AuthService,
+    private readonly userActivitySrv: UserActivityService,
     private readonly eventEmitterSrv: EventEmitter2,
   ) {
     super();
@@ -371,7 +373,7 @@ export class UserService extends GenericService(User) {
       }
       if (payload.email) {
         validateEmailField(payload.email);
-        record = await this.findOne({ id: payload.email.toUpperCase() });
+        record = await this.findOne({ email: payload.email.toUpperCase() });
       }
       if (payload.phoneNumber) {
         record = await this.findOne({ phoneNumber: payload.phoneNumber });
@@ -593,8 +595,9 @@ export class UserService extends GenericService(User) {
       const user = await this.getRepo().findOne({
         where: { email: email.toUpperCase() },
       });
-      console.log(user)
+      console.log(user);
       if (user?.id && (await verifyPasswordHash(password, user.password))) {
+        await this.userActivitySrv.logUserActivity(user?.id, 'Login');
         return {
           success: true,
           code: HttpStatus.OK,
@@ -617,7 +620,9 @@ export class UserService extends GenericService(User) {
       const user = await this.getRepo().findOne({
         where: { phoneNumber },
       });
+
       if (user?.id && (await verifyPasswordHash(password, user.password))) {
+        await this.userActivitySrv.logUserActivity(user?.id, 'Login');
         return {
           success: true,
           code: HttpStatus.OK,
@@ -819,6 +824,7 @@ export class UserService extends GenericService(User) {
         { id: record.id },
         { password: newPasswordHash },
       );
+      await this.userActivitySrv.logUserActivity(record?.id, 'Pass Word Change');
       return {
         success: true,
         code: HttpStatus.OK,
@@ -918,6 +924,13 @@ export class UserService extends GenericService(User) {
       if (payload.lastName && payload.lastName !== record.lastName) {
         record.lastName = payload.lastName.toUpperCase();
       }
+
+      if (payload.Freeze && payload.Freeze !== record.Freeze) {
+        record.Freeze = payload.Freeze;
+      }
+
+
+      
       if (payload.gender && payload.gender !== record.gender) {
         compareEnumValueFields(payload.gender, Object.values(Gender), 'gender');
         record.gender = payload.gender;
@@ -992,6 +1005,7 @@ export class UserService extends GenericService(User) {
         email: record.email,
         status: record.status,
         userTag: record.userTag,
+        Freeze:record.Freeze,
         lastName: record.lastName,
         password: record.password,
         firstName: record.firstName,
@@ -1445,7 +1459,6 @@ export class UserService extends GenericService(User) {
   }
 
   async createAdminAndEmployees(createUserDto: CreateAdminDto): Promise<User> {
-
     checkForRequiredFields(['email', 'password'], createUserDto);
     validateEmailField(createUserDto.email);
 
@@ -1461,12 +1474,74 @@ export class UserService extends GenericService(User) {
       gender: createUserDto.gender,
       email: createUserDto.email.toUpperCase(),
       lastName: createUserDto.lastName,
-      password:createUserDto.password,
+      password: createUserDto.password,
       firstName: createUserDto.firstName,
       role: AppRole.ADMIN,
-      profileImageUrl:createUserDto.profileImageUrl
+      profileImageUrl: createUserDto.profileImageUrl,
     });
 
     return this.getRepo().save(newUser);
   }
+
+  // async getTotalUsersByIsNewUser(): Promise<{ activeUsers: number; inactiveUsers: number  }> {
+  //   const isNewUserTrueCount = await this.getRepo().count({ where: { isNewUser: true } });
+  //   const isNewUserFalseCount = await this.getRepo().count({ where: { isNewUser: false } });
+
+  //   return { activeUsers: isNewUserTrueCount, inactiveUsers: isNewUserFalseCount };
+  // }
+
+  async getTotalUsersByIsNewUserWithPercentage(): Promise<{
+    activeUsers: number;
+    activeUsersPercentage: number;
+    inactiveUsers: number;
+    inactiveUsersPercentage: number;
+  }> {
+    const isNewUserTrueCount = await this.getRepo().count({
+      where: { status: true },
+    });
+    const isNewUserFalseCount = await this.getRepo().count({
+      where: { status: false },
+    });
+    const totalUsersCount = isNewUserTrueCount + isNewUserFalseCount;
+
+    const activeUsersPercentage =
+      totalUsersCount !== 0 ? (isNewUserTrueCount / totalUsersCount) * 100 : 0;
+    const inactiveUsersPercentage =
+      totalUsersCount !== 0 ? (isNewUserFalseCount / totalUsersCount) * 100 : 0;
+
+    return {
+      activeUsers: isNewUserTrueCount,
+      activeUsersPercentage,
+      inactiveUsers: isNewUserFalseCount,
+      inactiveUsersPercentage,
+    };
+  }
+
+  async getAdminUsers(): Promise<User[]> {
+    return await this.getRepo().find({
+      where: { role: AppRole.ADMIN },
+    });
+  }
+
+  async findUsersByWildcard(searchTerm: string): Promise<User[]> {
+    const queryBuilder = this.getRepo().createQueryBuilder('user');
+
+    queryBuilder.where(
+      '(UPPER(user.firstName) LIKE UPPER(:searchTerm) OR UPPER(user.lastName) LIKE UPPER(:searchTerm) OR UPPER(user.email) LIKE UPPER(:searchTerm))',
+      { searchTerm: `%${searchTerm}%` },
+    );
+
+    return await queryBuilder.getMany();
+  }
+
+  async searchUsers(query: string): Promise<User[]> {
+    return await this.getRepo()
+      .createQueryBuilder('user')
+      .where('user.firstName LIKE :query', { query: `%${query}%` })
+      .orWhere('user.lastName LIKE :query', { query: `%${query}%` })
+      .orWhere('user.email LIKE :query', { query: `%${query}%` })
+      .getMany();
+  }
+
+
 }

@@ -220,7 +220,7 @@ export const uploadFileToS3 = async (
 ): Promise<string> => {
   try {
     const s3Client = new S3Client({
-      region: 'us-east-2', // Replace with your desired AWS region
+      region: 'eu-north-1', // Replace with your desired AWS region
       credentials: {
         accessKeyId: String(process.env.AWS_ACCESS_KEY_ID).trim(),
         secretAccessKey: String(process.env.AWS_SECRET_ACCESS_KEY).trim(),
@@ -233,9 +233,15 @@ export const uploadFileToS3 = async (
       Body: Readable.from(createdReadStream),
       ACL: 'public-read',
     };
+    const { Bucket, Key, Body, ACL } = s3UploadParams; // Destructure the s3UploadParams object
     const upload = new Upload({
       client: s3Client,
-      params: s3UploadParams,
+      params: {
+        Bucket,
+        Key,
+        Body,
+        //  ACL, // Use the destructured ACL value
+      },
     });
     const result = await upload.done();
     if (result && deleteAfterUpload) {
@@ -247,6 +253,39 @@ export const uploadFileToS3 = async (
     throw ex;
   }
 };
+// export const uploadFileToS3 = async (
+//   filePath: string,
+//   deleteAfterUpload = false,
+// ): Promise<string> => {
+//   try {
+//     const s3Client = new S3Client({
+//       region: 'us-east-2', // Replace with your desired AWS region
+//       credentials: {
+//         accessKeyId: String(process.env.AWS_ACCESS_KEY_ID).trim(),
+//         secretAccessKey: String(process.env.AWS_SECRET_ACCESS_KEY).trim(),
+//       },
+//     });
+//     const createdReadStream = fs.createReadStream(filePath);
+//     const s3UploadParams = {
+//       Bucket: String(process.env.AWS_BUCKET_NAME).trim(),
+//       Key: `${String(process.env.AWS_KEY_NAME).trim()}/${filePath}`,
+//       Body: Readable.from(createdReadStream),
+//       ACL: 'public-read',
+//     };
+//     const upload = new Upload({
+//       client: s3Client,
+//       params: s3UploadParams,
+//     });
+//     const result = await upload.done();
+//     if (result && deleteAfterUpload) {
+//       fs.unlinkSync(filePath);
+//     }
+//     return result['Location'];
+//   } catch (ex) {
+//     logger.error(ex);
+//     throw ex;
+//   }
+// };
 
 export const removeKeyFromObject = (obj: any, keys: string[]): any => {
   for (const prop in obj) {

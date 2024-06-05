@@ -28,6 +28,7 @@ export class DataPurchase extends Base {
   @Column({ type: 'float' })
   amount: number;
 
+  
   @ApiProperty()
   @Column({ type: 'varchar', length: 255 })
   providerId: string;

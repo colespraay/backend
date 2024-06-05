@@ -22,19 +22,30 @@ import {
 import { TransactionService } from '@modules/transaction/transaction.service';
 import { CreateAdminDto } from '@modules/user/dto/user.dto';
 import { UserService } from '@modules/user/user.service';
-import { Body, Controller, Get, HttpStatus, Post, Query } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Get,
+  HttpStatus,
+  Param,
+  Post,
+  Query,
+  UseGuards,
+} from '@nestjs/common';
 import {
   ApiBadRequestResponse,
+  ApiBearerAuth,
   ApiConsumes,
   ApiCreatedResponse,
   ApiNotFoundResponse,
   ApiOperation,
+  ApiParam,
   ApiProduces,
   ApiQuery,
   ApiResponse,
   ApiTags,
 } from '@nestjs/swagger';
-import { CurrentUser } from '@schematics/index';
+import { CurrentUser, RolesGuard } from '@schematics/index';
 import { DecodedTokenKey } from '@utils/index';
 import { PaginationRequestType } from '@utils/utils.types';
 
@@ -67,6 +78,11 @@ export class AdminDashboardController {
     return this.userSrv.createAdminAndEmployees(createUserDto);
   }
 
+  @Get('admins')
+  async getAdminUsers() {
+    return this.userSrv.getAdminUsers();
+  }
+
   @Get('transaction/get-all-transaction')
   @ApiOperation({ summary: 'Get all transactions with pagination' })
   @ApiResponse({
@@ -89,8 +105,10 @@ export class AdminDashboardController {
   @ApiOperation({ description: 'Find events for currently logged in user' })
   @ApiProduces('json')
   @ApiConsumes('application/json')
+  @ApiBearerAuth('JWT')
+@UseGuards(RolesGuard)
   @ApiResponse({ type: EventsResponseDTO })
-  @Get('events/get-events-created-by-adimin')
+  @Get('events/get-events-created-by-admin')
   async findEventsForCurrentUser(
     @CurrentUser(DecodedTokenKey.USER_ID) userId: string,
     @Query() pagination?: PaginationRequestType,
@@ -107,6 +125,16 @@ export class AdminDashboardController {
     @Query() paginationDto: EventPaginationDto,
   ): Promise<{ data: EventRecord[]; totalCount: number }> {
     return this.eventSrv.getAllEvents(paginationDto);
+  }
+
+  @Get('users/total-users-pie-chart-data')
+  async getTotalUsersByIsNewUser(): Promise<{
+    activeUsers: number;
+    activeUsersPercentage: number;
+    inactiveUsers: number;
+    inactiveUsersPercentage: number;
+  }> {
+    return this.userSrv.getTotalUsersByIsNewUserWithPercentage();
   }
 
   @Get('users/get-all-users')
@@ -163,8 +191,12 @@ export class AdminDashboardController {
     description: 'Failed to calculate total transaction amount',
   })
   // @Query() dateRangeDto: TransactionDateRangeDto,
-  async getTotalTransactionAmount(@Query() dateRangeDto: TransactionDateRangeDto): Promise<any> {
-    return await this.transactionSrv.calculateTotalTransactionAmount(dateRangeDto);
+  async getTotalTransactionAmount(
+    @Query() dateRangeDto: TransactionDateRangeDto,
+  ): Promise<any> {
+    return await this.transactionSrv.calculateTotalTransactionAmount(
+      dateRangeDto,
+    );
   }
 
   @Get('app-revenue/get-total-revenue')
@@ -178,8 +210,12 @@ export class AdminDashboardController {
     description: 'Failed to sum up app profit',
   })
   // @Query() dateRangeDto: TransactionDateRangeDto,
-  async sumUpAppProfitAndReturn(@Query() dateRangeDto: TransactionDateRangeDto): Promise<number> {
-    const totalAppProfit = await this.appProfitSrv.sumUpAppProfitAndReturn( dateRangeDto);
+  async sumUpAppProfitAndReturn(
+    @Query() dateRangeDto: TransactionDateRangeDto,
+  ): Promise<number> {
+    const totalAppProfit = await this.appProfitSrv.sumUpAppProfitAndReturn(
+      dateRangeDto,
+    );
     return totalAppProfit;
   }
 
@@ -201,15 +237,16 @@ export class AdminDashboardController {
   @Get('eventspray/aggregate-total-sum-per-day')
   @ApiResponse({
     status: 200,
-    description:
-      'Successfully aggregated total event spraay sum per day ',
+    description: 'Successfully aggregated total event spraay sum per day ',
   })
   @ApiResponse({
     status: 500,
     description: 'Failed to aggregate total event spraay sum per day',
   })
   // @Query() dateRangeDto: TransactionDateRangeDto,
-  async aggregateTotalEventSpraaySumPerDay(@Query() dateRangeDto: TransactionDateRangeDto): Promise<any> {
+  async aggregateTotalEventSpraaySumPerDay(
+    @Query() dateRangeDto: TransactionDateRangeDto,
+  ): Promise<any> {
     return this.eventspraaySrv.aggregateTotalEventSpraaySumPerDay(dateRangeDto);
   }
 
@@ -223,13 +260,17 @@ export class AdminDashboardController {
     description: 'Internal Server Error',
   })
   // @Query() dateRangeDto: TransactionDateRangeDto,
-  async aggregateTotalGiftingumPerDay(@Query() dateRangeDto: TransactionDateRangeDto): Promise<any> {
+  async aggregateTotalGiftingumPerDay(
+    @Query() dateRangeDto: TransactionDateRangeDto,
+  ): Promise<any> {
     return this.giftingSrv.aggregateTotalGiftingPerDay(dateRangeDto);
   }
 
   @Get('/bills/aggregate-total-sum-per-day')
   // @Query() dateRangeDto: TransactionDateRangeDto,
-  async gettoatlsumedupbillingperday(@Query() dateRangeDto: TransactionDateRangeDto): Promise<any> {
+  async gettoatlsumedupbillingperday(
+    @Query() dateRangeDto: TransactionDateRangeDto,
+  ): Promise<any> {
     const services = [
       this.electricityPurchaseSrv,
       this.dataPurchaseSrv,
@@ -237,7 +278,7 @@ export class AdminDashboardController {
       this.cablePurchaseSrv,
       this.bettingPurchaseSrv,
     ];
-    return await this.billSrv.aggregateBillingPerDay(services,dateRangeDto);
+    return await this.billSrv.aggregateBillingPerDay(services, dateRangeDto);
   }
   ////////////////////////////////////////USE DATE RANGE PLEASE////////////////////////////////////
   ////////////////////////////////////////USE DATE RANGE PLEASE////////////////////////////////////
@@ -303,103 +344,278 @@ export class AdminDashboardController {
     return this.eventspraaySrv.getTotalEventSpraayAmountAndCount(dateRangeDto);
   }
 
+  @Get('total-by-venue')
+  @ApiResponse({
+    status: HttpStatus.OK,
+    description: 'Returns the total events grouped by venue state',
+  })
+  async getTotalEventsByVenue(): Promise<{
+    [state: string]: { count: number; percentage: number };
+  }> {
+    return this.eventSrv.getTotalEventsByVenueWithPercentage();
+  }
+
+  // @Get('bill/total-amount-for-date-range')
+  // async getTotalSumPerRepo(
+  //   @Query() dateRange: TransactionDateRangeDto,
+  // ): Promise<{ repo: string; sum: number }[]> {
+  //   const { startDate, endDate } = dateRange;
+  //   const results = [];
+
+  //   // Calculate total sum for electricityPurchaseSrv
+  //   const electricitySum = await this.electricityPurchaseSrv
+  //     .getRepo()
+  //     .createQueryBuilder('entity')
+  //     .select('SUM(entity.amount)', 'sum')
+  //     .where('entity.dateCreated BETWEEN :startDate AND :endDate', {
+  //       startDate,
+  //       endDate,
+  //     })
+  //     .getRawOne();
+
+  //   results.push({
+  //     repo: 'electricity',
+  //     sum: parseFloat(electricitySum.sum) || 0,
+  //   });
+
+  //   // Calculate total sum for dataPurchaseSrv
+  //   const dataSum = await this.dataPurchaseSrv
+  //     .getRepo()
+  //     .createQueryBuilder('entity')
+  //     .select('SUM(entity.amount)', 'sum')
+  //     .where('entity.dateCreated BETWEEN :startDate AND :endDate', {
+  //       startDate,
+  //       endDate,
+  //     })
+  //     .getRawOne();
+
+  //   results.push({
+  //     repo: 'data',
+  //     sum: parseFloat(dataSum.sum) || 0,
+  //   });
+
+  //   // Calculate total sum for airtimePurchaseSrv
+  //   const airtimeSum = await this.airtimePurchaseSrv
+  //     .getRepo()
+  //     .createQueryBuilder('entity')
+  //     .select('SUM(entity.amount)', 'sum')
+  //     .where('entity.dateCreated BETWEEN :startDate AND :endDate', {
+  //       startDate,
+  //       endDate,
+  //     })
+  //     .getRawOne();
+
+  //   results.push({
+  //     repo: 'airtime',
+  //     sum: parseFloat(airtimeSum.sum) || 0,
+  //   });
+
+  //   // Calculate total sum for cablePurchaseSrv
+  //   const cableSum = await this.cablePurchaseSrv
+  //     .getRepo()
+  //     .createQueryBuilder('entity')
+  //     .select('SUM(entity.amount)', 'sum')
+  //     .where('entity.dateCreated BETWEEN :startDate AND :endDate', {
+  //       startDate,
+  //       endDate,
+  //     })
+  //     .getRawOne();
+
+  //   results.push({
+  //     repo: 'cable',
+  //     sum: parseFloat(cableSum.sum) || 0,
+  //   });
+
+  //   // Calculate total sum for bettingPurchaseSrv
+  //   const bettingSum = await this.bettingPurchaseSrv
+  //     .getRepo()
+  //     .createQueryBuilder('entity')
+  //     .select('SUM(entity.amount)', 'sum')
+  //     .where('entity.dateCreated BETWEEN :startDate AND :endDate', {
+  //       startDate,
+  //       endDate,
+  //     })
+  //     .getRawOne();
+
+  //   results.push({
+  //     repo: 'betting',
+  //     sum: parseFloat(bettingSum.sum) || 0,
+  //   });
+
+  //   return results;
+  // }
+
   @Get('bill/total-amount-for-date-range')
   async getTotalSumPerRepo(
     @Query() dateRange: TransactionDateRangeDto,
-  ): Promise<{ repo: string; sum: number }[]> {
+  ): Promise<{ repo: string; sum: number; percentage: number }[]> {
     const { startDate, endDate } = dateRange;
     const results = [];
 
+    // Helper function to calculate sum for a given service
+    const calculateSum = async (service: any, repo: string) => {
+      const sumResult = await service
+        .getRepo()
+        .createQueryBuilder('entity')
+        .select('SUM(entity.amount)', 'sum')
+        .where('entity.dateCreated BETWEEN :startDate AND :endDate', {
+          startDate,
+          endDate,
+        })
+        .getRawOne();
+
+      const sum = parseFloat(sumResult.sum) || 0;
+      results.push({ repo, sum });
+      return sum;
+    };
+
+    // Calculate total sums for each service
+    const electricitySum = await calculateSum(
+      this.electricityPurchaseSrv,
+      'electricity',
+    );
+    const dataSum = await calculateSum(this.dataPurchaseSrv, 'data');
+    const airtimeSum = await calculateSum(this.airtimePurchaseSrv, 'airtime');
+    const cableSum = await calculateSum(this.cablePurchaseSrv, 'cable');
+    const bettingSum = await calculateSum(this.bettingPurchaseSrv, 'betting');
+
+    // Calculate total sum
+    const totalSum =
+      electricitySum + dataSum + airtimeSum + cableSum + bettingSum;
+
+    // Calculate percentage for each repo
+    results.forEach((result) => {
+      result.percentage = totalSum ? (result.sum / totalSum) * 100 : 0;
+    });
+
+    return results;
+  }
+
+  @Get('user/Transaction-charts/:userId')
+  @ApiOperation({
+    summary: 'Get combined total sum and percentages by user ID',
+    description:
+      'Calculates the total sum and percentages of different purchases for a user.',
+  })
+  @ApiParam({
+    name: 'userId',
+    description:
+      'The ID of the user for whom to calculate the total sum and percentages.',
+    type: 'string',
+    required: true,
+  })
+  async getCombinedTotalSumByUserId(
+    @Param('userId') userId: string,
+  ): Promise<any> {
+    let totalbillSum = 0;
+    console.log(userId);
     // Calculate total sum for electricityPurchaseSrv
     const electricitySum = await this.electricityPurchaseSrv
       .getRepo()
       .createQueryBuilder('entity')
       .select('SUM(entity.amount)', 'sum')
-      .where('entity.dateCreated BETWEEN :startDate AND :endDate', {
-        startDate,
-        endDate,
-      })
+      .where('entity.userId = :userId', { userId })
       .getRawOne();
 
-    results.push({
-      repo: 'electricity',
-      sum: parseFloat(electricitySum.sum) || 0,
-    });
+    totalbillSum += parseFloat(electricitySum.sum) || 0;
 
     // Calculate total sum for dataPurchaseSrv
     const dataSum = await this.dataPurchaseSrv
       .getRepo()
       .createQueryBuilder('entity')
       .select('SUM(entity.amount)', 'sum')
-      .where('entity.dateCreated BETWEEN :startDate AND :endDate', {
-        startDate,
-        endDate,
-      })
+      .where('entity.userId = :userId', { userId })
       .getRawOne();
 
-    results.push({
-      repo: 'data',
-      sum: parseFloat(dataSum.sum) || 0,
-    });
+    totalbillSum += parseFloat(dataSum.sum) || 0;
 
     // Calculate total sum for airtimePurchaseSrv
     const airtimeSum = await this.airtimePurchaseSrv
       .getRepo()
       .createQueryBuilder('entity')
       .select('SUM(entity.amount)', 'sum')
-      .where('entity.dateCreated BETWEEN :startDate AND :endDate', {
-        startDate,
-        endDate,
-      })
+      .where('entity.userId = :userId', { userId })
       .getRawOne();
 
-    results.push({
-      repo: 'airtime',
-      sum: parseFloat(airtimeSum.sum) || 0,
-    });
+    totalbillSum += parseFloat(airtimeSum.sum) || 0;
 
     // Calculate total sum for cablePurchaseSrv
     const cableSum = await this.cablePurchaseSrv
       .getRepo()
       .createQueryBuilder('entity')
       .select('SUM(entity.amount)', 'sum')
-      .where('entity.dateCreated BETWEEN :startDate AND :endDate', {
-        startDate,
-        endDate,
-      })
+      .where('entity.userId = :userId', { userId })
       .getRawOne();
 
-    results.push({
-      repo: 'cable',
-      sum: parseFloat(cableSum.sum) || 0,
-    });
+    totalbillSum += parseFloat(cableSum.sum) || 0;
 
     // Calculate total sum for bettingPurchaseSrv
     const bettingSum = await this.bettingPurchaseSrv
       .getRepo()
       .createQueryBuilder('entity')
       .select('SUM(entity.amount)', 'sum')
-      .where('entity.dateCreated BETWEEN :startDate AND :endDate', {
-        startDate,
-        endDate,
-      })
+      .where('entity.userId = :userId', { userId })
       .getRawOne();
 
-    results.push({
-      repo: 'betting',
-      sum: parseFloat(bettingSum.sum) || 0,
-    });
+    totalbillSum += parseFloat(bettingSum.sum) || 0;
 
-    return results;
+    // Calculate total sum for eventspraaySrv
+    const eventSum = await this.eventspraaySrv
+      .getRepo()
+      .createQueryBuilder('entity')
+      .select('SUM(entity.amount)', 'sum')
+      .where('entity.userId = :userId', { userId })
+      .getRawOne();
+    totalbillSum += parseFloat(eventSum.sum) || 0;
+
+    // Calculate total sum for giftingSrv
+    const giftingSum = await this.giftingSrv
+      .getRepo()
+      .createQueryBuilder('entity')
+      .select('SUM(entity.amount)', 'sum')
+      .where('entity.receiverUserId = :userId', { userId })
+      .getRawOne();
+    totalbillSum += parseFloat(giftingSum.sum) || 0;
+
+    const eventsPercentage =
+      (parseFloat(eventSum.sum) / totalbillSum) * 100 || 0;
+    const giftingPercentage =
+      (parseFloat(giftingSum.sum) / totalbillSum) * 100 || 0;
+    const billspercentage =
+      (((parseFloat(electricitySum.sum) || 0) +
+        (parseFloat(dataSum.sum) || 0) +
+        (parseFloat(airtimeSum.sum) || 0) +
+        (parseFloat(cableSum.sum) || 0) +
+        (parseFloat(bettingSum.sum) || 0)) /
+        totalbillSum) *
+        100 || 0;
+    console.log(totalbillSum);
+    return {
+      allBills: billspercentage,
+      Events: eventsPercentage,
+      Gifting: giftingPercentage,
+    };
   }
 
-  @Get('total-by-venue')
+  @Get('/events/totals-for-date-range')
+  @ApiOperation({ summary: 'Get total event spraay amount and count for a date range' })
+  @ApiQuery({ name: 'startDate', required: true, type: String, example: '2024-01-01' })
+  @ApiQuery({ name: 'endDate', required: true, type: String, example: '2024-01-31' })
   @ApiResponse({
-    status: HttpStatus.OK,
-    description: 'Returns the total events grouped by venue state',
+    status: 200,
+    description: 'Total event spraay amount and count for the specified date range',
+    schema: {
+      properties: {
+        totalAmount: { type: 'number', example: 1000 },
+        totalCount: { type: 'number', example: 10 },
+      },
+    },
   })
-  async getTotalEventsByVenue(): Promise<{ [state: string]: number }> {
-    return this.eventSrv.getTotalEventsByVenue();
+  async getTotalevent_spraayAmountAndCount(
+    @Query() dateRange: TransactionDateRangeDto,
+  ): Promise<{ totalAmount: number; totalCount: number }> {
+    return this.eventSrv.getTotaleventAmountAndCount(dateRange);
   }
+
   //Custom date , Today Yseterday, last 7 days, last 3 days, this month, last month,
 }

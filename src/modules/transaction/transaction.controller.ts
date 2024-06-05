@@ -10,6 +10,8 @@ import {
   Post,
   Body,
   BadRequestException,
+  HttpCode,
+  ParseIntPipe,
 } from '@nestjs/common';
 import {
   ApiBadRequestResponse,
@@ -222,6 +224,29 @@ export class TransactionController {
     );
   }
 
+  @Get('user-all-transactions/:userId')
+  @ApiOperation({ summary: 'Get transactions for a user with pagination' })
+  @ApiResponse({ status: 200, description: 'Returns transactions and total count' })
+  @ApiBadRequestResponse({ description: 'Invalid request parameters' })
+  @HttpCode(200)
+  async getTransactionsByUserId(
+    @Param('userId') userId: string,
+    @Query('page', ParseIntPipe) page: number = 1,
+    @Query('limit', ParseIntPipe) limit: number = 10,
+  ): Promise<{ transactions: TransactionRecord[]; totalTransactions: number }> {
+    return this.transactionSrv.getTransactionsByUserId(userId, page, limit);
+  }
+
+
+  @Get('search/:reference')
+  @ApiOperation({ summary: 'Search transactions by reference (wildcard)' })
+  @ApiResponse({ status: 200, type: [TransactionRecord], description: 'Found transactions' })
+  async searchTransactionsByReference(
+    @Param('reference') reference: string,
+  ): Promise<TransactionRecord[]> {
+    const transactions = await this.transactionSrv.findTransactionsByWildcardReference(reference);
+    return transactions;
+  }
 
   // @Post('dummy/create')
   // @ApiResponse({
