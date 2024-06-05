@@ -58,7 +58,7 @@
 
       if (!socket || socket.disconnected) {
         // Connect to the WebSocket server
-        socket = io('ws://admin-test-app-527853a95e08.herokuapp.com', {
+       socket = io('ws://localhost:8080', {
           query: { userId:eventId },
         });
         console.log(eventId)

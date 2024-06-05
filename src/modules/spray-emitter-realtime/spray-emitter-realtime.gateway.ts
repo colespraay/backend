@@ -31,6 +31,15 @@ export class SprayEmitterRealtimeGateway implements OnGatewayConnection {
     client.join(userId);
   }
 
+  async generateSprayId(length) {
+    const characters = '0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ';
+    let result = '';
+    for (let i = 0; i < length; i++) {
+      result += characters.charAt(Math.floor(Math.random() * characters.length));
+    }
+    return result;
+  }
+
   @SubscribeMessage('sendSpray')
   async handleMessage(
     @ConnectedSocket() client: Socket,
@@ -41,7 +50,15 @@ export class SprayEmitterRealtimeGateway implements OnGatewayConnection {
     const { receiver,sprayerId ,eventId} = payload;
     // const savedchat = await this.chatsService.sendChat(payload);
     // Send the message to the recipient's room
-    this.server.to(eventId).emit('newSpary', payload);
+    const characters = '0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ';
+    let result = '';
+    for (let i = 0; i < 7; i++) {
+      result += characters.charAt(Math.floor(Math.random() * characters.length));
+    }
+    const sprayId = result
+    console.log({...payload,autoId: sprayId})
+    const PayloadToSendsend= {...payload,autoId: sprayId}
+    this.server.to(eventId).emit('newSpary', PayloadToSendsend);
   }
 
   // @SubscribeMessage('findAllMessage')
