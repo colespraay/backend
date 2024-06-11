@@ -28,9 +28,9 @@ import {
 } from './dto/event-invite.dto';
 import { EventInviteService } from './event-invite.service';
 
-// @ApiBearerAuth('JWT')
-// @UseGuards(RolesGuard)
-// @ApiTags('event-invite')
+@ApiBearerAuth('JWT')
+@UseGuards(RolesGuard)
+@ApiTags('event-invite')
 @Controller('event-invite')
 export class EventInviteController {
   constructor(private readonly eventInviteSrv: EventInviteService) {}
