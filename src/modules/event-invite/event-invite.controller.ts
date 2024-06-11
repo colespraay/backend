@@ -66,7 +66,7 @@ export class EventInviteController {
     return await this.eventInviteSrv.deleteEventInvites(eventInviteIds);
   }
 
-  @Get('/all-event-invites/')
+  @Get('/all-event-invites/invite-count')
   @ApiOperation({ description: 'Find event invite by ID' })
   @ApiProduces('json')
   @ApiConsumes('application/json')
