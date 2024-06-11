@@ -227,4 +227,8 @@ export class EventInviteService extends GenericService(EventInvite) {
       throw ex;
     }
   }
+
+  async getAllEventInvites(): Promise<EventInvite[]> {
+    return await this.getRepo().find(); // No relations option needed
+  }
 }

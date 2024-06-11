@@ -65,4 +65,14 @@ export class EventInviteController {
   ): Promise<BaseResponseTypeDTO> {
     return await this.eventInviteSrv.deleteEventInvites(eventInviteIds);
   }
+
+  @Get('/all-event-invites/')
+  @ApiOperation({ description: 'Find event invite by ID' })
+  @ApiProduces('json')
+  @ApiConsumes('application/json')
+  @ApiResponse({ type: EventInviteResponseDTO })
+  async findEventinvites(
+  ): Promise<any> {
+    return await this.eventInviteSrv.getAllEventInvites();
+  }
 }
