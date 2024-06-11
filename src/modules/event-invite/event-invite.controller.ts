@@ -7,6 +7,8 @@ import {
   Param,
   ParseUUIDPipe,
   UseGuards,
+  HttpCode,
+  HttpStatus,
 } from '@nestjs/common';
 import {
   ApiBearerAuth,
@@ -26,9 +28,9 @@ import {
 } from './dto/event-invite.dto';
 import { EventInviteService } from './event-invite.service';
 
-@ApiBearerAuth('JWT')
-@UseGuards(RolesGuard)
-@ApiTags('event-invite')
+// @ApiBearerAuth('JWT')
+// @UseGuards(RolesGuard)
+// @ApiTags('event-invite')
 @Controller('event-invite')
 export class EventInviteController {
   constructor(private readonly eventInviteSrv: EventInviteService) {}
@@ -75,4 +77,17 @@ export class EventInviteController {
   ): Promise<any> {
     return await this.eventInviteSrv.getAllEventInvites();
   }
+
+@Get('/event-invites/counts') // More descriptive path
+@HttpCode(HttpStatus.OK)
+@ApiOperation({ description: 'Get event invite counts by ID (total, pending, accepted)' }) // Accurate description
+@ApiProduces('json')
+@ApiConsumes('application/json')
+async countEventInvitesByStatusAndId(
+  @Param('eventId') eventId: string,
+): Promise<any> {
+  const counts = await this.eventInviteSrv.countEventInvitesByStatusAndId(eventId);
+  return counts;
+}
+
 }

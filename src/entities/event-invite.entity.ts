@@ -18,6 +18,9 @@ export class EventInvite extends Base {
   @Column({ type: 'uuid' })
   eventId: string;
 
+  @Column({ type: 'text', default: "pending" })  // pending, accepted
+  inviteStatus: string;
+
   @ApiProperty({ type: () => EventRecord })
   @JoinColumn({ name: 'eventId' })
   @ManyToOne(() => EventRecord, ({ eventInvites }) => eventInvites, {

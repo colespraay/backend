@@ -231,4 +231,20 @@ export class EventInviteService extends GenericService(EventInvite) {
   async getAllEventInvites(): Promise<EventInvite[]> {
     return await this.getRepo().find(); // No relations option needed
   }
+
+
+  async countEventInvitesByStatusAndId(eventId: string): Promise<{
+    total: number;
+    pending: number;
+    accepted: number;
+  }> {
+   // console.log(eventId)
+    const [totalResults, pendingCount, acceptedCount] = await Promise.all([
+      this.getRepo().count({ where: { id: eventId } }),
+      this.getRepo().count({ where: { id: eventId, inviteStatus: 'pending' } }),
+      this.getRepo().count({ where: { id: eventId, inviteStatus: 'accepted' } }),
+    ]);
+
+    return { total: totalResults, pending: pendingCount, accepted: acceptedCount };
+  }
 }

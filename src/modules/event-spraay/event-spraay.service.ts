@@ -23,7 +23,7 @@ import {
   validateUUIDField,
 } from '@utils/index';
 import { TransactionService } from '@modules/transaction/transaction.service';
-import { EventService, UserService, WalletService } from '../index';
+import { EventInviteService, EventService, UserService, WalletService } from '../index';
 import {
   EventSpraayResponseDTO,
   CreateEventSpraayDTO,
@@ -39,6 +39,7 @@ export class EventSpraayService extends GenericService(EventSpraay) {
   constructor(
     private readonly userSrv: UserService,
     private readonly eventSrv: EventService,
+    private readonly evenInvitetSrv: EventInviteService,
     @Inject(forwardRef(() => WalletService))
     private readonly walletSrv: WalletService,
     @Inject(forwardRef(() => TransactionService))
@@ -66,6 +67,17 @@ export class EventSpraayService extends GenericService(EventSpraay) {
     });
     validateUUIDField(payload.eventId, 'eventId');
     payload.amount = Number(payload.amount);
+
+    const eventInvite = await this.evenInvitetSrv.getRepo().findOne({
+      where: { userId:user.id, eventId:payload.eventId },
+    });
+
+    if (eventInvite) {
+      eventInvite.inviteStatus ="accepted" ;
+      await this.evenInvitetSrv.getRepo().save(eventInvite);
+    }
+
+
     const isPinValid = await this.userSrv.verifyTransactionPin(
       user.id,
       payload.transactionPin,

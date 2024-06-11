@@ -4,6 +4,7 @@ import { EventSpraay } from '@entities/index';
 import { EventSpraayController } from './event-spraay.controller';
 import { EventSpraayService } from './event-spraay.service';
 import {
+  EventInviteModule,
   EventModule,
   TransactionModule,
   UserModule,
@@ -15,6 +16,7 @@ import {
     TypeOrmModule.forFeature([EventSpraay]),
     UserModule,
     EventModule,
+    EventInviteModule,
     forwardRef(() => WalletModule),
     forwardRef(() => TransactionModule),
   ],
