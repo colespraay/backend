@@ -78,7 +78,7 @@ export class EventInviteController {
     return await this.eventInviteSrv.getAllEventInvites();
   }
 
-@Get('/event-invites/counts') // More descriptive path
+@Get('/event-invites/counts/:eventId') // More descriptive path
 @HttpCode(HttpStatus.OK)
 @ApiOperation({ description: 'Get event invite counts by ID (total, pending, accepted)' }) // Accurate description
 @ApiProduces('json')
