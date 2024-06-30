@@ -59,7 +59,7 @@ export class SprayEmitterRealtimeGateway implements OnGatewayConnection {
     const payloadToSend = { ...payload }; // Create a copy of the payload
 
     if (
-      typeof payloadToSend.amount === 'number' &&
+      //typeof payloadToSend.amount === 'number' &&
       payloadToSend.amount.toString().endsWith('.0')
     ) {
       payloadToSend.amount = Math.floor(payloadToSend.amount); 
