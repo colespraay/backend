@@ -1,4 +1,4 @@
-import { EmmitEventSpraayDTO } from '@modules/event-spraay/dto/event-spraay.dto';
+import { EmmitEventSpraayDTO, EmmitEventSpraayDTOReal } from '@modules/event-spraay/dto/event-spraay.dto';
 import { EventService } from '@modules/event/event.service';
 import { UserService } from '@modules/user/user.service';
 import {
@@ -43,13 +43,9 @@ export class SprayEmitterRealtimeGateway implements OnGatewayConnection {
   @SubscribeMessage('sendSpray')
   async handleMessage(
     @ConnectedSocket() client: Socket,
-    @MessageBody() payload: EmmitEventSpraayDTO,
+    @MessageBody() payload: EmmitEventSpraayDTOReal,
   ): Promise<void> {
-    // console.log(payload);
-    // Handle the incoming message and send it to the recipient
     const { receiver,sprayerId ,eventId} = payload;
-    // const savedchat = await this.chatsService.sendChat(payload);
-    // Send the message to the recipient's room
     const characters = '0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ';
     let result = '';
     for (let i = 0; i < 7; i++) {
@@ -57,8 +53,20 @@ export class SprayEmitterRealtimeGateway implements OnGatewayConnection {
     }
     const sprayId = result
     console.log({...payload,autoId: sprayId})
-    const PayloadToSendsend= {...payload,autoId: sprayId}
-    this.server.to(eventId).emit('newSpary', PayloadToSendsend);
+    // const PayloadToSendsend= {...payload,autoId: sprayId}
+    // this.server.to(eventId).emit('newSpary', PayloadToSendsend);
+    
+    const payloadToSend = { ...payload }; // Create a copy of the payload
+
+    if (
+      typeof payloadToSend.amount === 'number' &&
+      payloadToSend.amount.toString().endsWith('.0')
+    ) {
+      payloadToSend.amount = Math.floor(payloadToSend.amount); 
+    }
+
+    payloadToSend.autoId = sprayId; // Add the autoId property
+    this.server.to(eventId).emit('newSpary', payloadToSend);
   }
 
   // @SubscribeMessage('findAllMessage')
