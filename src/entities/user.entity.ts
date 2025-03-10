@@ -69,6 +69,21 @@ export class User extends Base {
   @Column({ type: 'boolean', default: false })
   isNewUser: boolean;
 
+  ///////////////////MAIN USER VERIFICATION///////////////////////
+    ///////////////////MAIN USER VERIFICATION///////////////////////
+      ///////////////////MAIN USER VERIFICATION///////////////////////
+  @ApiProperty()
+  @Column({ type: 'boolean', default: false })
+  isBvnVerified: boolean;
+
+  @ApiProperty()
+  @Column({ type: 'boolean', default: false })
+  isFaceMatchingVerifiedBvn: boolean;
+
+    ///////////////////MAIN USER VERIFICATION///////////////////////
+    ///////////////////MAIN USER VERIFICATION///////////////////////
+      ///////////////////MAIN USER VERIFICATION///////////////////////
+
 
   @ApiProperty()
   @Column({ type: 'boolean', default: false })

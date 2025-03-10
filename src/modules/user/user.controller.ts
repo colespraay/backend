@@ -12,9 +12,11 @@ import {
   ParseIntPipe,
   Req,
   HttpStatus,
+  ValidationPipe,
 } from '@nestjs/common';
 import {
   ApiBearerAuth,
+  ApiBody,
   ApiConsumes,
   ApiOperation,
   ApiProduces,
@@ -44,6 +46,10 @@ import {
   AccountBalanceDTO,
   UserContactsDTO,
   UserContactsQueryDTO,
+  GetBvnAdvancedDto,
+  BvnSelfieVerificationDto,
+  BvnVerificationResponse,
+  LivenessCheckDto,
 } from './dto/user.dto';
 import { UserService } from './user.service';
 import { Request } from 'express';
@@ -361,6 +367,72 @@ export class UserController {
     } catch (error) {
       throw error; // Re-throw for global error handling
     }
+  }
+
+  // @Get('bvn/advance')
+  // // @ApiTags('Biometric Checks')
+  // @ApiOperation({ summary: 'Fetch advanced BVN details' })
+  // @ApiResponse({
+  //   status: 200,
+  //   description: 'BVN details retrieved successfully.',
+  // })
+  // @ApiResponse({ status: 400, description: 'Bad Request' })
+  // @ApiResponse({ status: 500, description: 'Internal server error.' })
+  // async getBvnAdvanced(@Query() query: GetBvnAdvancedDto) {
+  //   return await this.userSrv.resolveUserBvnDojah(query);
+  // }
+
+  // @Post('liveness')
+  // // @ApiTags('Biometric Checks')
+  // @ApiOperation({ summary: 'Performs a liveness check on an image' })
+  // @ApiBody({
+  //   type: LivenessCheckDto,
+  //   description: 'Provide image URL to check'
+  // })
+  // async checkLiveness(
+  //   @Body() dto: LivenessCheckDto
+  // ): Promise<any> {
+  //   return this.userSrv.checkLiveness(dto);
+  // }
+
+  @Post('kyc/liveness/face-match/bvn/verify')
+  // @ApiTags('Biometric Checks')
+  // @ApiBearerAuth()
+  @ApiOperation({
+    summary: 'Verify BVN with Selfie Image',
+    description: 
+      'Lookup and verify a user\'s BVN with their selfie image. This endpoint helps reduce fraud by confirming ' +
+      'the person inputting the BVN is who they claim to be. The confidence value ranges from 0% to 100%, ' +
+      'where 0-90% indicates a false match and 90-100% indicates a true match.'
+  })
+  @ApiBody({
+    type: BvnSelfieVerificationDto,
+    description: 'BVN and selfie image URL data',
+    examples: {
+      example1: {
+        summary: 'Verification Request Example',
+        description: 'A request to verify BVN with selfie image URL',
+        value: {
+          userId:"67a0888aa2be4c3f68c3ccfa",
+          bvn: '12345678901',
+          selfie_image_url: 'https://example.com/user-selfie.jpg',
+        },
+      },
+    },
+  })
+  @ApiResponse({
+    status: HttpStatus.OK,
+    description: 'BVN verified successfully',
+    type: BvnVerificationResponse
+  })
+  async verifyBvnWithSelfie(
+    @Body(new ValidationPipe({ transform: true })) verificationDto: BvnSelfieVerificationDto,
+  ): Promise<BvnVerificationResponse> {
+    return this.userSrv.verifyBvnWithSelfie(
+      verificationDto.userId,
+      verificationDto.bvn, 
+      verificationDto.selfie_image_url
+    );
   }
 
   // @Get()

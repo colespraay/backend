@@ -7,9 +7,12 @@ import { UserService } from './user.service';
 import { AuthModule } from '../auth/auth.module';
 import { UserActivityModule } from '@modules/user-activity/user-activity.module';
 
-
 @Module({
-  imports: [TypeOrmModule.forFeature([User]), forwardRef(() => AuthModule),forwardRef(() => UserActivityModule)],
+  imports: [
+    TypeOrmModule.forFeature([User]),
+    forwardRef(() => AuthModule),
+    forwardRef(() => UserActivityModule),
+  ],
   controllers: [UserController],
   providers: [UserService, AuthService],
   exports: [UserService],

@@ -20,7 +20,7 @@ import {
   createConnection,
   getConnection,
 } from 'typeorm';
-import axios, { AxiosError } from 'axios';
+import axios, { AxiosError, AxiosResponse } from 'axios';
 import { GenericService } from '@schematics/index';
 import { User } from '@entities/index';
 import {
@@ -69,6 +69,8 @@ import {
   UserContactsDTO,
   UserContactsQueryDTO,
   CreateAdminDto,
+  GetBvnAdvancedDto,
+  LivenessCheckDto,
 } from './dto/user.dto';
 import ormConfig from '../../orm.config';
 import { Request } from 'express';
@@ -76,6 +78,7 @@ import { UserActivityService } from '@modules/user-activity/user-activity.servic
 
 @Injectable()
 export class UserService extends GenericService(User) {
+  private readonly DojahbaseUrl = 'https://api.dojah.io'; // Ensure this is in your .env file
   constructor(
     @Inject(forwardRef(() => AuthService))
     private readonly authSrv: AuthService,
@@ -824,7 +827,10 @@ export class UserService extends GenericService(User) {
         { id: record.id },
         { password: newPasswordHash },
       );
-      await this.userActivitySrv.logUserActivity(record?.id, 'Pass Word Change');
+      await this.userActivitySrv.logUserActivity(
+        record?.id,
+        'Pass Word Change',
+      );
       return {
         success: true,
         code: HttpStatus.OK,
@@ -929,8 +935,6 @@ export class UserService extends GenericService(User) {
         record.Freeze = payload.Freeze;
       }
 
-
-      
       if (payload.gender && payload.gender !== record.gender) {
         compareEnumValueFields(payload.gender, Object.values(Gender), 'gender');
         record.gender = payload.gender;
@@ -970,31 +974,95 @@ export class UserService extends GenericService(User) {
       ) {
         record.uniqueVerificationCode = payload.uniqueVerificationCode;
       }
-      if (payload.bvn && record.bvn !== payload.bvn) {
+      // if (payload.bvn && record.bvn !== payload.bvn) {
+      //   validateBvn(payload.bvn, 'bvn');
+      //   const bvnValidationResponse = await this.resolveUserBvn(
+      //     payload.bvn,
+      //     record.id,
+      //   );
+      //   if (bvnValidationResponse?.success && bvnValidationResponse.data) {
+      //     if (record.profileImageUrl === DefaultPassportLink.male) {
+      //       record.profileImageUrl = bvnValidationResponse.data.pixBase64;
+      //     }
+      //     if (!record.phoneNumber) {
+      //       record.phoneNumber = bvnValidationResponse.data.phoneNo;
+      //     }
+      //     if (!record.firstName) {
+      //       record.firstName = bvnValidationResponse.data.firstName;
+      //     }
+      //     if (!record.lastName) {
+      //       record.lastName = bvnValidationResponse.data.lastName;
+      //     }
+      //     if (!record.virtualAccountNumber) {
+      //       this.eventEmitterSrv.emit('create-wallet', {
+      //         userId: record.id,
+      //         req,
+      //       });
+      //     }
+      //   }
+      //   record.bvn = payload.bvn;
+      // }
+
+      if (
+        payload.bvn &&
+        record.bvn !== payload.bvn &&
+        payload.bvn != '' &&
+        payload.bvn != ' '
+      ) {
+        console.log(payload.bvn);
         validateBvn(payload.bvn, 'bvn');
-        const bvnValidationResponse = await this.resolveUserBvn(
-          payload.bvn,
-          record.id,
+        const recordExists = await this.findOne({ bvn: payload.bvn });
+        if (recordExists?.id) {
+          let message = 'This BVN is already registered';
+          if (recordExists.bvn === payload.bvn) {
+            message = 'This BVN is already registered';
+          }
+          throw new ConflictException(message);
+        }
+
+        const bvnValidationResponse = await this.resolveUserBvnDojah(
+          { bvn: payload.bvn },
+          // record.id,
         );
-        if (bvnValidationResponse?.success && bvnValidationResponse.data) {
-          if (record.profileImageUrl === DefaultPassportLink.male) {
-            record.profileImageUrl = bvnValidationResponse.data.pixBase64;
+        // console.log(bvnValidationResponse)
+        if (bvnValidationResponse.entity.bvn === payload.bvn) {
+          // Check if the first name matches
+          const firstNameMatches =
+            bvnValidationResponse.entity.first_name.toLowerCase().trim() ===
+            record.firstName.toLowerCase().trim();
+
+          // Check if the last name matches the middle name
+          const middleNameMatchesLastName =
+            bvnValidationResponse.entity.middle_name.toLowerCase().trim() ===
+            record.lastName.toLowerCase().trim();
+
+          // Check if the first name matches the surname
+          const surnameMatchesFirstName =
+            bvnValidationResponse.entity.last_name.toLowerCase().trim() ===
+            record.firstName.toLowerCase().trim();
+
+          // Only proceed if any of the above conditions are true
+          if (
+            firstNameMatches ||
+            middleNameMatchesLastName ||
+            surnameMatchesFirstName
+          ) {
+            // If no virtual account number exists, emit the event to create one
+            if (!record.virtualAccountNumber) {
+              this.eventEmitterSrv.emit('create-wallet', {
+                userId: record.id,
+                req,
+              });
+            }
+          } else {
+            // Throw an error if none of the names match
+            throw new BadRequestException(
+              `BVN verification failed or details do not match`,
+            );
           }
-          if (!record.phoneNumber) {
-            record.phoneNumber = bvnValidationResponse.data.phoneNo;
-          }
-          if (!record.firstName) {
-            record.firstName = bvnValidationResponse.data.firstName;
-          }
-          if (!record.lastName) {
-            record.lastName = bvnValidationResponse.data.lastName;
-          }
-          if (!record.virtualAccountNumber) {
-            this.eventEmitterSrv.emit('create-wallet', {
-              userId: record.id,
-              req,
-            });
-          }
+        } else {
+          // Throw an error if BVN verification was not successful
+          throw new BadRequestException('BVN verification failed.');
         }
         record.bvn = payload.bvn;
       }
@@ -1005,7 +1073,7 @@ export class UserService extends GenericService(User) {
         email: record.email,
         status: record.status,
         userTag: record.userTag,
-        Freeze:record.Freeze,
+        Freeze: record.Freeze,
         lastName: record.lastName,
         password: record.password,
         firstName: record.firstName,
@@ -1342,6 +1410,208 @@ export class UserService extends GenericService(User) {
   //   }
   // }
 
+  async resolveUserBvnDojah(query: GetBvnAdvancedDto): Promise<any> {
+    const appId = process.env.DOJAH_APP_ID; // AppId from the environment
+    const secretKey = process.env.DOJAH_SECRETE_API_KEY; // Authorization key
+    try {
+      const { bvn } = query;
+      const url = `${this.DojahbaseUrl}/api/v1/kyc/bvn/advance?bvn=${bvn}`;
+
+      const headers = {
+        AppId: appId,
+        Authorization: `${secretKey}`,
+      };
+
+      const response = await axios.get(url, { headers });
+      return response.data;
+    } catch (error) {
+      console.log(error);
+      if (error.response) {
+        throw new HttpException(
+          `Failed to fetch BVN details: ${error.response.data.message}`,
+          error.response.status,
+        );
+      } else {
+        throw new HttpException(
+          `Failed to fetch BVN details: ${error.message}`,
+          HttpStatus.INTERNAL_SERVER_ERROR,
+        );
+      }
+    }
+  }
+
+  async checkLiveness(dto: LivenessCheckDto): Promise<any> {
+    const imageBuffer = await this.fetchImage(dto.url);
+    const base64Image = imageBuffer.toString('base64');
+    const response = await axios.post(
+      `${this.DojahbaseUrl}/api/v1/ml/liveness/`,
+      { image: base64Image },
+      {
+        headers: {
+          'Content-Type': 'application/json',
+          AppId: process.env.DOJAH_APP_ID,
+          Authorization: `${process.env.DOJAH_SECRETE_API_KEY}`,
+        },
+      },
+    );
+
+    if (response.data.entity.liveness.liveness_probability < 50) {
+      throw new BadRequestException('Your selfie is not live');
+    }
+    return response.data;
+  }
+
+  private async fetchImage(url: string): Promise<Buffer> {
+    const response = await axios.get(url, { responseType: 'arraybuffer' });
+    return Buffer.from(response.data, 'binary');
+  }
+
+  async verifyBvnWithSelfie(
+    userid: string,
+    bvn: string,
+    selfieImageUrl: string,
+  ): Promise<any> {
+    const record = await this.findOne({ id: userid });
+    if (!record?.id) {
+      throw new NotFoundException('User with id not found');
+    }
+    await this.checkLiveness({ url: selfieImageUrl });
+    try {
+      // Download and convert the image from URL to base64
+      const base64Image = await this.convertImageUrlToBase64(selfieImageUrl);
+
+      // Remove the data:image/jpeg;base64, prefix if it exists
+      const cleanedBase64Image = base64Image.replace(
+        /^data:image\/\w+;base64,/,
+        '',
+      );
+
+      const response: AxiosResponse<any> = await axios({
+        method: 'post',
+        url: `${this.DojahbaseUrl}/api/v1/kyc/bvn/verify`,
+        headers: {
+          'Content-Type': 'application/json',
+          AppId: process.env.DOJAH_APP_ID,
+          Authorization: `${process.env.DOJAH_SECRETE_API_KEY}`,
+        },
+        data: {
+          bvn: bvn,
+          selfie_image: cleanedBase64Image,
+        },
+      });
+
+      if (response.data.entity.selfie_verification.confidence_value < 90) {
+        throw new BadRequestException('invalid details');
+      }
+
+      const updatedRecord: Partial<User> = {
+        isBvnVerified: true,
+        isFaceMatchingVerifiedBvn: true,
+      };
+      await this.getRepo().update({ id: record.id }, updatedRecord);
+
+      return response.data;
+    } catch (error) {
+      if (error.response) {
+        // The request was made and the server responded with a status code
+        // that falls out of the range of 2xx
+        throw new HttpException(
+          {
+            message:
+              error.response.data.message || 'Error verifying BVN with selfie',
+            status: error.response.status,
+            data: error.response.data,
+          },
+          error.response.status,
+        );
+      } else if (error.request) {
+        // The request was made but no response was received
+        throw new HttpException(
+          {
+            message: 'No response received from verification service',
+            status: HttpStatus.SERVICE_UNAVAILABLE,
+          },
+          HttpStatus.SERVICE_UNAVAILABLE,
+        );
+      } else {
+        // Something happened in setting up the request that triggered an Error
+        throw new HttpException(
+          {
+            message: `Error setting up verification request: ${error.message}`,
+            status: HttpStatus.INTERNAL_SERVER_ERROR,
+          },
+          HttpStatus.INTERNAL_SERVER_ERROR,
+        );
+      }
+    }
+  }
+
+  /**
+   * Helper function to convert an image URL to base64 string
+   * @param imageUrl URL of the image to convert
+   * @returns Base64 encoded image string
+   */
+  private async convertImageUrlToBase64(imageUrl: string): Promise<string> {
+    try {
+      // Download the image
+      const response = await axios({
+        method: 'get',
+        url: imageUrl,
+        responseType: 'arraybuffer',
+      });
+
+      // Convert the image to base64
+      const base64 = Buffer.from(response.data, 'binary').toString('base64');
+
+      // Determine the MIME type based on the URL or response headers
+      const contentType =
+        response.headers['content-type'] || this.getMimeTypeFromUrl(imageUrl);
+
+      // Return the complete base64 image string
+      return `data:${contentType};base64,${base64}`;
+    } catch (error) {
+      throw new HttpException(
+        {
+          message: `Failed to convert image URL to base64: ${error.message}`,
+          status: HttpStatus.BAD_REQUEST,
+        },
+        HttpStatus.BAD_REQUEST,
+      );
+    }
+  }
+
+  /**
+   * Helper function to determine MIME type from URL
+   * @param url Image URL
+   * @returns MIME type string
+   */
+  private getMimeTypeFromUrl(url: string): string {
+    const extension = url.split('.').pop()?.toLowerCase();
+    switch (extension) {
+      case 'jpg':
+      case 'jpeg':
+        return 'image/jpeg';
+      case 'png':
+        return 'image/png';
+      case 'gif':
+        return 'image/gif';
+      case 'webp':
+        return 'image/webp';
+      default:
+        return 'image/jpeg'; // Default to JPEG if unknown
+    }
+  }
+
+  /**
+   * Helper function to validate BVN format
+   * @param bvn BVN to validate
+   * @returns true if valid, false otherwise
+   */
+  private isValidBvn(bvn: string): boolean {
+    // BVN should be exactly 11 digits
+    return /^\d{11}$/.test(bvn);
+  }
+
   private async resolveUserBvn(
     bvn: string,
     userId: string,
@@ -1542,6 +1812,4 @@ export class UserService extends GenericService(User) {
       .orWhere('user.email LIKE :query', { query: `%${query}%` })
       .getMany();
   }
-
-
 }

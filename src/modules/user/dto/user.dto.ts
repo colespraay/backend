@@ -8,7 +8,7 @@ import {
   PaginationRequestType,
   PaginationResponseType,
 } from '@utils/index';
-import { IsEmail, IsEnum, IsNotEmpty, IsString } from 'class-validator';
+import { IsEmail, IsEnum, IsNotEmpty, IsString, Length, Matches } from 'class-validator';
 
 export enum OTPMedium {
   PHONE_NUMBER = 'PHONE_NUMBER',
@@ -26,6 +26,10 @@ export class UsersResponseDTO extends BaseResponseTypeDTO {
 
   @ApiProperty({ type: () => PaginationResponseType })
   paginationControl?: PaginationResponseType;
+}
+export class GetBvnAdvancedDto {
+  @ApiProperty({ example: '12345678901', description: 'A valid BVN', required: true })
+  bvn: string;
 }
 
 export class ChangePasswordDTO {
@@ -282,4 +286,127 @@ export class CreateAdminDto{
   @ApiProperty()
   @IsString()
   profileImageUrl: string;
+}
+
+export class LivenessCheckDto {
+  @ApiProperty({
+    description: 'URL of the image to check for liveness',
+    example: 'https://example.com/image.jpg'
+  })
+  url: string;
+}
+
+export class BvnSelfieVerificationDto {
+  @ApiProperty()
+  userId: string;
+  
+  @ApiProperty({
+    description: 'A valid Bank Verification Number (BVN)',
+    example: '12345678901',
+    required: true
+  })
+  @IsString()
+  @IsNotEmpty()
+  @Length(11, 11, { message: 'BVN must be exactly 11 digits' })
+  @Matches(/^\d{11}$/, { message: 'BVN must contain only numbers' })
+  bvn: string;
+
+  @ApiProperty({
+    description: 'URL of the selfie image to be used for verification',
+    example: 'https://example.com/user-selfie.jpg',
+    required: true
+  })
+  @IsString()
+  @IsNotEmpty({ message: 'Selfie image URL is required' })
+  selfie_image_url: string;
+}
+
+export class SelfieVerification {
+  @ApiProperty({
+    description: 'Confidence value of the match (0-100%)',
+    example: 99.99620056152344
+  })
+  confidence_value: number;
+
+  @ApiProperty({
+    description: 'Whether the selfie matches the BVN image (true if confidence > 90%)',
+    example: true
+  })
+  match: boolean;
+}
+
+export class BvnVerificationResponseData {
+  @ApiProperty({
+    description: 'Bank Verification Number',
+    example: '1234567890'
+  })
+  bvn: string;
+
+  @ApiProperty({
+    description: 'First name associated with the BVN',
+    example: 'JOHN'
+  })
+  first_name: string;
+
+  @ApiProperty({
+    description: 'Middle name associated with the BVN',
+    example: 'ANON'
+  })
+  middle_name: string;
+
+  @ApiProperty({
+    description: 'Last name associated with the BVN',
+    example: 'DOE'
+  })
+  last_name: string;
+
+  @ApiProperty({
+    description: 'Date of birth',
+    example: '01-January-1907'
+  })
+  date_of_birth: string;
+
+  @ApiProperty({
+    description: 'Primary phone number',
+    example: '08103817187'
+  })
+  phone_number1: string;
+
+  @ApiProperty({
+    description: 'Secondary phone number',
+    example: ''
+  })
+  phone_number2: string;
+
+  @ApiProperty({
+    description: 'Gender of the BVN holder',
+    example: 'Male'
+  })
+  gender: string;
+
+  @ApiProperty({
+    description: 'Base64 image from BVN record',
+    example: '/9j/4AAQSkZJRgABAgAAAQABAAD/2wBDAAgGBgcGBQgHBwcJCQgKD...'
+  })
+  image: string;
+
+  @ApiProperty({
+    description: 'Selfie verification result',
+    type: SelfieVerification
+  })
+  selfie_verification: SelfieVerification;
+
+  @ApiProperty({
+    description: 'URL of the submitted selfie image',
+    example: 'https://image-rekognitions.s3.amazonaws.com/bvn_n_selfie_172.jpg'
+  })
+  selfie_image_url: string;
+}
+
+export class BvnVerificationResponse {
+  @ApiProperty({
+    description: 'Verification response entity',
+    type: BvnVerificationResponseData
+  })
+  entity: BvnVerificationResponseData;
 }
