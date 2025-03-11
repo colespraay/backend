@@ -42,6 +42,7 @@ import { BettingPurchaseModule } from './modules/betting-purchase/betting-purcha
 import { AdminDashboardModule } from './modules/admin-dashboard/admin-dashboard.module';
 import { UserActivityModule } from './modules/user-activity/user-activity.module';
 import { SprayEmitterRealtimeModule } from './modules/spray-emitter-realtime/spray-emitter-realtime.module';
+import { GiftcardModule } from './modules/giftcard/giftcard.module';
 
 import ormConfig from './orm.config';
 
@@ -78,6 +79,7 @@ import ormConfig from './orm.config';
     AdminDashboardModule,
     UserActivityModule,
     SprayEmitterRealtimeModule,
+    GiftcardModule,
     // AdmindashboardModule,
   ],
   controllers: [AppController],

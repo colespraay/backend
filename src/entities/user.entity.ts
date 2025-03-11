@@ -29,6 +29,7 @@ import {
   EventCategory,
   AppProfit,
   BettingPurchase,
+  GiftCard,
 } from './index';
 
 @Entity({ name: 'user' })
@@ -252,6 +253,12 @@ export class User extends Base {
     cascade: true,
   })
   electricityPurchases: ElectricityPurchase[];
+
+  @ApiProperty({ type: () => [GiftCard] })
+  @OneToMany(() => GiftCard, ({ user }) => user, {
+    cascade: true,
+  })
+  giftCards: GiftCard[];
 
   @ApiProperty({ type: () => [Notification] })
   @OneToMany(() => Notification, ({ user }) => user, { cascade: true })

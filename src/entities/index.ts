@@ -13,6 +13,7 @@ export * from './bank.entity';
 export * from './user-activity.entity';
 export * from './notification.entity';
 export * from './notification-message.entity';
+export * from './gift-card-purchase.entity';
 export * from './airtime-purchase.entity';
 export * from './data-purchase.entity';
 export * from './cable-purchase.entity';
