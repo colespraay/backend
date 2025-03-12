@@ -453,48 +453,101 @@ export const formatPhoneNumberWithPrefix = (
 };
 
 export const sendSMS = async (
-  message: string,
+  senderName: string,
   phoneNumbers: string[],
-  subject?: string,
-): Promise<BaseResponseTypeDTO> => {
+  message: string,
+): Promise<boolean> => {
   try {
-    const key = String(process.env.TEXT_NG_API_KEY);
-    const url = 'https://api.textng.xyz/otp-sms/';
+    const FormData = require('form-data');
+    const formData = new FormData();
+    formData.append('key', process.env.TEXT_NG_API_KEY);
+    formData.append('sender', 'IGBIGI');
+    formData.append('phone', phoneNumbers[0]);
+    formData.append('message', encodeURIComponent(message));
+    formData.append('route', '3'); // Assuming route 3 is required
 
-    const gatewayResponses = [];
-    for (const phoneNumber of phoneNumbers) {
-      const formData = new FormData();
-      formData.append('key', key);
-      formData.append('sender', 'Spraay');
-      formData.append('route', '3');
-      formData.append('phone', formatPhoneNumberWithPrefix(phoneNumber));
-      formData.append('message', message);
-      formData.append('siscb', '1');
-
-      const gatewayResponse = await axios({
-        url,
-        method: 'post',
-        data: formData,
-        headers: { 'Content-Type': 'multipart/form-data' },
-      });
-      gatewayResponses.push(gatewayResponse);
-    }
-    const allSmsSent = gatewayResponses.every(
-      (response) => response.status === 200 && response.data,
+    const response = await axios.post(
+      'https://api.textng.xyz/otp-sms/',
+      formData,
+      {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
+      },
     );
-    const result = new BaseResponseTypeDTO();
-    result.success = true;
-    result.code = HttpStatus.OK;
-    result.message = `SMS messages sent to (${phoneNumbers.length}) number(s)`;
-    if (!allSmsSent) {
-      result.message = `SMS messages sent to (${phoneNumbers.length}) number(s)`;
+    // Check if the request was successful (status code 200)
+    console.log(response)
+    if (response.status === 200) {
+      // Check if the response data contains "ERROR"
+      if (response.data.includes('ERROR')) {
+        throw new BadRequestException(
+          'Error occurred while sending SMS:',
+          response.data,
+        );
+      }
+
+      if (response.data.includes('Successful')) {
+        return true; // SMS sent successfully
+      }
+      // Check the response data to determine if the SMS was sent successfully
+      if (response.data && response.data.success) {
+        return true; // SMS sent successfully
+      }
     }
-    return result;
-  } catch (ex) {
-    logger.error(ex);
-    throw ex;
+    // If the request was not successful or the SMS was not sent successfully, return false
+    return false;
+  } catch (error) {
+    console.error(' SMS WAS NOT SENT PLEASE RETRY AGAIN:', error);
+    throw new BadRequestException(
+      ' SMS WAS NOT SENT PLEASE RETRY AGAIN:',
+      error,
+    );
   }
 };
+
+// export const sendSMS = async (
+//   message: string,
+//   phoneNumbers: string[],
+//   subject?: string,
+// ): Promise<BaseResponseTypeDTO> => {
+//   try {
+//     const key = String(process.env.TEXT_NG_API_KEY);
+//     const url = 'https://api.textng.xyz/otp-sms/';
+
+//     const gatewayResponses = [];
+//     for (const phoneNumber of phoneNumbers) {
+//       const formData = new FormData();
+//       formData.append('key', key);
+//       formData.append('sender', 'Spraay');
+//       formData.append('route', '3');
+//       formData.append('phone', formatPhoneNumberWithPrefix(phoneNumber));
+//       formData.append('message', message);
+//       formData.append('siscb', '1');
+
+//       const gatewayResponse = await axios({
+//         url,
+//         method: 'post',
+//         data: formData,
+//         headers: { 'Content-Type': 'multipart/form-data' },
+//       });
+//       gatewayResponses.push(gatewayResponse);
+//     }
+//     const allSmsSent = gatewayResponses.every(
+//       (response) => response.status === 200 && response.data,
+//     );
+//     const result = new BaseResponseTypeDTO();
+//     result.success = true;
+//     result.code = HttpStatus.OK;
+//     result.message = `SMS messages sent to (${phoneNumbers.length}) number(s)`;
+//     if (!allSmsSent) {
+//       result.message = `SMS messages sent to (${phoneNumbers.length}) number(s)`;
+//     }
+//     return result;
+//   } catch (ex) {
+//     logger.error(ex);
+//     throw ex;
+//   }
+// };
 
 // export const sendSMS = async (
 //   message: string,
