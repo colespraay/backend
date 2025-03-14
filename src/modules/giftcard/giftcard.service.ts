@@ -406,7 +406,7 @@ export class GiftcardService extends GenericService(
 
       await this.userSrv.checkAccountBalance(RealNairaEquivalentOfCard, payload.userid);
 
-      const userToUse = await this.userSrv.repo.findOne({ where: { id: payload.userid } });
+      const userToUse = await this.userSrv.getRepo().findOne({ where: { id: payload.userid } });
       const narration = `Gift Card purchase (₦${RealNairaEquivalentOfCard}) for ${plan.data.productName}`;
       const transactionDate = new Date();
       const reference = `Spraay-Giftcard-${generateUniqueCode(10)}`;
@@ -436,7 +436,7 @@ export class GiftcardService extends GenericService(
         currentBalanceBeforeTransaction: userToUse.walletBalance,
       });
 
-      const newGiftCard = await this.repo.create({
+      const newGiftCard = await this.getRepo().create({
         transactionId: newTransaction.data.id,
         amount: RealNairaEquivalentOfCard,
         giftcardName: plan.data.productName,
@@ -445,7 +445,7 @@ export class GiftcardService extends GenericService(
         createdTime: new Date(),
       });
 
-      await this.repo.save(newGiftCard);
+      await this.getRepo().save(newGiftCard);
 
       return {
         success: true,

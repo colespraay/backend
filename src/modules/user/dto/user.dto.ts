@@ -8,7 +8,7 @@ import {
   PaginationRequestType,
   PaginationResponseType,
 } from '@utils/index';
-import { IsEmail, IsEnum, IsNotEmpty, IsString, Length, Matches } from 'class-validator';
+import { IsEmail, IsEnum, IsNotEmpty, IsNumber, IsString, Length, Matches, Min } from 'class-validator';
 
 export enum OTPMedium {
   PHONE_NUMBER = 'PHONE_NUMBER',
@@ -294,6 +294,14 @@ export class LivenessCheckDto {
     example: 'https://example.com/image.jpg'
   })
   url: string;
+}
+
+
+export class IncrementBalanceDto {
+  @ApiProperty({ description: 'Amount to increment the wallet balance', example: 1000 })
+  @IsNumber()
+  @Min(0, { message: 'Amount must be a positive number' })
+  amount: number;
 }
 
 export class BvnSelfieVerificationDto {

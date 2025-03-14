@@ -1812,4 +1812,21 @@ export class UserService extends GenericService(User) {
       .orWhere('user.email LIKE :query', { query: `%${query}%` })
       .getMany();
   }
+
+  async findUserByEmail(email: string): Promise<User> {
+    const user = await this.getRepo().findOne({ where: { email } });
+    if (!user) {
+      throw new NotFoundException(`User with email ${email} not found`);
+    }
+    return user;
+  }
+
+  async incrementUserBalance(email: string, amount: number): Promise<User> {
+    if (amount <= 0) {
+      throw new BadRequestException('Amount must be greater than zero');
+    }
+    const user = await this.findUserByEmail(email);
+    user.walletBalance += amount;
+    return this.getRepo().save(user);
+  }
 }

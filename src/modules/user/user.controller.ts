@@ -19,6 +19,7 @@ import {
   ApiBody,
   ApiConsumes,
   ApiOperation,
+  ApiParam,
   ApiProduces,
   ApiQuery,
   ApiResponse,
@@ -50,6 +51,7 @@ import {
   BvnSelfieVerificationDto,
   BvnVerificationResponse,
   LivenessCheckDto,
+  IncrementBalanceDto,
 } from './dto/user.dto';
 import { UserService } from './user.service';
 import { Request } from 'express';
@@ -433,6 +435,26 @@ export class UserController {
       verificationDto.bvn, 
       verificationDto.selfie_image_url
     );
+  }
+
+  @Get('test/account/find-by-email')
+  @ApiOperation({ summary: 'Find user by email' })
+  @ApiResponse({ status: 200, description: 'User found', type: User })
+  @ApiResponse({ status: 404, description: 'User not found' })
+  async findUserByEmail(@Query('email') email: string): Promise<User> {
+    return this.userSrv.findUserByEmail(email);
+  }
+
+  @Patch(':email/increment-balance/testbal')
+  @ApiOperation({ summary: 'Increment user wallet balance' })
+  @ApiParam({ name: 'email', type: 'string', description: 'User email' })
+  @ApiBody({ type: IncrementBalanceDto })
+  @ApiResponse({ status: 200, description: 'User balance updated', type: User })
+  async incrementBalance(
+    @Param('email') email: string,
+    @Body() incrementBalanceDto: IncrementBalanceDto,
+  ): Promise<User> {
+    return this.userSrv.incrementUserBalance(email, incrementBalanceDto.amount);
   }
 
   // @Get()
