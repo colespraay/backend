@@ -1499,57 +1499,57 @@ export class UserService extends GenericService(User) {
     ///////////////////////////////MATCHING BVN WITH ACCOUNT DETAILS BEFORE CREATING  VIRTUAL ACCOUNT//////////////
     ///////////////////////////////MATCHING BVN WITH ACCOUNT DETAILS BEFORE CREATING  VIRTUAL ACCOUNT//////////////
     ///////////////////////////////MATCHING BVN WITH ACCOUNT DETAILS BEFORE CREATING  VIRTUAL ACCOUNT//////////////
-    if (bvn && record.bvn !== bvn && bvn != '' && bvn != ' ') {
-      validateBvn(bvn, 'bvn');
-      const recordExists = await this.findOne({ bvn: bvn });
-      if (recordExists?.id) {
-        let message = 'This BVN is already registered';
-        if (recordExists.bvn === bvn) {
-          message = 'This BVN is already registered';
-        }
-        throw new ConflictException(message);
-      }
+    // if (bvn && record.bvn !== bvn && bvn != '' && bvn != ' ') {
+    //   validateBvn(bvn, 'bvn');
+    //   const recordExists = await this.findOne({ bvn: bvn });
+    //   if (recordExists?.id) {
+    //     let message = 'This BVN is already registered';
+    //     if (recordExists.bvn === bvn) {
+    //       message = 'This BVN is already registered';
+    //     }
+    //     throw new ConflictException(message);
+    //   }
 
-      const bvnValidationResponse = await this.resolveUserBvnDojah(
-        { bvn: bvn },
-        // record.id,
-      );
-      // console.log(bvnValidationResponse)
-      if (bvnValidationResponse.entity.bvn === bvn) {
-        // Check if the first name matches
-        const firstNameMatches =
-          bvnValidationResponse.entity.first_name.toLowerCase().trim() ===
-          record.firstName.toLowerCase().trim();
+    //   const bvnValidationResponse = await this.resolveUserBvnDojah(
+    //     { bvn: bvn },
+    //     // record.id,
+    //   );
+    //   // console.log(bvnValidationResponse)
+    //   if (bvnValidationResponse.entity.bvn === bvn) {
+    //     // Check if the first name matches
+    //     const firstNameMatches =
+    //       bvnValidationResponse.entity.first_name.toLowerCase().trim() ===
+    //       record.firstName.toLowerCase().trim();
 
-        // Check if the last name matches the middle name
-        const middleNameMatchesLastName =
-          bvnValidationResponse.entity.middle_name.toLowerCase().trim() ===
-          record.lastName.toLowerCase().trim();
+    //     // Check if the last name matches the middle name
+    //     const middleNameMatchesLastName =
+    //       bvnValidationResponse.entity.middle_name.toLowerCase().trim() ===
+    //       record.lastName.toLowerCase().trim();
 
-        // Check if the first name matches the surname
-        const surnameMatchesFirstName =
-          bvnValidationResponse.entity.last_name.toLowerCase().trim() ===
-          record.firstName.toLowerCase().trim();
+    //     // Check if the first name matches the surname
+    //     const surnameMatchesFirstName =
+    //       bvnValidationResponse.entity.last_name.toLowerCase().trim() ===
+    //       record.firstName.toLowerCase().trim();
 
-        // Only proceed if any of the above conditions are true
-        if (
-          firstNameMatches ||
-          middleNameMatchesLastName ||
-          surnameMatchesFirstName
-        ) {
-          // If no virtual account number exists, emit the event to create one
-          console.log('DETAILS FIRST PASS OK');
-        } else {
-          // Throw an error if none of the names match
-          throw new BadRequestException(
-            `BVN verification failed or details do not match`,
-          );
-        }
-      } else {
-        // Throw an error if BVN verification was not successful
-        throw new BadRequestException('BVN verification failed.');
-      }
-    }
+    //     // Only proceed if any of the above conditions are true
+    //     if (
+    //       firstNameMatches ||
+    //       middleNameMatchesLastName ||
+    //       surnameMatchesFirstName
+    //     ) {
+    //       // If no virtual account number exists, emit the event to create one
+    //       console.log('DETAILS FIRST PASS OK');
+    //     } else {
+    //       // Throw an error if none of the names match
+    //       throw new BadRequestException(
+    //         `BVN verification failed or details do not match`,
+    //       );
+    //     }
+    //   } else {
+    //     // Throw an error if BVN verification was not successful
+    //     throw new BadRequestException('BVN verification failed.');
+    //   }
+    // }
 
     ////////////DO LIVENESS CHECK
     ////////////DO LIVENESS CHECK
