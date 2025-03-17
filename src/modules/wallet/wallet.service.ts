@@ -154,6 +154,8 @@ export class WalletService {
         };
         const response = await httpPost<any, any>(url, requestBody, headers);
         console.log("PAGA ACCOUNT CREATION",response)
+        console.log("PAGA ACCOUNT CREATION",response)
+        console.log("PAGA ACCOUNT CREATION",response)
         if (response?.statusMessage === 'success') {
           const updatedUser: Partial<User> = {
             bankName: 'PAGA',
