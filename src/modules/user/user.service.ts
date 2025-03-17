@@ -1492,6 +1492,9 @@ export class UserService extends GenericService(User) {
     req: Request,
   ): Promise<any> {
     const record = await this.findOne({ id: userid });
+    if (!record?.id) {
+      throw new NotFoundException('User with id not found');
+    }
     ///////////////////////////////MATCHING BVN WITH ACCOUNT DETAILS BEFORE CREATING  VIRTUAL ACCOUNT//////////////
     ///////////////////////////////MATCHING BVN WITH ACCOUNT DETAILS BEFORE CREATING  VIRTUAL ACCOUNT//////////////
     ///////////////////////////////MATCHING BVN WITH ACCOUNT DETAILS BEFORE CREATING  VIRTUAL ACCOUNT//////////////
@@ -1574,10 +1577,6 @@ export class UserService extends GenericService(User) {
         // Throw an error if BVN verification was not successful
         throw new BadRequestException('BVN verification failed.');
       }
-    }
-
-    if (!record?.id) {
-      throw new NotFoundException('User with id not found');
     }
     await this.checkLiveness({ url: selfieImageUrl });
     try {
