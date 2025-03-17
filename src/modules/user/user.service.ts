@@ -618,27 +618,66 @@ export class UserService extends GenericService(User) {
   async findUserByPhoneNumberAndPassword(
     phoneNumber: string,
     password: string,
-  ): Promise<UserResponseDTO> {
+): Promise<UserResponseDTO> {
     try {
-      const user = await this.getRepo().findOne({
-        where: { phoneNumber },
-      });
+        // Preprocess the phone number to ensure it is 11 digits long
+        if (phoneNumber.length === 10) {
+            phoneNumber = '0' + phoneNumber; // Add a leading '0' if the length is 10
+        }
 
-      if (user?.id && (await verifyPasswordHash(password, user.password))) {
-        await this.userActivitySrv.logUserActivity(user?.id, 'Login');
-        return {
-          success: true,
-          code: HttpStatus.OK,
-          data: user,
-          message: 'User found',
-        };
-      }
-      throw new NotFoundException('Invalid credentials');
+        // Validate that the phone number is now 11 digits long
+        if (phoneNumber.length !== 11) {
+            throw new BadRequestException('Invalid phone number format');
+        }
+
+        // Query the database for the user with the processed phone number
+        const user = await this.getRepo().findOne({
+            where: { phoneNumber },
+        });
+
+        // Verify the user exists and the password matches
+        if (user?.id && (await verifyPasswordHash(password, user.password))) {
+            await this.userActivitySrv.logUserActivity(user?.id, 'Login');
+            return {
+                success: true,
+                code: HttpStatus.OK,
+                data: user,
+                message: 'User found',
+            };
+        }
+
+        // If the user is not found or the password is incorrect, throw an exception
+        throw new NotFoundException('Invalid credentials');
     } catch (ex) {
-      this.logger.error(ex);
-      throw ex;
+        this.logger.error(ex);
+        throw ex;
     }
-  }
+}
+
+  // async findUserByPhoneNumberAndPassword(
+  //   phoneNumber: string,
+  //   password: string,
+  // ): Promise<UserResponseDTO> {
+  //   try {
+  //     const user = await this.getRepo().findOne({
+  //       where: { phoneNumber },
+  //     });
+
+  //     if (user?.id && (await verifyPasswordHash(password, user.password))) {
+  //       await this.userActivitySrv.logUserActivity(user?.id, 'Login');
+  //       return {
+  //         success: true,
+  //         code: HttpStatus.OK,
+  //         data: user,
+  //         message: 'User found',
+  //       };
+  //     }
+  //     throw new NotFoundException('Invalid credentials');
+  //   } catch (ex) {
+  //     this.logger.error(ex);
+  //     throw ex;
+  //   }
+  // }
 
   async findUserById(userId: string): Promise<UserResponseDTO> {
     try {
