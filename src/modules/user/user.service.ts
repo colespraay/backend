@@ -1538,35 +1538,7 @@ export class UserService extends GenericService(User) {
           surnameMatchesFirstName
         ) {
           // If no virtual account number exists, emit the event to create one
-          const updatedRecord: Partial<User> = {
-            bvn: record.bvn,
-            dob: record.dob,
-            gender: record.gender,
-            email: record.email,
-            status: record.status,
-            userTag: record.userTag,
-            Freeze: record.Freeze,
-            lastName: record.lastName,
-            password: record.password,
-            firstName: record.firstName,
-            phoneNumber: record.phoneNumber,
-            deviceId: record.deviceId,
-            enableFaceId: record.enableFaceId,
-            transactionPin: record.transactionPin,
-            profileImageUrl: record.profileImageUrl,
-            uniqueVerificationCode: record.uniqueVerificationCode,
-            allowEmailNotifications: record.allowEmailNotifications,
-            allowPushNotifications: record.allowPushNotifications,
-            allowSmsNotifications: record.allowSmsNotifications,
-            displayWalletBalance: record.displayWalletBalance,
-          };
-          await this.getRepo().update({ id: record.id }, updatedRecord);
-          // if (!record.virtualAccountNumber) {
-          //   this.eventEmitterSrv.emit('create-wallet', {
-          //     userId: record.id,
-          //     req,
-          //   });
-          // }
+          console.log('DETAILS FIRST PASS OK');
         } else {
           // Throw an error if none of the names match
           throw new BadRequestException(
@@ -1578,7 +1550,16 @@ export class UserService extends GenericService(User) {
         throw new BadRequestException('BVN verification failed.');
       }
     }
+
+    ////////////DO LIVENESS CHECK
+    ////////////DO LIVENESS CHECK
+    ////////////DO LIVENESS CHECK
+
     await this.checkLiveness({ url: selfieImageUrl });
+
+    ////////////MATCH FACE WITH BVN
+    ////////////MATCH FACE WITH BVN
+    ////////////MATCH FACE WITH BVN
     try {
       // Download and convert the image from URL to base64
       const base64Image = await this.convertImageUrlToBase64(selfieImageUrl);
@@ -1610,9 +1591,13 @@ export class UserService extends GenericService(User) {
       const updatedRecord: Partial<User> = {
         isBvnVerified: true,
         isFaceMatchingVerifiedBvn: true,
+        bvn: bvn,
       };
       await this.getRepo().update({ id: record.id }, updatedRecord);
 
+      ////////////CREATE ACCOUNT DETAILS
+      ////////////CREATE ACCOUNT DETAILS
+      ////////////CREATE ACCOUNT DETAILS
       if (!record.virtualAccountNumber) {
         this.eventEmitterSrv.emit('create-wallet', {
           userId: record.id,
