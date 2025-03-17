@@ -117,6 +117,10 @@ export class WalletService {
     try {
       checkForRequiredFields(['userId', 'req'], payload);
       validateUUIDField(payload.userId, 'userId');
+      console.log(payload)
+      console.log(payload)
+      console.log(payload)
+      console.log(payload)
       const user = await this.userSrv.findUserById(payload.userId);
       const {
         data: { firstName, lastName, bvn, phoneNumber },
