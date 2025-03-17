@@ -420,11 +420,13 @@ export class UserController {
   })
   async verifyBvnWithSelfie(
     @Body(new ValidationPipe({ transform: true })) verificationDto: BvnSelfieVerificationDto,
+    @Req() req: Request,
   ): Promise<BvnVerificationResponse> {
     return this.userSrv.verifyBvnWithSelfie(
       verificationDto.userId,
       verificationDto.bvn, 
-      verificationDto.selfie_image_url
+      verificationDto.selfie_image_url,
+      req
     );
   }
 
