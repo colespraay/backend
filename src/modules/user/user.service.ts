@@ -859,25 +859,7 @@ export class UserService extends GenericService(User) {
     }
   }
 
-  async deleteUserByPhoneNumber(
-    phoneNumber: string,
-  ): Promise<BaseResponseTypeDTO> {
-    try {
-      const userExists = await this.findOne({ phoneNumber });
-      if (userExists?.id) {
-        await this.delete({ phoneNumber });
-        return {
-          code: HttpStatus.OK,
-          message: 'User deleted',
-          success: true,
-        };
-      }
-      throw new NotFoundException('User was not found');
-    } catch (ex) {
-      this.logger.error(ex);
-      throw ex;
-    }
-  }
+
 
   async updateUser(
     payload: UpdateUserDTO,
@@ -1828,5 +1810,38 @@ export class UserService extends GenericService(User) {
     const user = await this.findUserByEmail(email);
     user.walletBalance += amount;
     return this.getRepo().save(user);
+  }
+  async findUserByPhoneNumber(phoneNumber: string): Promise<User> {
+    const user = await this.getRepo().findOne({ where: { phoneNumber } });
+    if (!user) {
+      throw new NotFoundException(`User with phone number ${phoneNumber} not found`);
+    }
+    return user;
+  }
+
+  // async deleteUserByPhoneNumber(phoneNumber: string): Promise<{ message: string }> {
+  //   const user = await this.findUserByPhoneNumber(phoneNumber);
+  //   await this.getRepo().remove(user);
+  //   return { message: `User with phone number ${phoneNumber} has been deleted` };
+  // }
+
+  async deleteUserByPhoneNumber(
+    phoneNumber: string,
+  ): Promise<BaseResponseTypeDTO> {
+    try {
+      const userExists = await this.findOne({ phoneNumber });
+      if (userExists?.id) {
+        await this.delete({ phoneNumber });
+        return {
+          code: HttpStatus.OK,
+          message: 'User deleted',
+          success: true,
+        };
+      }
+      throw new NotFoundException('User was not found');
+    } catch (ex) {
+      this.logger.error(ex);
+      throw ex;
+    }
   }
 }

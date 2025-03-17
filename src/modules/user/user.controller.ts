@@ -348,16 +348,7 @@ export class UserController {
     return await this.userSrv.deleteUserByEmail(email);
   }
 
-  @ApiOperation({ description: 'Delete user account by phone number' })
-  @ApiProduces('json')
-  @ApiConsumes('application/json')
-  @ApiResponse({ type: BaseResponseTypeDTO })
-  @Delete('/delete-by-phone-number/:phoneNumber')
-  async deleteUserByPhoneNumber(
-    @Param('phoneNumber') phoneNumber: string,
-  ): Promise<BaseResponseTypeDTO> {
-    return await this.userSrv.deleteUserByPhoneNumber(phoneNumber);
-  }
+
 
   @Get('user-wildcard-search/search')
   @ApiOperation({ summary: 'Search Users (Wildcard)' })
@@ -455,6 +446,27 @@ export class UserController {
     @Body() incrementBalanceDto: IncrementBalanceDto,
   ): Promise<User> {
     return this.userSrv.incrementUserBalance(email, incrementBalanceDto.amount);
+  }
+
+  @Get('testing/phone/:phoneNumber')
+  @ApiOperation({ summary: 'Find user by phone number' })
+  @ApiParam({ name: 'phoneNumber', type: 'string', description: 'User phone number' })
+  @ApiResponse({ status: 200, description: 'User found', type: User })
+  @ApiResponse({ status: 404, description: 'User not found' })
+  async getUserByPhoneNumber(@Param('phoneNumber') phoneNumber: string): Promise<User> {
+    return this.userSrv.findUserByPhoneNumber(phoneNumber);
+  }
+
+
+  @ApiOperation({ description: 'Delete user account by phone number' })
+  @ApiProduces('json')
+  @ApiConsumes('application/json')
+  @ApiResponse({ type: BaseResponseTypeDTO })
+  @Delete('/delete-by-phone-number/:phoneNumber')
+  async deleteUserByPhoneNumber(
+    @Param('phoneNumber') phoneNumber: string,
+  ): Promise<BaseResponseTypeDTO> {
+    return await this.userSrv.deleteUserByPhoneNumber(phoneNumber);
   }
 
   // @Get()
