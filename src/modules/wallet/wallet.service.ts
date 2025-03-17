@@ -121,9 +121,13 @@ export class WalletService {
       console.log(payload.userId)
       const user = await this.userSrv.findUserById(payload.userId);
       const {
-        data: { firstName, lastName, bvn, phoneNumber },
+        data: { firstName, lastName, 
+          // bvn, 
+          phoneNumber },
       } = user;
-      if (firstName && lastName && bvn && phoneNumber) {
+      if (firstName && lastName && 
+        // bvn && 
+        phoneNumber) {
         const url = `${process.env.PAGA_COLLECT_URL}/registerPersistentPaymentAccount`;
         const hashKeys = [
           'referenceNumber',
