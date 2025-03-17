@@ -117,12 +117,6 @@ export class WalletService {
     console.log(
       'CREATING ACCOUNT DETILS -----WALLET SERVICE CALLING BEFORE TRY CATCH',
     );
-    console.log(
-      'CREATING ACCOUNT DETILS -----WALLET SERVICE CALLING BEFORE TRY CATCH',
-    );
-    console.log(
-      'CREATING ACCOUNT DETILS -----WALLET SERVICE CALLING BEFORE TRY CATCH',
-    );
     try {
       checkForRequiredFields(['userId', 'req'], payload);
       validateUUIDField(payload.userId, 'userId');
@@ -132,14 +126,6 @@ export class WalletService {
       const user = await this.userSrv.getRepo().findOne({
         where: { id: payload.userId },
       });
-      console.log(
-        'CREATING ACCOUNT DETILS -----WALLET SERVICE USER',
-        user,
-      );
-      console.log(
-        'CREATING ACCOUNT DETILS -----WALLET SERVICE USER',
-        user,
-      );
       console.log(
         'CREATING ACCOUNT DETILS -----WALLET SERVICE USER',
         user,
@@ -188,8 +174,6 @@ export class WalletService {
         };
         const response = await httpPost<any, any>(url, requestBody, headers);
         console.log('PAGA ACCOUNT CREATION', response);
-        console.log('PAGA ACCOUNT CREATION', response);
-        console.log('PAGA ACCOUNT CREATION', response);
         if (response?.statusMessage === 'success') {
           const updatedUser: Partial<User> = {
             bankName: 'PAGA',
@@ -203,16 +187,16 @@ export class WalletService {
       }
     } catch (ex) {
       if (ex instanceof AxiosError) {
-        // const errorObject = ex.response.data;
-        // const message =
-        //   typeof errorObject === 'string'
-        //     ? errorObject
-        //     : errorObject.statusMessage;
-        // this.logger.error(message);
-        // throw new HttpException(
-        //   message,
-        //   Number(errorObject.statusCode) ?? HttpStatus.BAD_GATEWAY,
-        // );
+        const errorObject = ex.response.data;
+        const message =
+          typeof errorObject === 'string'
+            ? errorObject
+            : errorObject.statusMessage;
+        this.logger.error(message);
+        throw new HttpException(
+          message,
+          Number(errorObject.statusCode) ?? HttpStatus.BAD_GATEWAY,
+        );
       } else {
         this.logger.error(ex);
         throw ex;
