@@ -1327,7 +1327,7 @@ export class UserService extends GenericService(User) {
       if (user.phoneNumber) {
         const code = user.uniqueVerificationCode;
         const message = `Please use this OTP to validate your Spraay account: ${code}`;
-        await sendSMS(message, [user.phoneNumber], 'Verify Account');
+        // await sendSMS(message, [user.phoneNumber], 'Verify Account');
       }
     } catch (ex) {
       this.logger.error(ex);
