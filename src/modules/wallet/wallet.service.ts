@@ -114,26 +114,42 @@ export class WalletService {
 
   @OnEvent('create-wallet', { async: true })
   async createWallet(payload: { userId: string; req: Request }): Promise<void> {
-    console.log("CREATING ACCOUNT DETILS -----WALLET SERVICE CALLING BEFORE TRY CATCH")
-    console.log("CREATING ACCOUNT DETILS -----WALLET SERVICE CALLING BEFORE TRY CATCH")
-    console.log("CREATING ACCOUNT DETILS -----WALLET SERVICE CALLING BEFORE TRY CATCH")
+    console.log(
+      'CREATING ACCOUNT DETILS -----WALLET SERVICE CALLING BEFORE TRY CATCH',
+    );
+    console.log(
+      'CREATING ACCOUNT DETILS -----WALLET SERVICE CALLING BEFORE TRY CATCH',
+    );
+    console.log(
+      'CREATING ACCOUNT DETILS -----WALLET SERVICE CALLING BEFORE TRY CATCH',
+    );
     try {
       checkForRequiredFields(['userId', 'req'], payload);
       validateUUIDField(payload.userId, 'userId');
       console.log(payload.userId);
       console.log(payload.userId);
-      const user = await this.userSrv.findUserById(payload.userId);
-      console.log("CREATING ACCOUNT DETILS -----WALLET SERVICE USER DATA",user)
-      console.log("CREATING ACCOUNT DETILS -----WALLET SERVICE USER DATA",user)
-      console.log("CREATING ACCOUNT DETILS -----WALLET SERVICE USER DATA",user)
+      // const user = await this.userSrv.findUserById(payload.userId);
+      const data = await this.userSrv.getRepo().findOne({
+        where: { id: payload.userId },
+      });
+      console.log(
+        'CREATING ACCOUNT DETILS -----WALLET SERVICE USER DATA',
+        data,
+      );
+      console.log(
+        'CREATING ACCOUNT DETILS -----WALLET SERVICE USER DATA',
+        data,
+      );
+      console.log(
+        'CREATING ACCOUNT DETILS -----WALLET SERVICE USER DATA',
+        data,
+      );
       const {
-        data: {
-          firstName,
-          lastName,
-          // bvn,
-          phoneNumber,
-        },
-      } = user;
+        firstName,
+        lastName,
+        // bvn,
+        phoneNumber,
+      } = data;
       if (
         firstName &&
         lastName &&

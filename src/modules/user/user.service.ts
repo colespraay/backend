@@ -1599,9 +1599,9 @@ export class UserService extends GenericService(User) {
       ////////////CREATE ACCOUNT DETAILS
       ////////////CREATE ACCOUNT DETAILS
       if (!record.virtualAccountNumber) {
-        console.log("CREATING ACCOUNT DETILS -----USER SERVICE CALLING")
-        console.log("CREATING ACCOUNT DETILS -----USER SERVICE CALLING")
-        console.log("CREATING ACCOUNT DETILS -----USER SERVICE CALLING")
+        // console.log("CREATING ACCOUNT DETILS -----USER SERVICE CALLING")
+        // console.log("CREATING ACCOUNT DETILS -----USER SERVICE CALLING")
+        // console.log("CREATING ACCOUNT DETILS -----USER SERVICE CALLING")
         this.eventEmitterSrv.emit('create-wallet', {
           userId: record.id,
           req,
