@@ -129,27 +129,27 @@ export class WalletService {
       console.log(payload.userId);
       console.log(payload.userId);
       // const user = await this.userSrv.findUserById(payload.userId);
-      const data = await this.userSrv.getRepo().findOne({
+      const user = await this.userSrv.getRepo().findOne({
         where: { id: payload.userId },
       });
       console.log(
-        'CREATING ACCOUNT DETILS -----WALLET SERVICE USER DATA',
-        data,
+        'CREATING ACCOUNT DETILS -----WALLET SERVICE USER',
+        user,
       );
       console.log(
-        'CREATING ACCOUNT DETILS -----WALLET SERVICE USER DATA',
-        data,
+        'CREATING ACCOUNT DETILS -----WALLET SERVICE USER',
+        user,
       );
       console.log(
-        'CREATING ACCOUNT DETILS -----WALLET SERVICE USER DATA',
-        data,
+        'CREATING ACCOUNT DETILS -----WALLET SERVICE USER',
+        user,
       );
       const {
         firstName,
         lastName,
         // bvn,
         phoneNumber,
-      } = data;
+      } = user;
       if (
         firstName &&
         lastName &&
@@ -203,16 +203,16 @@ export class WalletService {
       }
     } catch (ex) {
       if (ex instanceof AxiosError) {
-        const errorObject = ex.response.data;
-        const message =
-          typeof errorObject === 'string'
-            ? errorObject
-            : errorObject.statusMessage;
-        this.logger.error(message);
-        throw new HttpException(
-          message,
-          Number(errorObject.statusCode) ?? HttpStatus.BAD_GATEWAY,
-        );
+        // const errorObject = ex.response.data;
+        // const message =
+        //   typeof errorObject === 'string'
+        //     ? errorObject
+        //     : errorObject.statusMessage;
+        // this.logger.error(message);
+        // throw new HttpException(
+        //   message,
+        //   Number(errorObject.statusCode) ?? HttpStatus.BAD_GATEWAY,
+        // );
       } else {
         this.logger.error(ex);
         throw ex;
