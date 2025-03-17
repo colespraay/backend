@@ -114,20 +114,32 @@ export class WalletService {
 
   @OnEvent('create-wallet', { async: true })
   async createWallet(payload: { userId: string; req: Request }): Promise<void> {
+    console.log("CREATING ACCOUNT DETILS -----WALLET SERVICE CALLING BEFORE TRY CATCH")
+    console.log("CREATING ACCOUNT DETILS -----WALLET SERVICE CALLING BEFORE TRY CATCH")
+    console.log("CREATING ACCOUNT DETILS -----WALLET SERVICE CALLING BEFORE TRY CATCH")
     try {
       checkForRequiredFields(['userId', 'req'], payload);
       validateUUIDField(payload.userId, 'userId');
-      console.log(payload.userId)
-      console.log(payload.userId)
+      console.log(payload.userId);
+      console.log(payload.userId);
       const user = await this.userSrv.findUserById(payload.userId);
+      console.log("CREATING ACCOUNT DETILS -----WALLET SERVICE USER DATA",user)
+      console.log("CREATING ACCOUNT DETILS -----WALLET SERVICE USER DATA",user)
+      console.log("CREATING ACCOUNT DETILS -----WALLET SERVICE USER DATA",user)
       const {
-        data: { firstName, lastName, 
-          // bvn, 
-          phoneNumber },
+        data: {
+          firstName,
+          lastName,
+          // bvn,
+          phoneNumber,
+        },
       } = user;
-      if (firstName && lastName && 
-        // bvn && 
-        phoneNumber) {
+      if (
+        firstName &&
+        lastName &&
+        // bvn &&
+        phoneNumber
+      ) {
         const url = `${process.env.PAGA_COLLECT_URL}/registerPersistentPaymentAccount`;
         const hashKeys = [
           'referenceNumber',
@@ -159,9 +171,9 @@ export class WalletService {
           'Content-Type': 'application/json',
         };
         const response = await httpPost<any, any>(url, requestBody, headers);
-        console.log("PAGA ACCOUNT CREATION",response)
-        console.log("PAGA ACCOUNT CREATION",response)
-        console.log("PAGA ACCOUNT CREATION",response)
+        console.log('PAGA ACCOUNT CREATION', response);
+        console.log('PAGA ACCOUNT CREATION', response);
+        console.log('PAGA ACCOUNT CREATION', response);
         if (response?.statusMessage === 'success') {
           const updatedUser: Partial<User> = {
             bankName: 'PAGA',
@@ -705,7 +717,7 @@ export class WalletService {
             `${payload.fundingPaymentReference} - Wallet Funded`;
           const pagaCharge = parseFloat(payload.clearingFeeAmount);
           // const amount = parseFloat(payload.amount) - pagaCharge;
-          const amount = parseFloat(payload.amount) 
+          const amount = parseFloat(payload.amount);
           const transactionDate = new Date().toLocaleString();
           const newTransaction = await this.transactionSrv.createTransaction({
             amount,
