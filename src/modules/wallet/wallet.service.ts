@@ -710,26 +710,52 @@ export class WalletService {
         });
         if (user?.id) {
           const currentBalanceBeforeTransaction =
-            await this.userSrv.getCurrentWalletBalance(user.id);
-          const reference = String(payload.payerDetails.paymentReferenceNumber);
-          const narration =
-            payload.payerDetails?.narration ??
-            `${payload.fundingPaymentReference} - Wallet Funded`;
-          const pagaCharge = parseFloat(payload.clearingFeeAmount);
-          // const amount = parseFloat(payload.amount) - pagaCharge;
-          const amount = parseFloat(payload.amount);
-          const transactionDate = new Date().toLocaleString();
-          const newTransaction = await this.transactionSrv.createTransaction({
-            amount,
-            reference,
-            narration,
-            type: TransactionType.CREDIT,
-            transactionStatus: PaymentStatus.SUCCESSFUL,
-            userId: user.id,
-            transactionDate,
-            jsonResponse: payload,
-            currentBalanceBeforeTransaction,
-          });
+          await this.userSrv.getCurrentWalletBalance(user.id);
+        const reference = String(payload.payerDetails.paymentReferenceNumber);
+        const narration =
+          payload.payerDetails?.narration ??
+          `${payload.fundingPaymentReference} - Wallet Funded`;
+        const pagaCharge = parseFloat(payload.clearingFeeAmount);
+        // const amount = parseFloat(payload.amount) - pagaCharge;
+
+        const withoutCommas = payload.amount.replace(/,/g, '');
+        const integerValue = parseInt(withoutCommas);
+
+        // const amount = parseFloat(payload.amount);
+        const transactionDate = new Date().toLocaleString();
+        const newTransaction = await this.transactionSrv.createTransaction({
+          amount: integerValue,
+          currency: CurrencyType.NAIRA,
+          reference,
+          narration,
+          type: TransactionType.CREDIT,
+          transactionStatus: PaymentStatus.SUCCESSFUL,
+          userId: user.id,
+          transactionDate,
+          // jsonResponse: payload,
+          currentBalanceBeforeTransaction,
+        });
+          // const currentBalanceBeforeTransaction =
+          //   await this.userSrv.getCurrentWalletBalance(user.id);
+          // const reference = String(payload.payerDetails.paymentReferenceNumber);
+          // const narration =
+          //   payload.payerDetails?.narration ??
+          //   `${payload.fundingPaymentReference} - Wallet Funded`;
+          // const pagaCharge = parseFloat(payload.clearingFeeAmount);
+          // // const amount = parseFloat(payload.amount) - pagaCharge;
+          // const amount = parseFloat(payload.amount);
+          // const transactionDate = new Date().toLocaleString();
+          // const newTransaction = await this.transactionSrv.createTransaction({
+          //   amount,
+          //   reference,
+          //   narration,
+          //   type: TransactionType.CREDIT,
+          //   transactionStatus: PaymentStatus.SUCCESSFUL,
+          //   userId: user.id,
+          //   transactionDate,
+          //   jsonResponse: payload,
+          //   currentBalanceBeforeTransaction,
+          // });
           this.logger.debug({ newTransaction, narration, reference });
         }
       }
