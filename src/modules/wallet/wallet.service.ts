@@ -725,7 +725,7 @@ export class WalletService {
         const transactionDate = new Date().toLocaleString();
         const newTransaction = await this.transactionSrv.createTransaction({
           amount: integerValue,
-          currency: CurrencyType.NAIRA,
+          // currency: CurrencyType.NAIRA,
           reference,
           narration,
           type: TransactionType.CREDIT,
