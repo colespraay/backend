@@ -43,6 +43,8 @@ import { AdminDashboardModule } from './modules/admin-dashboard/admin-dashboard.
 import { UserActivityModule } from './modules/user-activity/user-activity.module';
 import { SprayEmitterRealtimeModule } from './modules/spray-emitter-realtime/spray-emitter-realtime.module';
 import { GiftcardModule } from './modules/giftcard/giftcard.module';
+import { CryptoModule } from './modules/crypto/crypto.module';
+import { QuidaxorderModule } from './modules/quidaxorder/quidaxorder.module';
 
 import ormConfig from './orm.config';
 
@@ -80,6 +82,8 @@ import ormConfig from './orm.config';
     UserActivityModule,
     SprayEmitterRealtimeModule,
     GiftcardModule,
+    CryptoModule,
+    QuidaxorderModule,
     // AdmindashboardModule,
   ],
   controllers: [AppController],

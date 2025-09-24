@@ -21,4 +21,5 @@ export * from './event-category.entity';
 export * from './app-profit.entity';
 export * from './betting-purchase.entity';
 export * from './electricity-purchase.entity';
+export * from './quidax-order.entity';
 export { v4 as uuidV4 } from 'uuid';

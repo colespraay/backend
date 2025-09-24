@@ -7,7 +7,7 @@ import {
   ManyToOne,
   BeforeInsert,
 } from 'typeorm';
-import { PaymentStatus, TransactionType, generateUniqueCode } from '@utils/index';
+import { PaymentStatus, TransactionType, TransactionTypeAction, generateUniqueCode } from '@utils/index';
 import {
   Base,
   User,
@@ -34,6 +34,10 @@ export class TransactionRecord extends Base {
   @Column({ type: 'float', default: 0.0 })
   currentBalanceBeforeTransaction: number;
 
+@ApiProperty()
+@Column({ type: 'varchar', length: 255, nullable: true })
+currency?: string;
+
   @ApiProperty()
   @Column({ type: 'varchar', length: 255 })
   narration: string;
@@ -43,7 +47,7 @@ export class TransactionRecord extends Base {
   reference: string;
 
   @ApiProperty({ enum: TransactionType })
-  @Column({ enum: TransactionType })
+  @Column({ enum: TransactionType ,nullable: true})
   type: TransactionType;
 
   @ApiProperty()
@@ -108,6 +112,11 @@ export class TransactionRecord extends Base {
   @ApiProperty({ enum: PaymentStatus })
   @Column({ enum: PaymentStatus, default: PaymentStatus.SUCCESSFUL })
   transactionStatus: PaymentStatus;
+
+
+  @ApiProperty({ enum: TransactionTypeAction })
+  @Column({ enum: TransactionTypeAction,nullable: true })
+  typeAction: TransactionTypeAction;
 
   @ApiProperty({ type: () => [ElectricityPurchase] })
   @OneToMany(() => ElectricityPurchase, ({ transaction }) => transaction, {

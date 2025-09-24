@@ -97,6 +97,10 @@ export class User extends Base {
 
   @ApiProperty({ nullable: true })
   @Column({ type: 'text', nullable: true })
+  quidax_user_id : string;
+
+  @ApiProperty({ nullable: true })
+  @Column({ type: 'text', nullable: true })
   deviceId: string;
 
   @ApiProperty({ enum: AuthProvider })

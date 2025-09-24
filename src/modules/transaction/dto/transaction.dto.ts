@@ -7,6 +7,7 @@ import {
   PaginationResponseType,
   PaymentStatus,
   TransactionType,
+  TransactionTypeAction,
 } from '@utils/index';
 import { IsDate, IsInt, IsOptional, Min } from 'class-validator';
 
@@ -68,6 +69,12 @@ export class CreateTransactionDTO {
 
   @ApiProperty({ enum: PaymentStatus, nullable: true })
   transactionStatus?: PaymentStatus;
+
+  @ApiProperty({ nullable: true })
+  currency?: string;
+
+  @ApiProperty({ enum: TransactionTypeAction })
+  typeAction?: TransactionTypeAction;
 
   @ApiProperty({ nullable: true })
   receiverUserId?: string;

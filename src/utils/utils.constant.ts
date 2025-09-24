@@ -50,6 +50,14 @@ export enum Gender {
   FEMALE = 'FEMALE',
 }
 
+export enum TransactionTypeAction {
+  DEPOSIT = 'Deposit',
+  WITHDRAWAL = 'Withdrawal',
+  SWAP="Swap",
+  BUY="Buy",
+  SELL="Sell"
+}
+
 export enum TransactionType {
   DEBIT = 'Debit',
   CREDIT = 'Credit',

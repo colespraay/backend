@@ -243,6 +243,10 @@ export class UserService extends GenericService(User) {
         });
       }
       await this.afterSignup(newUser);
+      this.eventEmitterSrv.emit('create-crypto-wallet', {
+        userId: newUser.id,
+      });
+
       return {
         ...response,
         code: HttpStatus.CREATED,

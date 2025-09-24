@@ -452,6 +452,50 @@ export const formatPhoneNumberWithPrefix = (
   return formattedPhoneNumber;
 };
 
+
+
+/**
+ * Sends an SMS message using Twilio.
+ * @param {string} to - The phone number to send the SMS to (include country code, e.g., +1234567890).
+ * @param {string} message - The SMS message content.
+ * @returns {Promise} - A promise that resolves to the message SID if successful, or an error.
+ */
+
+//      const countryCode = payload.code ?? '+234'
+// let num = payload?.phoneNumber
+// if(num.startsWith('+')){
+//   num = payload?.phoneNumber;
+// }else{
+//   num = `${countryCode}${payload?.phoneNumber}`
+// }
+
+//  await sendTwilioSms(num, `
+//     Here is your verification code to change phone number:
+//     ${code}
+
+//     `)
+const twilio = require('twilio');
+const account_sid = process.env.TWILIO_ACCOUNT_SID;
+const account_token = process.env.TWILIO_AUTH_TOKEN;
+const account_number = process.env.TWILIO_NUMBER;
+const client = twilio(account_sid, account_token);
+export const sendTwilioSms = async (to: string, message: string) => {
+  return client.messages
+    .create({
+      body: message,
+      from: account_number,
+      to: to,
+    })
+    .then((message) => {
+      console.log(`Message sent successfully! SID: ${message.sid}`);
+      return message.sid;
+    })
+    .catch((error) => {
+      console.error('Error sending SMS:', error);
+      throw error;
+    });
+};
+
 export const sendSMS = async (
   senderName: string,
   phoneNumbers: string[],
@@ -476,7 +520,7 @@ export const sendSMS = async (
       },
     );
     // Check if the request was successful (status code 200)
-    console.log(response)
+    console.log(response);
     if (response.status === 200) {
       // Check if the response data contains "ERROR"
       if (response.data.includes('ERROR')) {
