@@ -243,9 +243,9 @@ export class UserService extends GenericService(User) {
         });
       }
       await this.afterSignup(newUser);
-      this.eventEmitterSrv.emit('create-crypto-wallet', {
-        userId: newUser.id,
-      });
+      // this.eventEmitterSrv.emit('create-crypto-wallet', {
+      //   userId: newUser.id,
+      // });
 
       return {
         ...response,
@@ -997,34 +997,6 @@ export class UserService extends GenericService(User) {
       ) {
         record.uniqueVerificationCode = payload.uniqueVerificationCode;
       }
-      // if (payload.bvn && record.bvn !== payload.bvn) {
-      //   validateBvn(payload.bvn, 'bvn');
-      //   const bvnValidationResponse = await this.resolveUserBvn(
-      //     payload.bvn,
-      //     record.id,
-      //   );
-      //   if (bvnValidationResponse?.success && bvnValidationResponse.data) {
-      //     if (record.profileImageUrl === DefaultPassportLink.male) {
-      //       record.profileImageUrl = bvnValidationResponse.data.pixBase64;
-      //     }
-      //     if (!record.phoneNumber) {
-      //       record.phoneNumber = bvnValidationResponse.data.phoneNo;
-      //     }
-      //     if (!record.firstName) {
-      //       record.firstName = bvnValidationResponse.data.firstName;
-      //     }
-      //     if (!record.lastName) {
-      //       record.lastName = bvnValidationResponse.data.lastName;
-      //     }
-      //     if (!record.virtualAccountNumber) {
-      //       this.eventEmitterSrv.emit('create-wallet', {
-      //         userId: record.id,
-      //         req,
-      //       });
-      //     }
-      //   }
-      //   record.bvn = payload.bvn;
-      // }
 
       if (
         payload.bvn &&
@@ -1116,6 +1088,12 @@ export class UserService extends GenericService(User) {
       //   userId: record.id,
       //   req,
       // });
+      // 🔹 Add check for Quidax crypto wallet
+      if (!record.quidax_user_id) {
+        this.eventEmitterSrv.emit('create-crypto-wallet', {
+          userId: record.id,
+        });
+      }
       return {
         success: true,
         code: HttpStatus.OK,

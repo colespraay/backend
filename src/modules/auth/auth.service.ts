@@ -271,7 +271,7 @@ export class AuthService {
     }
   }
 
-  private signPayload<T>(payload: T): string {
+  private signPayload(payload): string {
     return sign(payload, process.env.JWT_SECRET, { expiresIn: '1d' });
   }
 
