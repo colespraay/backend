@@ -380,6 +380,8 @@ export class CryptoController {
                 depositFee: '$2',
                 cashWithdrawalFee: '₦100',
                 cryptoWithdrawalFee: '$2',
+                cryptoswapfee:"$2",
+                swapfee:"2"
             },
         };
     }
