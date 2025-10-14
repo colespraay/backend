@@ -475,16 +475,49 @@ export const formatPhoneNumberWithPrefix = (
 
 //     `)
 const twilio = require('twilio');
+
 const account_sid = process.env.TWILIO_ACCOUNT_SID;
-const account_token = process.env.TWILIO_AUTH_TOKEN;
+const auth_token = process.env.TWILIO_AUTH_TOKEN;
 const account_number = process.env.TWILIO_NUMBER;
-const client = twilio(account_sid, account_token);
-export const sendTwilioSms = async (to: string, message: string) => {
+
+const client = twilio(account_sid, auth_token);
+
+const formatNigerianNumber = (phoneNumber: string): string => {
+  // Remove any spaces, dashes, or other non-digit characters except +
+  let cleanNumber = phoneNumber.replace(/[^\d+]/g, '');
+  
+  // If number already has +234, return as is
+  if (cleanNumber.startsWith('+234')) {
+    return cleanNumber;
+  }
+  
+  // If number starts with 234 (without +), add the +
+  if (cleanNumber.startsWith('234')) {
+    return '+' + cleanNumber;
+  }
+  
+  // If number starts with 0 (Nigerian local format), remove 0 and add +234
+  if (cleanNumber.startsWith('0')) {
+    return '+234' + cleanNumber.substring(1);
+  }
+  
+  // If number doesn't start with 0 or 234, assume it's missing country code
+  // and add +234 (for numbers like 8087812345)
+  return '+234' + cleanNumber;
+};
+
+export const sendSMS = async (
+    senderName: string,
+  phoneNumber: string,
+  message: string,
+) => {
+  const formattedNumber = formatNigerianNumber(phoneNumber);
+  
   return client.messages
     .create({
       body: message,
       from: account_number,
-      to: to,
+      to: formattedNumber,
     })
     .then((message) => {
       console.log(`Message sent successfully! SID: ${message.sid}`);
@@ -496,7 +529,7 @@ export const sendTwilioSms = async (to: string, message: string) => {
     });
 };
 
-export const sendSMS = async (
+export const sendSMS_ = async (
   senderName: string,
   phoneNumbers: string[],
   message: string,
