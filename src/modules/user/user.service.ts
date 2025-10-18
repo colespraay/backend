@@ -448,7 +448,7 @@ export class UserService extends GenericService(User) {
         default:
         case OTPMedium.PHONE_NUMBER:
           const message = `Please copy the code below to verify your account\n ${token}`;
-          // await sendSMS(message, [record.phoneNumber], 'Verify Account');
+           await sendSMS(message, record.phoneNumber, 'Verify Account');
           responseMessage = 'Token has been sent to your phone-number via sms';
           break;
       }
