@@ -120,9 +120,8 @@ export const compareEnumValueFields = (
   fieldName?: string,
 ): void => {
   if (!compareEnumValues(value, checkAgainst)) {
-    const message = `Field '${
-      fieldName ?? value
-    }' can only contain values: ${checkAgainst}`;
+    const message = `Field '${fieldName ?? value
+      }' can only contain values: ${checkAgainst}`;
     throw new BadRequestException(message);
   }
 };
@@ -135,10 +134,10 @@ export const checkForRequiredFields = (
     (field: string) =>
       Object.keys(requestPayload).indexOf(field) < 0 ||
       Object.values(requestPayload)[
-        Object.keys(requestPayload).indexOf(field)
+      Object.keys(requestPayload).indexOf(field)
       ] === '' ||
       !Object.values(requestPayload)[
-        Object.keys(requestPayload).indexOf(field)
+      Object.keys(requestPayload).indexOf(field)
       ],
   );
   if (missingFields.length) {
@@ -485,34 +484,36 @@ const client = twilio(account_sid, auth_token);
 const formatNigerianNumber = (phoneNumber: string): string => {
   // Remove any spaces, dashes, or other non-digit characters except +
   let cleanNumber = phoneNumber.replace(/[^\d+]/g, '');
-  
+
   // If number already has +234, return as is
   if (cleanNumber.startsWith('+234')) {
     return cleanNumber;
   }
-  
+
   // If number starts with 234 (without +), add the +
   if (cleanNumber.startsWith('234')) {
     return '+' + cleanNumber;
   }
-  
+
   // If number starts with 0 (Nigerian local format), remove 0 and add +234
   if (cleanNumber.startsWith('0')) {
     return '+234' + cleanNumber.substring(1);
   }
-  
+
   // If number doesn't start with 0 or 234, assume it's missing country code
   // and add +234 (for numbers like 8087812345)
   return '+234' + cleanNumber;
 };
 
 export const sendSMS = async (
-    senderName: string,
-  phoneNumber: string,
   message: string,
+  phoneNumber: string,
+  senderName: string,
+
+
 ) => {
   const formattedNumber = formatNigerianNumber(phoneNumber);
-  
+
   return client.messages
     .create({
       body: message,
@@ -826,9 +827,9 @@ export const haversineDistance = (
   const a =
     Math.sin(dLat / 2) * Math.sin(dLat / 2) +
     Math.cos(toRad(lat1)) *
-      Math.cos(toRad(lat2)) *
-      Math.sin(dLon / 2) *
-      Math.sin(dLon / 2);
+    Math.cos(toRad(lat2)) *
+    Math.sin(dLon / 2) *
+    Math.sin(dLon / 2);
   const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
   const d = R * c;
 
@@ -1124,9 +1125,8 @@ export const formatDate = (date: Date): string => {
 
   const suffix = day <= 3 ? suffixes[day - 1] : suffixes[3];
 
-  const formattedDate = `${day}${suffix} ${months[month]}, ${year} - ${
-    hour % 12 === 0 ? 12 : hour % 12
-  }:${minute < 10 ? '0' + minute : minute}${hour >= 12 ? 'pm' : 'am'}`;
+  const formattedDate = `${day}${suffix} ${months[month]}, ${year} - ${hour % 12 === 0 ? 12 : hour % 12
+    }:${minute < 10 ? '0' + minute : minute}${hour >= 12 ? 'pm' : 'am'}`;
 
   return formattedDate;
 };
