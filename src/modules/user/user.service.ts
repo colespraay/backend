@@ -1347,6 +1347,7 @@ export class UserService extends GenericService(User) {
         const code = user.uniqueVerificationCode;
         const message = `Please use this OTP to validate your Spraay account: ${code}`;
         // await sendSMS(message, [user.phoneNumber], 'Verify Account');
+          await sendSMS(message, user.phoneNumber, 'Verify Account');
       }
     } catch (ex) {
       this.logger.error(ex);
@@ -1942,6 +1943,36 @@ export class UserService extends GenericService(User) {
     } catch (ex) {
       this.logger.error(ex);
       throw ex;
+    }
+  }
+
+  async deleteAllExceptAdmin(): Promise<BaseResponseTypeDTO> {
+    try {
+      // Find all users that are NOT ADMIN
+      const nonAdminUsers = await this.getRepo().find({
+        where: { role: Not(AppRole.ADMIN) },
+      });
+
+      if (!nonAdminUsers.length) {
+        return {
+          code: HttpStatus.OK,
+          message: 'No non-admin users found to delete',
+          success: true,
+        };
+      }
+
+      // Delete them all
+      await this.getRepo().remove(nonAdminUsers);
+
+      return {
+        code: HttpStatus.OK,
+        message: `Successfully deleted ${nonAdminUsers.length} non-admin users`,
+        success: true,
+      };
+    } catch (error) {
+      throw new InternalServerErrorException(
+        'An error occurred while deleting non-admin users.',
+      );
     }
   }
 }

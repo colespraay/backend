@@ -13,6 +13,7 @@ import {
   Req,
   HttpStatus,
   ValidationPipe,
+  BadRequestException,
 } from '@nestjs/common';
 import {
   ApiBearerAuth,
@@ -362,32 +363,6 @@ export class UserController {
     }
   }
 
-  // @Get('bvn/advance')
-  // // @ApiTags('Biometric Checks')
-  // @ApiOperation({ summary: 'Fetch advanced BVN details' })
-  // @ApiResponse({
-  //   status: 200,
-  //   description: 'BVN details retrieved successfully.',
-  // })
-  // @ApiResponse({ status: 400, description: 'Bad Request' })
-  // @ApiResponse({ status: 500, description: 'Internal server error.' })
-  // async getBvnAdvanced(@Query() query: GetBvnAdvancedDto) {
-  //   return await this.userSrv.resolveUserBvnDojah(query);
-  // }
-
-  // @Post('liveness')
-  // // @ApiTags('Biometric Checks')
-  // @ApiOperation({ summary: 'Performs a liveness check on an image' })
-  // @ApiBody({
-  //   type: LivenessCheckDto,
-  //   description: 'Provide image URL to check'
-  // })
-  // async checkLiveness(
-  //   @Body() dto: LivenessCheckDto
-  // ): Promise<any> {
-  //   return this.userSrv.checkLiveness(dto);
-  // }
-
   @Post('kyc/liveness/face-match/bvn/verify')
   // @ApiTags('Biometric Checks')
   // @ApiBearerAuth()
@@ -438,26 +413,26 @@ export class UserController {
     return this.userSrv.findUserByEmail(email);
   }
 
-  @Patch(':email/increment-balance/testbal')
-  @ApiOperation({ summary: 'Increment user wallet balance' })
-  @ApiParam({ name: 'email', type: 'string', description: 'User email' })
-  @ApiBody({ type: IncrementBalanceDto })
-  @ApiResponse({ status: 200, description: 'User balance updated', type: User })
-  async incrementBalance(
-    @Param('email') email: string,
-    @Body() incrementBalanceDto: IncrementBalanceDto,
-  ): Promise<User> {
-    return this.userSrv.incrementUserBalance(email, incrementBalanceDto.amount);
-  }
+  // @Patch(':email/increment-balance/testbal')
+  // @ApiOperation({ summary: 'Increment user wallet balance' })
+  // @ApiParam({ name: 'email', type: 'string', description: 'User email' })
+  // @ApiBody({ type: IncrementBalanceDto })
+  // @ApiResponse({ status: 200, description: 'User balance updated', type: User })
+  // async incrementBalance(
+  //   @Param('email') email: string,
+  //   @Body() incrementBalanceDto: IncrementBalanceDto,
+  // ): Promise<User> {
+  //   return this.userSrv.incrementUserBalance(email, incrementBalanceDto.amount);
+  // }
 
-  @Get('testing/phone/:phoneNumber')
-  @ApiOperation({ summary: 'Find user by phone number' })
-  @ApiParam({ name: 'phoneNumber', type: 'string', description: 'User phone number' })
-  @ApiResponse({ status: 200, description: 'User found', type: User })
-  @ApiResponse({ status: 404, description: 'User not found' })
-  async getUserByPhoneNumber(@Param('phoneNumber') phoneNumber: string): Promise<User> {
-    return this.userSrv.findUserByPhoneNumber(phoneNumber);
-  }
+  // @Get('testing/phone/:phoneNumber')
+  // @ApiOperation({ summary: 'Find user by phone number' })
+  // @ApiParam({ name: 'phoneNumber', type: 'string', description: 'User phone number' })
+  // @ApiResponse({ status: 200, description: 'User found', type: User })
+  // @ApiResponse({ status: 404, description: 'User not found' })
+  // async getUserByPhoneNumber(@Param('phoneNumber') phoneNumber: string): Promise<User> {
+  //   return this.userSrv.findUserByPhoneNumber(phoneNumber);
+  // }
 
 
   @ApiOperation({ description: 'Delete user account by phone number' })
@@ -471,59 +446,30 @@ export class UserController {
     return await this.userSrv.deleteUserByPhoneNumber(phoneNumber);
   }
 
-  // @Get()
-  // @ApiQuery({ name: 'page', type: Number, required: false })
-  // @ApiQuery({ name: 'limit', type: Number, required: false })
-  // @ApiResponse({
-  //   status: HttpStatus.OK,
-  //   description: 'Users retrieved successfully',
-  //   type: [User],
-  // })
-  // @ApiResponse({
-  //   status: HttpStatus.INTERNAL_SERVER_ERROR,
-  //   description: 'Failed to retrieve users',
-  // })
-  // async getAllUsers(
-  //   @Query('page') page: number = 1,
-  //   @Query('limit') limit: number = 10,
-  // ): Promise<{ data: User[]; totalCount: number }> {
-  //   try {
-  //     const result = await this.userService.getAllUsers(page, limit);
-  //     return { data: result.data, totalCount: result.totalCount };
-  //   } catch (error) {
-  //     console.error('Error in getAllUsers:', error);
-  //     throw new Error('Failed to retrieve users');
-  //   }
-  // }
 
-  // @Get("admin/get-all-users")
-  // @ApiQuery({ name: 'page', type: Number, required: false })
-  // @ApiQuery({ name: 'limit', type: Number, required: false })
-  // @ApiResponse({
-  //   status: HttpStatus.OK,
-  //   description: 'Users retrieved successfully',
-  //   type: [User],
-  // })
-  // @ApiResponse({
-  //   status: HttpStatus.INTERNAL_SERVER_ERROR,
-  //   description: 'Failed to retrieve users',
-  // })
-  // async getAllUsers(
-  //   @Query('page') page: number = 1,
-  //   @Query('limit') limit: number = 10,
-  // ): Promise<{
-  //   success: boolean;
-  //   message: string;
-  //   error?: string;
-  //   code: number;
-  //   data: { users: User[]; totalCount: number };
-  // }> {
-  //   try {
-  //     const result = await this.userSrv.getAllUsers(page, limit);
-  //     return result;
-  //   } catch (error) {
-  //     console.error('Error in getAllUsers:', error);
-  //     throw new Error('Failed to retrieve users');
-  //   }
-  // }
+  @Delete('delete-non-admins/all')
+   @ApiOperation({
+    summary: 'Delete all non-admin users',
+    description:
+      'Deletes all user accounts except those with the role `ADMIN`. This operation is irreversible and should only be performed by administrators.',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Successfully deleted non-admin users.',
+    type: BaseResponseTypeDTO,
+    schema: {
+      example: {
+        code: 200,
+        message: 'Successfully deleted 12 non-admin users',
+        success: true,
+      },
+    },
+  })
+  @ApiResponse({
+    status: 500,
+    description: 'An unexpected error occurred while deleting users.',
+  })
+  async deleteAllExceptAdmin(): Promise<BaseResponseTypeDTO> {
+    return await this.userSrv.deleteAllExceptAdmin();
+  }
 }
