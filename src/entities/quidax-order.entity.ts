@@ -33,7 +33,7 @@ export class QuidaxOrder extends Base {
   beneficiaryBankCode?: string;
 
   @ApiProperty({ description: 'Transaction status of the order' })
-  @Column({ type: 'varchar', length: 100 })
+  @Column({ type: 'varchar', length: 100 ,nullable: true})
   transactionStatus: string;
 
   @ApiProperty({ description: 'Timestamp when the order was created' })
