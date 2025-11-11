@@ -234,16 +234,52 @@ export class WalletService {
     }
   }
 
-  async getBankLists(searchTerm?: string): Promise<BankListDTO> {
+
+    async fetchAndCompareBanks(): Promise<Partial<any>[]> {
+    const dateOfCall = new Date();
+    // Log the date and IP address
+    console.log(`Date of bank list call: ${dateOfCall.toLocaleString()}`);
+    // const url ='https://mypaga.com/paga-webservices/business-rest/secured/getBanks'
+    const url = `${process.env.PAGA_BASE_URL}/getBanks`;
+    console.log('URL TO PAGA', url);
+    const keys = ['referenceNumber'];
+    const body = {
+      referenceNumber: 'PAGA|280418|0000000021',
+      locale: 'EN',
+    };
+    const { hash, password, username } = generatePagaHash(keys, body);
+    const headers = {
+      hash,
+      principal: username,
+      credentials: password,
+      'Content-Type': 'application/json',
+    };
+    // Fetch banks from the API
+    const banksFromAPI: any = await httpPost(url, body, headers);
+    // Get banks from the database
+    const banksToCreate: Partial<any>[] = [];
+    for (const apiBank of banksFromAPI.banks) {
+      const existingBank = null;
+      if (!existingBank) {
+        banksToCreate.push({
+          bankCode: apiBank.uuid,
+          bankName: apiBank.name,
+          interInstitutionCode: apiBank.institutionCode,
+          sortCode: apiBank.sortCode,
+        });
+      }
+    }
+    return banksToCreate;
+  }
+
+    async getBankLists(searchTerm?: string): Promise<BankListDTO> {
     try {
-      let bankList = await this.bankSrv.getRepo().find({
-        where: { status: true },
-        order: { bankName: 'ASC' },
-      });
+      const allBanks = await this.fetchAndCompareBanks();
+      let bankList = allBanks;
       if (searchTerm) {
         searchTerm = searchTerm.toLowerCase();
         bankList = bankList.filter(
-          ({ bankName, bankCode }) =>
+          ({ bankName, bankCode, sortCode }) =>
             bankName.toLowerCase().includes(searchTerm) ||
             bankCode.toLowerCase().includes(searchTerm),
         );
@@ -252,16 +288,47 @@ export class WalletService {
         success: true,
         code: HttpStatus.OK,
         message: 'Bank list found',
-        data: bankList.map(({ bankName, bankCode }) => ({
+        data: bankList.map(({ bankName, bankCode, sortCode }) => ({
           bankName,
           bankCode,
+          sortCode,
         })),
       };
     } catch (ex) {
+      console.log(ex);
       this.logger.error(ex);
       throw ex;
     }
   }
+
+  // async getBankLists(searchTerm?: string): Promise<BankListDTO> {
+  //   try {
+  //     let bankList = await this.bankSrv.getRepo().find({
+  //       where: { status: true },
+  //       order: { bankName: 'ASC' },
+  //     });
+  //     if (searchTerm) {
+  //       searchTerm = searchTerm.toLowerCase();
+  //       bankList = bankList.filter(
+  //         ({ bankName, bankCode }) =>
+  //           bankName.toLowerCase().includes(searchTerm) ||
+  //           bankCode.toLowerCase().includes(searchTerm),
+  //       );
+  //     }
+  //     return {
+  //       success: true,
+  //       code: HttpStatus.OK,
+  //       message: 'Bank list found',
+  //       data: bankList.map(({ bankName, bankCode }) => ({
+  //         bankName,
+  //         bankCode,
+  //       })),
+  //     };
+  //   } catch (ex) {
+  //     this.logger.error(ex);
+  //     throw ex;
+  //   }
+  // }
 
   async calculateTransactionFee(
     amount: number,
