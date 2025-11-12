@@ -441,7 +441,7 @@ export class CryptoService {
     }
 
 
-async fetchUserWallets(userId: string): Promise<any> {
+    async fetchUserWallets(userId: string): Promise<any> {
     const url = `${this.baseUrl}/users/${userId}/wallets`;
 
     const options = {
@@ -456,6 +456,9 @@ async fetchUserWallets(userId: string): Promise<any> {
         const response = await axios.get(url, options);
         const wallets = response.data.data;
 
+        // Allowed coins list
+        const allowedCurrencies = ['usdt', 'btc', 'eth', 'ltc', 'bch'];
+
         // Add image_url and filter unwanted items
         const enhancedWallets = wallets
             .map((wallet) => {
@@ -467,11 +470,7 @@ async fetchUserWallets(userId: string): Promise<any> {
             })
             .filter(
                 (wallet) =>
-                    // Remove USD and NGN wallets
-                    wallet.currency !== 'usd' &&
-                    wallet.currency !== 'ngn' &&
-                    wallet.name !== 'US Dollar' &&
-                    // Ensure deposit_address and image_url are valid
+                    allowedCurrencies.includes(wallet.currency) &&
                     wallet.deposit_address &&
                     wallet.image_url
             );
@@ -498,50 +497,65 @@ async fetchUserWallets(userId: string): Promise<any> {
     }
 }
 
-    // async fetchUserWallets(userId: string): Promise<any> {
-    //     const url = `${this.baseUrl}/users/${userId}/wallets`;
 
-    //     const options = {
-    //         method: 'GET',
-    //         headers: {
-    //             accept: 'application/json',
-    //             Authorization: `Bearer ${process.env.QUIDAX_Secrete_key}`,
-    //         },
-    //     };
+// async fetchUserWallets(userId: string): Promise<any> {
+//     const url = `${this.baseUrl}/users/${userId}/wallets`;
 
-    //     try {
-    //         const response = await axios.get(url, options);
-    //         const wallets = response.data.data;
+//     const options = {
+//         method: 'GET',
+//         headers: {
+//             accept: 'application/json',
+//             Authorization: `Bearer ${process.env.QUIDAX_Secrete_key}`,
+//         },
+//     };
 
-    //         const enhancedWallets = wallets.map((wallet) => {
-    //             const symbol = wallet.currency?.toUpperCase();
-    //             return {
-    //                 ...wallet,
-    //                 image_url: this.coinLogos[symbol] || null,
-    //             };
-    //         });
+//     try {
+//         const response = await axios.get(url, options);
+//         const wallets = response.data.data;
 
-    //         return {
-    //             success: true,
-    //             message: 'User wallets fetched successfully.',
-    //             status: HttpStatus.OK,
-    //             code: HttpStatus.OK,
-    //             data: enhancedWallets,
-    //         };
-    //     } catch (error) {
-    //         if (error.response) {
-    //             throw new HttpException(
-    //                 `Failed to fetch user wallets: ${error.response.data.message}`,
-    //                 error.response.status,
-    //             );
-    //         } else {
-    //             throw new HttpException(
-    //                 `Failed to fetch user wallets: ${error.message}`,
-    //                 HttpStatus.INTERNAL_SERVER_ERROR,
-    //             );
-    //         }
-    //     }
-    // }
+//         // Add image_url and filter unwanted items
+//         const enhancedWallets = wallets
+//             .map((wallet) => {
+//                 const symbol = wallet.currency?.toUpperCase();
+//                 return {
+//                     ...wallet,
+//                     image_url: this.coinLogos[symbol] || null,
+//                 };
+//             })
+//             .filter(
+//                 (wallet) =>
+//                     // Remove USD and NGN wallets
+//                     wallet.currency !== 'usd' &&
+//                     wallet.currency !== 'ngn' &&
+//                     wallet.name !== 'US Dollar' &&
+//                     // Ensure deposit_address and image_url are valid
+//                     wallet.deposit_address &&
+//                     wallet.image_url
+//             );
+
+//         return {
+//             success: true,
+//             message: 'User wallets fetched successfully.',
+//             status: HttpStatus.OK,
+//             code: HttpStatus.OK,
+//             data: enhancedWallets,
+//         };
+//     } catch (error) {
+//         if (error.response) {
+//             throw new HttpException(
+//                 `Failed to fetch user wallets: ${error.response.data.message}`,
+//                 error.response.status,
+//             );
+//         } else {
+//             throw new HttpException(
+//                 `Failed to fetch user wallets: ${error.message}`,
+//                 HttpStatus.INTERNAL_SERVER_ERROR,
+//             );
+//         }
+//     }
+// }
+
+
 
     async getUserWallet(getUserWalletDto: GetUserWalletDto): Promise<any> {
         const { user_id, currency } = getUserWalletDto;
