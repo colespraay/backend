@@ -65,7 +65,7 @@ export class WalletService {
     private readonly withdrawalSrv: WithdrawalService,
     private readonly userAccountSrv: UserAccountService,
     private readonly transactionSrv: TransactionService,
-  ) {}
+  ) { }
 
   async getAccountBalance(): Promise<{
     totalBalance: number;
@@ -153,8 +153,8 @@ export class WalletService {
         const callbackUrl =
           payload.req.protocol && payload.req.get('host')
             ? `${payload.req.protocol}://${payload.req.get(
-                'host',
-              )}/wallet/webhook`
+              'host',
+            )}/wallet/webhook`
             : String(process.env.PAGA_WEBHOOK);
         const referenceNumber = generateUniqueCode(13);
         const requestBody = {
@@ -235,7 +235,7 @@ export class WalletService {
   }
 
 
-    async fetchAndCompareBanks(): Promise<Partial<any>[]> {
+  async fetchAndCompareBanks(): Promise<Partial<any>[]> {
     const dateOfCall = new Date();
     // Log the date and IP address
     console.log(`Date of bank list call: ${dateOfCall.toLocaleString()}`);
@@ -272,7 +272,7 @@ export class WalletService {
     return banksToCreate;
   }
 
-    async getBankLists(searchTerm?: string): Promise<BankListDTO> {
+  async getBankLists(searchTerm?: string): Promise<BankListDTO> {
     try {
       const allBanks = await this.fetchAndCompareBanks();
       let bankList = allBanks;
@@ -426,6 +426,46 @@ export class WalletService {
     }
   }
 
+
+  async fetchAndFilterBanks(filterBankCode: string): Promise<any | null> {
+    const url = `${process.env.PAGA_BASE_URL}/getBanks`;
+    const keys = ['referenceNumber'];
+    const body = {
+      referenceNumber: 'PAGA|280418|0000000021',
+      locale: 'EN',
+    };
+    const { hash, password, username } = generatePagaHash(keys, body);
+    const headers = {
+      hash,
+      principal: username,
+      credentials: password,
+      'Content-Type': 'application/json',
+    };
+
+    // Fetch banks from the API
+    const banksFromAPI: any = await httpPost(url, body, headers);
+
+    // Filter banks based on bankCode
+    // console.log(filterBankCode)
+    // console.log(banksFromAPI.banks)
+    const filteredBank = banksFromAPI.banks.find(
+      (bank: any) => bank.uuid === filterBankCode,
+    );
+
+    if (filteredBank) {
+      const { bankCode, bankName, interInstitutionCode, sortCode } =
+        filteredBank;
+      return {
+        bankCode,
+        bankName,
+        interInstitutionCode,
+        sortCode,
+      };
+    } else {
+      return null; // Bank with the specified bankCode not found
+    }
+  }
+
   async verifyExternalAccountNumber(
     userBankCode: string,
     userAccountNumber: string,
@@ -462,8 +502,11 @@ export class WalletService {
         'Content-Type': 'application/json',
       };
       const response = await httpPost<any, any>(url, requestBody, headers);
+      console.log(response);
       if (response?.destinationAccountHolderNameAtBank) {
-        const bank = await this.bankSrv.findOne({ bankCode: userBankCode });
+        const bank = await this.fetchAndFilterBanks(userBankCode);
+        console.log(bank);
+
         return {
           accountName: response.destinationAccountHolderNameAtBank,
           accountNumber: userAccountNumber,
@@ -485,6 +528,65 @@ export class WalletService {
       }
     }
   }
+  // async verifyExternalAccountNumber(
+  //   userBankCode: string,
+  //   userAccountNumber: string,
+  // ): Promise<VerifiesAccountDetailDTO> {
+  //   try {
+  //     checkForRequiredFields(['userBankCode', 'userAccountNumber'], {
+  //       userBankCode,
+  //       userAccountNumber,
+  //     });
+  //     const url = `${process.env.PAGA_BASE_URL}/validateDepositToBank`;
+  //     const hashKeys = [
+  //       'referenceNumber',
+  //       'amount',
+  //       'destinationBankUUID',
+  //       'destinationBankAccountNumber',
+  //     ];
+  //     const amount = '50';
+  //     const referenceNumber = '23453498574985830';
+  //     const requestBody = {
+  //       referenceNumber,
+  //       amount,
+  //       currency: 'NGN',
+  //       destinationBankUUID: userBankCode,
+  //       destinationBankAccountNumber: userAccountNumber,
+  //     };
+  //     const { hash, password, username } = generatePagaHash(
+  //       hashKeys,
+  //       requestBody,
+  //     );
+  //     const headers = {
+  //       hash,
+  //       principal: username,
+  //       credentials: password,
+  //       'Content-Type': 'application/json',
+  //     };
+  //     const response = await httpPost<any, any>(url, requestBody, headers);
+  //     if (response?.destinationAccountHolderNameAtBank) {
+  //       const bank = await this.bankSrv.findOne({ bankCode: userBankCode });
+  //       return {
+  //         accountName: response.destinationAccountHolderNameAtBank,
+  //         accountNumber: userAccountNumber,
+  //         bankCode: bank.bankCode,
+  //         currency: 'NGN',
+  //       };
+  //     }
+  //     throw new NotFoundException('Could not verify account');
+  //   } catch (ex) {
+  //     if (ex instanceof AxiosError) {
+  //       const errorObject = ex.response.data;
+  //       const message =
+  //         typeof errorObject === 'string' ? errorObject : errorObject.error;
+  //       this.logger.error(message);
+  //       throw new HttpException(message, ex.response.status);
+  //     } else {
+  //       this.logger.error(ex);
+  //       throw ex;
+  //     }
+  //   }
+  // }
 
   async verifyWalletAccountNumber(
     userAccountNumber: string,
@@ -565,11 +667,10 @@ export class WalletService {
       }
 
       // Verify destination Account
-      const destinationAccountEnquiryUrl = `https://apiplayground.alat.ng/debit-wallet/api/Shared/AccountNameEnquiry/${
-        payload.destinationBankCode
-      }/${payload.destinationAccountNumber}?channelId=${String(
-        process.env.WEMA_ATLAT_X_API_KEY,
-      )}`;
+      const destinationAccountEnquiryUrl = `https://apiplayground.alat.ng/debit-wallet/api/Shared/AccountNameEnquiry/${payload.destinationBankCode
+        }/${payload.destinationAccountNumber}?channelId=${String(
+          process.env.WEMA_ATLAT_X_API_KEY,
+        )}`;
       const destinationAccount = await httpGet<any>(
         destinationAccountEnquiryUrl,
         {
@@ -777,31 +878,31 @@ export class WalletService {
         });
         if (user?.id) {
           const currentBalanceBeforeTransaction =
-          await this.userSrv.getCurrentWalletBalance(user.id);
-        const reference = String(payload.payerDetails.paymentReferenceNumber);
-        const narration =
-          payload.payerDetails?.narration ??
-          `${payload.fundingPaymentReference} - Wallet Funded`;
-        const pagaCharge = parseFloat(payload.clearingFeeAmount);
-        // const amount = parseFloat(payload.amount) - pagaCharge;
+            await this.userSrv.getCurrentWalletBalance(user.id);
+          const reference = String(payload.payerDetails.paymentReferenceNumber);
+          const narration =
+            payload.payerDetails?.narration ??
+            `${payload.fundingPaymentReference} - Wallet Funded`;
+          const pagaCharge = parseFloat(payload.clearingFeeAmount);
+          // const amount = parseFloat(payload.amount) - pagaCharge;
 
-        const withoutCommas = payload.amount.replace(/,/g, '');
-        const integerValue = parseInt(withoutCommas);
+          const withoutCommas = payload.amount.replace(/,/g, '');
+          const integerValue = parseInt(withoutCommas);
 
-        // const amount = parseFloat(payload.amount);
-        const transactionDate = new Date().toLocaleString();
-        const newTransaction = await this.transactionSrv.createTransaction({
-          amount: integerValue,
-          // currency: CurrencyType.NAIRA,
-          reference,
-          narration,
-          type: TransactionType.CREDIT,
-          transactionStatus: PaymentStatus.SUCCESSFUL,
-          userId: user.id,
-          transactionDate,
-          // jsonResponse: payload,
-          currentBalanceBeforeTransaction,
-        });
+          // const amount = parseFloat(payload.amount);
+          const transactionDate = new Date().toLocaleString();
+          const newTransaction = await this.transactionSrv.createTransaction({
+            amount: integerValue,
+            // currency: CurrencyType.NAIRA,
+            reference,
+            narration,
+            type: TransactionType.CREDIT,
+            transactionStatus: PaymentStatus.SUCCESSFUL,
+            userId: user.id,
+            transactionDate,
+            // jsonResponse: payload,
+            currentBalanceBeforeTransaction,
+          });
           // const currentBalanceBeforeTransaction =
           //   await this.userSrv.getCurrentWalletBalance(user.id);
           // const reference = String(payload.payerDetails.paymentReferenceNumber);

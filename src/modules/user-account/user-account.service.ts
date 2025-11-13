@@ -47,6 +47,7 @@ export class UserAccountService extends GenericService(UserAccount) {
       if (!bankDetails?.accountName) {
         throw new NotFoundException('Could not verify account');
       }
+      console.log(bankDetails);
       const createdAccount = await this.create<Partial<UserAccount>>({
         userId,
         accountName: bankDetails.accountName,
