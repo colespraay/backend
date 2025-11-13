@@ -353,23 +353,6 @@ export class CryptoController {
 
     @Get("/transaction-fees/get-all-transaction-fees")
     @ApiOperation({ summary: 'Get all transaction fees' })
-    @ApiResponse({
-        status: 200,
-        description: 'Successfully fetched transaction fees',
-        schema: {
-            example: {
-                success: true,
-                message: 'Transaction fees fetched successfully.',
-                status: 200,
-                code: 200,
-                data: {
-                    depositFee: '$2',
-                    cashWithdrawalFee: '₦100',
-                    cryptoWithdrawalFee: '$2',
-                },
-            },
-        },
-    })
     getTransactionFees() {
         return {
             success: true,
@@ -377,14 +360,38 @@ export class CryptoController {
             status: HttpStatus.OK,
             code: HttpStatus.OK,
             data: {
-                depositFee: '$2',
-                cashWithdrawalFee: '₦100',
-                cryptoWithdrawalFee: '$2',
-                cryptoswapfee:"$2",
-                swapfee:"2"
+                depositFee: {
+                    value: 2,
+                    currency: 'USD',
+                },
+                cashWithdrawalFee: {
+                    value: 100,
+                    currency: 'NGN',
+                },
+                cryptoWithdrawalFee: {
+                    value: 2,
+                    currency: 'USD',
+                },
+                cryptoSwapFee: {
+                    value: 2,
+                    currency: 'USD',
+                },
+                swapFee: {
+                    value: 2,
+                    currency: 'USD',
+                },
+                spraayFee: {
+                    value: 100,
+                    currency: 'NGN',
+                },
+                rateTopUp: {
+                    value: 50,
+                    currency: 'NGN',
+                },
             },
         };
     }
+
 
 
     @Post('/quidaxwebhook')
