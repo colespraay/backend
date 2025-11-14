@@ -2,6 +2,7 @@ import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import {
     IsEmail,
     IsEnum,
+    IsIn,
     IsNotEmpty,
     IsNumber,
     IsOptional,
@@ -371,6 +372,40 @@ export class ConfirmSwapDto {
     @IsString()
     @IsNotEmpty()
     swapId: string;
+}
+
+export class GetQuidaxFeeDto {
+  @ApiProperty({ example: 'usdt', description: 'Currency to check network fee for' })
+  @IsNotEmpty()
+  @IsString()
+  currency: string;
+
+  @ApiPropertyOptional({ example: 'btc', description: 'Blockchain network (optional)' })
+  @IsOptional()
+  @IsString()
+  network?: string;
+}
+
+export class GetNetworkFeeUsdDto {
+  @ApiProperty({ example: 'ltc', description: 'Currency to check network fee' })
+  @IsNotEmpty()
+  @IsString()
+  currency: string;
+
+  @ApiPropertyOptional({ example: 'ltcusdt', description: 'Ticker pair for USD price (e.g., btcusdt, ltcusdt)' })
+  @IsOptional()
+  @IsString()
+  ticker?: string;
+
+  @ApiPropertyOptional({ example: 'buy', enum: ['buy', 'sell'], description: 'Choose price type' })
+  @IsOptional()
+  @IsIn(['buy', 'sell'])
+  priceType?: 'buy' | 'sell';
+
+  @ApiPropertyOptional({ example: 'btc', description: 'Blockchain network (optional)' })
+  @IsOptional()
+  @IsString()
+  network?: string;
 }
 
 export class BuyCryptoDto {

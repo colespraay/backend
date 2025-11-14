@@ -18,6 +18,8 @@ import {
     FetchKlineDto,
     GetMarketTickerDto,
     GetMarketTickerResponseDto,
+    GetNetworkFeeUsdDto,
+    GetQuidaxFeeDto,
     GetUserWalletDto,
     MainWalletResponseDto,
     QuidaxQueryDto,
@@ -825,6 +827,90 @@ export class CryptoService {
             );
         }
     }
+
+    async getNetworkFee(dto: GetQuidaxFeeDto) {
+        const { currency, network } = dto;
+
+        // Build URL dynamically
+        let apiUrl = `https://app.quidax.io/api/v1/fee?currency=${currency}`;
+        if (network) {
+            apiUrl += `&network=${network}`;
+        }
+
+        try {
+            const response = await axios.get(apiUrl, {
+                headers: {
+                    accept: 'application/json',
+                    Authorization: `Bearer ${process.env.QUIDAX_Secrete_key}`,
+                },
+            });
+
+            return {
+                success: true,
+                code: HttpStatus.OK,
+                message: 'Network fee fetched successfully.',
+                data: response.data,
+            };
+
+        } catch (error) {
+            console.error(
+                '❌ Error in getNetworkFee:',
+                error.response?.data || error.message,
+            );
+
+            const errorMessage =
+                error.response?.data?.message ||
+                error.response?.data?.error ||
+                error.message ||
+                'Unable to fetch fee';
+
+            throw new HttpException(
+                { message: 'Failed to fetch network fee', details: errorMessage },
+                HttpStatus.BAD_REQUEST,
+            );
+        }
+    }
+
+    async getNetworkFeeWithUsdValue(dto: GetNetworkFeeUsdDto) {
+  const { currency, ticker, priceType, network } = dto;
+
+  // 1. Fetch network fee (crypto amount)
+  const feeResponse = await this.getNetworkFee({ currency, network });
+  const fee = feeResponse.data.data.fee; // Example: 0.002
+
+  // 2. Fetch market ticker for USD conversion
+  if (!ticker) {
+    throw new HttpException(
+      'Ticker (e.g., btcusdt, ltcusdt) is required to calculate USD value.',
+      HttpStatus.BAD_REQUEST,
+    );
+  }
+
+  const tickerResponse = await this.getMarketTicker({ currency: ticker });
+
+  const selectedPriceType = priceType || 'buy';
+  const usdPrice = parseFloat(tickerResponse.data.ticker[selectedPriceType]); // e.g., 95.69
+
+  // 3. Calculate USD value
+  const usdValue = fee * usdPrice;
+
+  return {
+    success: true,
+    code: HttpStatus.OK,
+    message: 'Network fee with USD value fetched successfully.',
+    data: {
+      fee_crypto: fee,
+      fee_type: feeResponse.data.data.type,
+      usd_per_unit: usdPrice,
+      price_type_used: selectedPriceType,
+      usd_value: parseFloat(usdValue.toFixed(5)),
+      ticker_used: ticker,
+      original_fee_response: feeResponse.data,
+      original_ticker_response: tickerResponse,
+    },
+  };
+}
+
 
     async checkUserWalletBalance(
         getUserWalletDto: GetUserWalletDto,

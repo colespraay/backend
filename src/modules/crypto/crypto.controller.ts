@@ -20,6 +20,8 @@ import {
     FetchKlineDto,
     GetMarketTickerDto,
     GetMarketTickerResponseDto,
+    GetNetworkFeeUsdDto,
+    GetQuidaxFeeDto,
     GetUserWalletDto,
     QuidaxQueryDto,
     RemoveFromWatchlistDto,
@@ -206,6 +208,33 @@ export class CryptoController {
         @Param() getMarketTickerDto: GetMarketTickerDto,
     ): Promise<GetMarketTickerResponseDto> {
         return await this.cryptoService.getMarketTicker(getMarketTickerDto);
+    }
+
+    @Get('sell/buy/network-fee')
+    @ApiOperation({ summary: 'Retrieve withdrawal network fee for a currency' })
+    @ApiQuery({ name: 'currency', example: 'usdt', required: true })
+    @ApiQuery({ name: 'network', example: 'btc', required: false })
+    async getNetworkFee(@Query() dto: GetQuidaxFeeDto) {
+        return await this.cryptoService.getNetworkFee(dto);
+    }
+
+    @Get('network-fee/usd-value')
+    @ApiOperation({
+        summary: 'Get network fee + USD equivalent using market ticker',
+        description:
+            'Fetches network withdrawal fee in crypto, gets USD price from market ticker, and multiplies fee × USD price.',
+    })
+    @ApiQuery({ name: 'currency', example: 'ltc', required: true })
+    @ApiQuery({ name: 'ticker', example: 'ltcusdt', required: true })
+    @ApiQuery({
+        name: 'priceType',
+        example: 'buy',
+        enum: ['buy', 'sell'],
+        required: false,
+    })
+    @ApiQuery({ name: 'network', example: 'ltc', required: false })
+    async getNetworkFeeUsd(@Query() dto: GetNetworkFeeUsdDto) {
+        return await this.cryptoService.getNetworkFeeWithUsdValue(dto);
     }
 
 
