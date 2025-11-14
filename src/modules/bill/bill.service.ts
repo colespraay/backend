@@ -633,8 +633,9 @@ export class BillService implements OnModuleInit {
   ): Promise<PagaMerchantPlanPartial> {
     try {
       const plans = await this.findMerchantPlans(providerId);
+      // console.log(plans)
       const plan = plans.data.find(
-        ({ name, shortCode }) => shortCode === planCode || name === planCode,
+        ({ name, shortCode,code }) => shortCode === planCode || name === planCode || code === planCode,
       );
       if (!plan) {
         throw new NotFoundException('Could not find plan');
