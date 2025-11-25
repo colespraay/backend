@@ -388,6 +388,7 @@ export class GiftcardService extends GenericService(
     }
   }
   async createGiftCardPurchase(payload: CreateGiftCardProviderDTO): Promise<any> {
+    console.log("Giftcard payload:",payload)
     try {
       checkForRequiredFields(
         ['productId', 'unitPrice', 'quantity', 'transactionPin', 'recipientEmail'],
