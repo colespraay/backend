@@ -151,6 +151,9 @@ export class WithdrawalService extends GenericService(Withdrawal) {
         transactionStatus: PaymentStatus.SUCCESSFUL,
         transactionDate: today.toLocaleString(),
         currentBalanceBeforeTransaction: balance.currentBalance,
+        bankName: payload.bankName,
+        accountName: destinationAccount.accountName,
+        accountNumber: payload.accountNumber,
       });
       const createdWithdrawal = await this.create<Partial<Withdrawal>>({
         userId,

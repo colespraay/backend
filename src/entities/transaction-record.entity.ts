@@ -34,9 +34,9 @@ export class TransactionRecord extends Base {
   @Column({ type: 'float', default: 0.0 })
   currentBalanceBeforeTransaction: number;
 
-@ApiProperty()
-@Column({ type: 'varchar', length: 255, nullable: true })
-currency?: string;
+  @ApiProperty()
+  @Column({ type: 'varchar', length: 255, nullable: true })
+  currency?: string;
 
   @ApiProperty()
   @Column({ type: 'varchar', length: 255 })
@@ -47,7 +47,7 @@ currency?: string;
   reference: string;
 
   @ApiProperty({ enum: TransactionType })
-  @Column({ enum: TransactionType ,nullable: true})
+  @Column({ enum: TransactionType, nullable: true })
   type: TransactionType;
 
   @ApiProperty()
@@ -56,6 +56,21 @@ currency?: string;
 
   @Column({ type: 'jsonb', default: {} })
   jsonResponse: any;
+
+
+    // 👉 ADD THESE FIELDS
+  @ApiProperty({ required: false })
+  @Column({ type: 'varchar', length: 150, nullable: true })
+  bankName?: string;
+
+  @ApiProperty({ required: false })
+  @Column({ type: 'varchar', length: 150, nullable: true })
+  accountName?: string;
+
+  @ApiProperty({ required: false })
+  @Column({ type: 'varchar', length: 50, nullable: true })
+  accountNumber?: string;
+  // 👉 ADD THESE FIELDS
 
   @ApiProperty()
   @Column({ type: 'varchar', length: 20 })
@@ -115,7 +130,7 @@ currency?: string;
 
 
   @ApiProperty({ enum: TransactionTypeAction })
-  @Column({ enum: TransactionTypeAction,nullable: true })
+  @Column({ enum: TransactionTypeAction, nullable: true })
   typeAction: TransactionTypeAction;
 
   @ApiProperty({ type: () => [ElectricityPurchase] })
@@ -168,9 +183,8 @@ currency?: string;
     }
     // Create time and date for transaction to enable faster filtering
     const dateTime = new Date(this.transactionDate);
-    this.createdDate = `${dateTime.getDate()}/${
-      dateTime.getMonth() + 1
-    }/${dateTime.getFullYear()}`;
+    this.createdDate = `${dateTime.getDate()}/${dateTime.getMonth() + 1
+      }/${dateTime.getFullYear()}`;
     this.createdTime = new Intl.DateTimeFormat('en-US', {
       hour: '2-digit',
       minute: '2-digit',

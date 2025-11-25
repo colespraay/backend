@@ -84,6 +84,17 @@ export class CreateTransactionDTO {
 
   @ApiProperty({ nullable: true })
   jsonResponse?: any;
+
+
+    // 👉 NEW OPTIONAL BANK FIELDS
+  @ApiProperty({ nullable: true })
+  bankName?: string;
+
+  @ApiProperty({ nullable: true })
+  accountName?: string;
+
+  @ApiProperty({ nullable: true })
+  accountNumber?: string;
 }
 
 export class FindTransactionDTO extends PaginationRequestType {
