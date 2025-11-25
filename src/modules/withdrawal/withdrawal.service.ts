@@ -111,9 +111,12 @@ export class WithdrawalService extends GenericService(Withdrawal) {
       ];
       const url = `${process.env.PAGA_BASE_URL}/depositToBank`;
       const referenceNumber = generateUniqueCode(13);
-      const narration = `Wallet payout of ₦${formatAmount(payload.amount)} to ${
-        user.data.firstName
-      } ${user.data.lastName}`;
+      // const narration = `Wallet payout of ₦${formatAmount(payload.amount)} to ${
+      //   user.data.firstName
+      // } ${user.data.lastName}`;
+      const narration = `Wallet payout of ₦${formatAmount(payload.amount)} to ${destinationAccount.accountName
+        }`;
+
       const requestBody = {
         referenceNumber,
         amount: String(payload.amount),
