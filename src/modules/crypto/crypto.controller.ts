@@ -46,8 +46,8 @@ import { BaseResponseTypeDTO } from 'src/utils';
 export class CryptoController {
     constructor(
         private readonly cryptoService: CryptoService,
-
     ) { }
+
 
     @Get('quidax/base-coins')
     @ApiOperation({ summary: 'List base coin symbols from market summary' })
@@ -68,9 +68,6 @@ export class CryptoController {
         return this.cryptoService.getMarketSummary(userId);
     }
 
-
-
-
     @ApiOperation({ summary: 'Fetch all wallets associated with a user' })
     @ApiResponse({ status: 200, description: 'Wallets fetched successfully.' })
     @ApiResponse({ status: 404, description: 'User not found.' })
@@ -84,6 +81,41 @@ export class CryptoController {
                 error.status || HttpStatus.INTERNAL_SERVER_ERROR,
             );
         }
+    }
+
+
+    @Post('users/:userId/wallets/:currency/address/creating-wallet/network')
+    @ApiOperation({
+        summary: 'Create a payment address for a user',
+        description:
+            'Creates a blockchain payment address for a specific currency using Quidax API. Optional network parameter is supported (e.g., ERC20, TRC20, BEP20).',
+    })
+    @ApiParam({
+        name: 'userId',
+        description: 'Quidax user ID',
+        example: 'a77b8f80-4421-4d4a-b8f6-41d0f0d9e8dc',
+    })
+    @ApiParam({
+        name: 'currency',
+        description: 'Cryptocurrency symbol (e.g., btc, usdt, eth, trx)',
+        example: 'usdt',
+    })
+    @ApiQuery({
+        name: 'network',
+        required: false,
+        description: 'Network option (e.g., ERC20, TRC20, BEP20)',
+        example: 'TRC20',
+    })
+    async createPaymentAddress(
+        @Param('userId') userId: string,
+        @Param('currency') currency: string,
+        @Query('network') network?: string,
+    ) {
+        return await this.cryptoService.createAllPaymentAddresses(
+            userId,
+            currency.toLowerCase(),
+            // network,
+        );
     }
 
     @ApiOperation({
@@ -108,6 +140,9 @@ export class CryptoController {
             );
         }
     }
+
+
+
 
     @ApiOperation({
         summary: 'Fetch specific wallet details by user ID and currency',

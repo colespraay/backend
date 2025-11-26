@@ -4,8 +4,8 @@ import { RolesGuard, SetRequestTimeout } from '@schematics/index';
 import { ApiBearerAuth, ApiConsumes, ApiOperation, ApiParam, ApiProduces, ApiQuery, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { GiftcardService } from './giftcard.service';
 
-// @ApiBearerAuth('JWT')
-// @UseGuards(RolesGuard)
+@ApiBearerAuth('JWT')
+@UseGuards(RolesGuard)
 @ApiTags('giftcards')
 @Controller('giftcard')
 export class GiftcardController {

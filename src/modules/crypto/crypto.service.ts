@@ -137,6 +137,100 @@ export class CryptoService {
         private readonly QuidaxorderSrv: QuidaxorderService,
     ) { }
 
+    // @OnEvent('create-crypto-wallet', { async: true })
+    // async createWallet(payload: {
+    //     userId: string;
+    //     req?: Request;
+    // }): Promise<void> {
+    //     try {
+    //         console.log('creating crypto wallet');
+    //         console.log('creating crypto wallet');
+    //         checkForRequiredFields(['userId'], payload);
+    //         // validateUUIDField(payload.userId, 'userId');
+    //         const user = await this.userSrv.findUserById(payload.userId);
+    //         const {
+    //             data: { firstName, lastName, email },
+    //         } = user;
+    //         if (firstName && lastName && email) {
+    //             const headers = {
+    //                 Authorization: `Bearer ${process.env.QUIDAX_Secrete_key}`,
+    //                 'Content-Type': 'application/json',
+    //                 Accept: 'application/json',
+    //             };
+    //             const response = await httpPost<any, any>(
+    //                 this.apiUrl,
+    //                 { email: email, first_name: firstName, last_name: lastName },
+    //                 headers,
+    //             );
+    //             console.log(response);
+    //             if (response?.status === 'success') {
+    //                 console.log('user to update wallet for', payload.userId);
+    //                 console.log('user to update wallet for', payload.userId);
+    //                 // 🔑 directly update quidax_user_id in User table
+    //                 await this.userSrv.getRepo().update(
+    //                     { id: payload.userId },
+    //                     { quidax_user_id: response.data.id },
+    //                 );
+
+    //                 const currencies = [
+    //                     'usdt',
+    //                     'btc',
+    //                     'ltc',
+    //                     'eth',
+    //                     'xrp',
+    //                     'usdt',
+    //                     'dash',
+    //                     'trx',
+    //                     'doge',
+    //                     'xrp',
+    //                     'bnb',
+    //                     'matic',
+    //                     'shib',
+    //                     'axs',
+    //                     'safemoon',
+    //                     'cake',
+    //                     'xlm',
+    //                     'aave',
+    //                     'link',
+    //                 ];
+    //                 for (const currency of currencies) {
+    //                     try {
+    //                         await this.ActivatePaymentAddress(response.data.id, currency);
+    //                     } catch (error) {
+    //                         console.log(error);
+    //                     }
+    //                 }
+
+    //                 const walletCurrencies = ['usdc', 'sol', 'busd'];
+    //                 for (const currency of walletCurrencies) {
+    //                     try {
+    //                         await this.createPaymentAddress(response.data.id, currency);
+    //                     } catch (error) {
+    //                         console.log(error);
+    //                     }
+    //                 }
+    //             }
+    //         }
+    //     } catch (ex) {
+    //         console.log(ex);
+    //         if (ex instanceof AxiosError) {
+    //             const errorObject = ex.response.data;
+    //             const message =
+    //                 typeof errorObject === 'string'
+    //                     ? errorObject
+    //                     : errorObject.statusMessage;
+    //             this.logger.error(message);
+    //             throw new HttpException(
+    //                 message,
+    //                 Number(errorObject.statusCode) ?? HttpStatus.BAD_GATEWAY,
+    //             );
+    //         } else {
+    //             this.logger.error(ex);
+    //             throw ex;
+    //         }
+    //     }
+    // }
+
     @OnEvent('create-crypto-wallet', { async: true })
     async createWallet(payload: {
         userId: string;
@@ -144,85 +238,67 @@ export class CryptoService {
     }): Promise<void> {
         try {
             console.log('creating crypto wallet');
-            console.log('creating crypto wallet');
             checkForRequiredFields(['userId'], payload);
-            // validateUUIDField(payload.userId, 'userId');
+
             const user = await this.userSrv.findUserById(payload.userId);
             const {
                 data: { firstName, lastName, email },
             } = user;
+
             if (firstName && lastName && email) {
                 const headers = {
                     Authorization: `Bearer ${process.env.QUIDAX_Secrete_key}`,
                     'Content-Type': 'application/json',
                     Accept: 'application/json',
                 };
+
                 const response = await httpPost<any, any>(
                     this.apiUrl,
-                    { email: email, first_name: firstName, last_name: lastName },
+                    { email, first_name: firstName, last_name: lastName },
                     headers,
                 );
+
                 console.log(response);
+
                 if (response?.status === 'success') {
                     console.log('user to update wallet for', payload.userId);
-                    console.log('user to update wallet for', payload.userId);
-                    // 🔑 directly update quidax_user_id in User table
+
+                    // update quidax_user_id
                     await this.userSrv.getRepo().update(
                         { id: payload.userId },
                         { quidax_user_id: response.data.id },
                     );
 
-                    const currencies = [
-                        'usdt',
-                        'btc',
-                        'ltc',
-                        'eth',
-                        'xrp',
-                        'usdt',
-                        'dash',
-                        'trx',
-                        'doge',
-                        'xrp',
-                        'bnb',
-                        'matic',
-                        'shib',
-                        'axs',
-                        'safemoon',
-                        'cake',
-                        'xlm',
-                        'aave',
-                        'link',
-                    ];
+                    // -------------------------------------------
+                    // Allowed currencies: btc, ltc, eth, usdt, bnb, xrp, trx
+                    // -------------------------------------------
+                    const currencies = ['btc', 'ltc', 'eth', 'usdt', 'bnb', 'xrp', 'trx'];
+
                     for (const currency of currencies) {
                         try {
-                            await this.ActivatePaymentAddress(response.data.id, currency);
+                            await this.createAllPaymentAddresses(response.data.id, currency);
                         } catch (error) {
-                            console.log(error);
+                            console.log(`Error creating wallet address for ${currency}`, error);
                         }
                     }
-
-                    const walletCurrencies = ['usdc', 'sol', 'busd'];
-                    for (const currency of walletCurrencies) {
-                        try {
-                            await this.createPaymentAddress(response.data.id, currency);
-                        } catch (error) {
-                            console.log(error);
-                        }
-                    }
+                    console.log('All payment addresses created 🎉');
                 }
             }
         } catch (ex) {
             console.log(ex);
+
             if (ex instanceof AxiosError) {
-                const errorObject = ex.response.data;
+                const errorObject = ex.response?.data;
                 const message =
                     typeof errorObject === 'string'
                         ? errorObject
-                        : errorObject.statusMessage;
+                        : errorObject?.statusMessage ?? 'Unknown Quidax error';
+
                 this.logger.error(message);
+
                 throw new HttpException(
                     message,
-                    Number(errorObject.statusCode) ?? HttpStatus.BAD_GATEWAY,
+                    Number(errorObject?.statusCode) ?? HttpStatus.BAD_GATEWAY,
                 );
             } else {
                 this.logger.error(ex);
@@ -230,6 +306,7 @@ export class CryptoService {
             }
         }
     }
+
 
     async createSubAccount(
         createSubAccountDto: CreateSubAccountDto,
@@ -248,6 +325,91 @@ export class CryptoService {
                 `Failed to create sub-account: ${error.response?.data?.message || error.message}`,
                 error.response?.status || HttpStatus.INTERNAL_SERVER_ERROR,
             );
+        }
+    }
+
+    async createAllPaymentAddresses(
+        quidaxUserId: string,
+        currency: string,
+    ): Promise<any[]> {
+
+        const NETWORKS = {
+            btc: ['btc'], // Bitcoin native
+            ltc: ['ltc'], // Litecoin native
+            eth: ['erc20', 'trc20', 'bep20',], // Ethereum ERC20
+            usdt: ['erc20', 'trc20', 'bep20', 'polygon', 'solana', 'celo', 'optimism', 'ton', 'arbitrum'], // all USDT networks supported
+            bnb: ['bep20', 'trc20', 'bep20'], // Binance Smart Chain
+            xrp: ['xrp'], // Ripple
+            trx: ['trc20'], // TRON
+        };
+
+
+        const networks = NETWORKS[currency];
+
+        if (!networks || networks.length === 0) {
+            throw new HttpException(
+                `No supported networks found for currency: ${currency}`,
+                HttpStatus.BAD_REQUEST,
+            );
+        }
+
+        const results = [];
+
+        for (const network of networks) {
+            try {
+                const res = await this.createPaymentAddress(
+                    quidaxUserId,
+                    currency,
+                    network,
+                );
+                console.log(`Created ${currency.toUpperCase()} address on ${network}`);
+                results.push({ network, result: res });
+            } catch (err) {
+                console.log(`Failed to create ${currency} address on ${network}`, err);
+                results.push({
+                    network,
+                    error: err.message,
+                });
+            }
+        }
+
+        return results;
+    }
+
+
+    async createPaymentAddress(
+        userId: string,
+        currency: string,
+        network?: string,
+    ): Promise<any> {
+        const url = `${this.baseUrl}/users/${userId}/wallets/${currency}/addresses`;
+
+        const params = network ? { network } : {};
+
+        const options = {
+            method: 'POST',
+            headers: {
+                accept: 'application/json',
+                Authorization: `Bearer ${process.env.QUIDAX_Secrete_key}`,
+            },
+            params,
+        };
+
+        try {
+            const response = await axios.post(url, null, options);
+            return response.data;
+        } catch (error) {
+            if (error.response) {
+                throw new HttpException(
+                    `Failed to create payment address: ${error.response.data.message}`,
+                    error.response.status,
+                );
+            } else {
+                throw new HttpException(
+                    `Failed to create payment address: ${error.message}`,
+                    HttpStatus.INTERNAL_SERVER_ERROR,
+                );
+            }
         }
     }
 
@@ -282,42 +444,6 @@ export class CryptoService {
             } else {
                 throw new HttpException(
                     `Failed to fetch payment address: ${error.message}`,
-                    HttpStatus.INTERNAL_SERVER_ERROR,
-                );
-            }
-        }
-    }
-
-    async createPaymentAddress(
-        userId: string,
-        currency: string,
-        network?: string,
-    ): Promise<any> {
-        const url = `${this.baseUrl}/users/${userId}/wallets/${currency}/addresses`;
-
-        const params = network ? { network } : {};
-
-        const options = {
-            method: 'POST',
-            headers: {
-                accept: 'application/json',
-                Authorization: `Bearer ${process.env.QUIDAX_Secrete_key}`,
-            },
-            params,
-        };
-
-        try {
-            const response = await axios.post(url, null, options);
-            return response.data;
-        } catch (error) {
-            if (error.response) {
-                throw new HttpException(
-                    `Failed to create payment address: ${error.response.data.message}`,
-                    error.response.status,
-                );
-            } else {
-                throw new HttpException(
-                    `Failed to create payment address: ${error.message}`,
                     HttpStatus.INTERNAL_SERVER_ERROR,
                 );
             }
@@ -873,50 +999,50 @@ export class CryptoService {
 
 
     async getNetworkFeeWithUsdValue(dto: GetNetworkFeeUsdDto) {
-    const { currency, priceType, network } = dto;
+        const { currency, priceType, network } = dto;
 
-    // 🟢 Auto-set ticker for USDT
-    let ticker = dto.ticker;
-    if (currency.toLowerCase() === 'usdt') {
-        ticker = 'usdtusd';
+        // 🟢 Auto-set ticker for USDT
+        let ticker = dto.ticker;
+        if (currency.toLowerCase() === 'usdt') {
+            ticker = 'usdtusd';
+        }
+
+        // 1. Fetch network fee
+        const feeResponse = await this.getNetworkFee({ currency, network });
+        const fee = feeResponse.data.data.fee;
+
+        // 2. Fetch ticker for USD conversion
+        if (!ticker) {
+            throw new HttpException(
+                'Ticker (e.g., btcusdt, ltcusdt) is required to calculate USD value.',
+                HttpStatus.BAD_REQUEST,
+            );
+        }
+
+        const tickerResponse = await this.getMarketTicker({ currency: ticker });
+
+        const selectedPriceType = priceType || 'buy';
+        const usdPrice = parseFloat(tickerResponse.data.ticker[selectedPriceType]);
+
+        // 3. Calculate USD value
+        const usdValue = fee * usdPrice;
+
+        return {
+            success: true,
+            code: HttpStatus.OK,
+            message: 'Network fee with USD value fetched successfully.',
+            data: {
+                fee_crypto: fee,
+                fee_type: feeResponse.data.data.type,
+                usd_per_unit: usdPrice,
+                price_type_used: selectedPriceType,
+                usd_value: parseFloat(usdValue.toFixed(5)),
+                ticker_used: ticker,
+                original_fee_response: feeResponse.data,
+                original_ticker_response: tickerResponse,
+            },
+        };
     }
-
-    // 1. Fetch network fee
-    const feeResponse = await this.getNetworkFee({ currency, network });
-    const fee = feeResponse.data.data.fee;
-
-    // 2. Fetch ticker for USD conversion
-    if (!ticker) {
-        throw new HttpException(
-            'Ticker (e.g., btcusdt, ltcusdt) is required to calculate USD value.',
-            HttpStatus.BAD_REQUEST,
-        );
-    }
-
-    const tickerResponse = await this.getMarketTicker({ currency: ticker });
-
-    const selectedPriceType = priceType || 'buy';
-    const usdPrice = parseFloat(tickerResponse.data.ticker[selectedPriceType]);
-
-    // 3. Calculate USD value
-    const usdValue = fee * usdPrice;
-
-    return {
-        success: true,
-        code: HttpStatus.OK,
-        message: 'Network fee with USD value fetched successfully.',
-        data: {
-            fee_crypto: fee,
-            fee_type: feeResponse.data.data.type,
-            usd_per_unit: usdPrice,
-            price_type_used: selectedPriceType,
-            usd_value: parseFloat(usdValue.toFixed(5)),
-            ticker_used: ticker,
-            original_fee_response: feeResponse.data,
-            original_ticker_response: tickerResponse,
-        },
-    };
-}
 
     // async getNetworkFeeWithUsdValue(dto: GetNetworkFeeUsdDto) {
     //     const { currency, ticker, priceType, network } = dto;
