@@ -1533,10 +1533,6 @@ export class CryptoService {
                     Authorization: `Bearer ${process.env.QUIDAX_Secrete_key}`, // Replace with your actual token
                 },
             });
-            // await this.confirmSwapQuotation(
-            //   payload.quidax_userId,
-            //   response.data.data.id,
-            // );
             return {
                 success: true,
                 code: HttpStatus.OK,
@@ -1558,16 +1554,101 @@ export class CryptoService {
         }
     }
 
+
+    async getSwapTransaction(userId: string, transactionId: string) {
+        try {
+            // https://app.quidax.io/api/v1/users/7cc10ba7-b3bd-4e03-844b-530d80250373/swap_quotation/903b283f-57a3-43b1-9ac0-d559de1d9de8/refresh
+            const url = `https://app.quidax.io/api/v1/users/${userId}/swap_quotation/${transactionId}/refresh`;
+
+            // NOTE: axios.post(body, headers) → body must be {}, headers in 3rd param
+            const response = await axios.post(
+                url,
+                {}, // No body required
+                {
+                    headers: {
+                        Authorization: `Bearer ${process.env.QUIDAX_Secrete_key}`, // Replace with your actual token
+                        accept: 'application/json',
+                        'content-type': 'application/json',
+                    },
+                },
+            );
+
+            return {
+                success: true,
+                data: response.data,
+            };
+        } catch (error) {
+            console.log(error.response?.data || error.message);
+            throw new HttpException(
+                {
+                    success: false,
+                    message: 'Failed to fetch swap transaction',
+                    error: error.response?.data || error.message,
+                },
+                error.response?.status || HttpStatus.BAD_REQUEST,
+            );
+        }
+    }
+
+
+
     async confirmSwapQuotation(
         quidax_userId: string,
         swapId: string,
+        amount?: number,
+        toCurrency?: string,
+        fromCurrency?: string
     ): Promise<any> {
+
+        // 🔹 If amount, fromCurrency, toCurrency exist, run custom logic
+        const hasCustomParams = amount && fromCurrency && toCurrency;
+
+        if (hasCustomParams) {
+            // 🛑 Cannot swap from NGN to other currency
+            if (fromCurrency.toLowerCase() === 'ngn') {
+                throw new HttpException(
+                    'You cannot swap NGN to another currency.',
+                    HttpStatus.BAD_REQUEST,
+                );
+            }
+
+            // 💰 If converting TO NGN, call UserSellCrypto
+            if (toCurrency.toLowerCase() === 'ngn') {
+                // Fetch the user details using their Quidax user ID
+                const user = await this.userSrv.findUserByQuidaxId(quidax_userId);
+                if (!user) {
+                    throw new HttpException(
+                        'User not found for provided Quidax User ID',
+                        HttpStatus.NOT_FOUND,
+                    );
+                }
+
+                // Prepare payload for sell crypto
+                const sellPayload = {
+                    userId: user.data.id, // internal database id
+                    amount: amount,
+                    currency: fromCurrency.toLowerCase(),
+                };
+
+                // Call your internal sell crypto function
+                const sellResult = await this.UserSellCrypto(sellPayload);
+
+                return {
+                    success: true,
+                    code: HttpStatus.OK,
+                    message: 'Crypto sold successfully.',
+                    data: sellResult,
+                };
+            }
+        }
+
+        // 🔹 Otherwise run normal confirm swap API call
         const apiUrl = `https://app.quidax.io/api/v1/users/${quidax_userId}/swap_quotation/${swapId}/confirm`;
 
         try {
             const response = await axios.post(
                 apiUrl,
-                {}, // No payload needed for this call
+                {}, // No payload needed
                 {
                     headers: {
                         accept: 'application/json',
@@ -1579,17 +1660,57 @@ export class CryptoService {
             return {
                 success: true,
                 code: HttpStatus.OK,
-                message: 'Successfully swap',
+                message: 'Swap confirmed successfully.',
                 data: response.data.data,
             };
+
         } catch (error) {
-            console.error(
-                '❌ Confirm Swap Error:',
-                error.response?.data || error.message,
+            console.error('❌ Confirm Swap Error:', error.response?.data || error.message);
+
+            throw new HttpException(
+                'Failed to confirm swap',
+                HttpStatus.BAD_REQUEST,
             );
-            throw new HttpException('Failed to confirm swap', HttpStatus.BAD_REQUEST);
         }
     }
+
+
+    // async confirmSwapQuotation(
+    //     quidax_userId: string,
+    //     swapId: string,
+    //     amount: number,
+    //     toCurrency: string,
+    //     fromCurrency: string
+    // ): Promise<any> {
+
+    //     const apiUrl = `https://app.quidax.io/api/v1/users/${quidax_userId}/swap_quotation/${swapId}/confirm`;
+
+    //     try {
+    //         const response = await axios.post(
+    //             apiUrl,
+    //             {}, // No payload needed for this call
+    //             {
+    //                 headers: {
+    //                     accept: 'application/json',
+    //                     Authorization: `Bearer ${process.env.QUIDAX_Secrete_key}`,
+    //                 },
+    //             },
+    //         );
+
+    //         return {
+    //             success: true,
+    //             code: HttpStatus.OK,
+    //             message: 'Successfully swap',
+    //             data: response.data.data,
+    //         };
+    //     } catch (error) {
+    //         console.error(
+    //             '❌ Confirm Swap Error:',
+    //             error.response?.data || error.message,
+    //         );
+    //         throw new HttpException('Failed to confirm swap', HttpStatus.BAD_REQUEST);
+    //     }
+    // }
 
     async SendCrypto(withdrawDto: WithdrawDto) {
         const apiUrl = `https://app.quidax.io/api/v1/users/${withdrawDto.userId}/withdraws`;

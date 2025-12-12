@@ -5,6 +5,7 @@ import {
     IsIn,
     IsNotEmpty,
     IsNumber,
+    IsNumberString,
     IsOptional,
     IsString,
 } from 'class-validator';
@@ -364,14 +365,36 @@ export class ConfirmSwapDto {
     @IsString()
     quidax_userId: string;
 
-
     @ApiProperty({
         example: 'f4t556htrht66h',
-        description: 'The ID of the swap to confirm',
+        description: 'The ID of the swap to confirm.',
     })
     @IsString()
     @IsNotEmpty()
     swapId: string;
+
+    @ApiPropertyOptional({
+        example: 1000,
+        description: 'The amount to confirm for the swap. Optional field.',
+    })
+    @IsOptional()
+    amount?: number;
+
+    @ApiPropertyOptional({
+        example: 'ngn',
+        description: 'Target currency of the swap. Optional field.',
+    })
+    @IsOptional()
+    @IsString()
+    toCurrency?: string;
+
+    @ApiPropertyOptional({
+        example: 'btc',
+        description: 'Source currency of the swap. Optional field.',
+    })
+    @IsOptional()
+    @IsString()
+    fromCurrency?: string;
 }
 
 export class GetQuidaxFeeDto {

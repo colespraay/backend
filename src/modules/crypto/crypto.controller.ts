@@ -88,21 +88,6 @@ export class CryptoController {
         }
     }
 
-    @ApiOperation({ summary: 'Fetch all wallets associated with a user' })
-    @ApiResponse({ status: 200, description: 'Wallets fetched successfully.' })
-    @ApiResponse({ status: 404, description: 'User not found.' })
-    @Get(':userId/wallets')
-    async fetchUserWalletsForSwapping(@Param('userId') userId: string): Promise<any> {
-        try {
-            return await this.cryptoService.fetchUserWalletsForSwapping(userId);
-        } catch (error) {
-            throw new HttpException(
-                error.message,
-                error.status || HttpStatus.INTERNAL_SERVER_ERROR,
-            );
-        }
-    }
-
 
     @Post('users/:userId/wallets/:currency/address/creating-wallet/network')
     @ApiOperation({
@@ -350,6 +335,23 @@ export class CryptoController {
         return this.cryptoService.UserSendCrypto(withdrawDto);
     }
 
+
+    @ApiOperation({ summary: 'Fetch all wallets associated with a user' })
+    @ApiResponse({ status: 200, description: 'Wallets fetched successfully.' })
+    @ApiResponse({ status: 404, description: 'User not found.' })
+    @Get(':userId/wallets')
+    async fetchUserWalletsForSwapping(@Param('userId') userId: string): Promise<any> {
+        try {
+            return await this.cryptoService.fetchUserWalletsForSwapping(userId);
+        } catch (error) {
+            throw new HttpException(
+                error.message,
+                error.status || HttpStatus.INTERNAL_SERVER_ERROR,
+            );
+        }
+    }
+
+
     @Post('swap/swap-quotation')
     @ApiOperation({ summary: 'Get crypto swap quotation from Quidax' })
     @ApiResponse({
@@ -361,6 +363,14 @@ export class CryptoController {
         return this.cryptoService.getSwapQuotation(dto);
     }
 
+//       @Get('swap/swap-details/:userId/:transactionId')
+//   async getSwapTransaction(
+//     @Param('userId') userId: string,
+//     @Param('transactionId') transactionId: string,
+//   ) {
+//     return this.cryptoService.getSwapTransaction(userId, transactionId);
+//   }
+
     @Post('swap-quotation/confirm')
     @ApiOperation({ summary: 'Confirm a previously quoted swap on Quidax' })
     @ApiResponse({ status: 200, description: 'Swap confirmed successfully' })
@@ -369,6 +379,9 @@ export class CryptoController {
         return this.cryptoService.confirmSwapQuotation(
             dto.quidax_userId,
             dto.swapId,
+            dto.amount,
+            dto.toCurrency,
+            dto.fromCurrency
         );
     }
 
