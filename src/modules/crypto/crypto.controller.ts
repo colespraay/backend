@@ -44,8 +44,8 @@ import { BaseResponseTypeDTO } from 'src/utils';
 import { RolesGuard } from '@schematics/index';
 
 
-@ApiBearerAuth('JWT')
-@UseGuards(RolesGuard)
+// @ApiBearerAuth('JWT')
+// @UseGuards(RolesGuard)
 @Controller('crypto')
 @ApiTags('Crypto')
 export class CryptoController {
