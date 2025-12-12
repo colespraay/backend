@@ -375,37 +375,37 @@ export class ConfirmSwapDto {
 }
 
 export class GetQuidaxFeeDto {
-  @ApiProperty({ example: 'usdt', description: 'Currency to check network fee for' })
-  @IsNotEmpty()
-  @IsString()
-  currency: string;
+    @ApiProperty({ example: 'usdt', description: 'Currency to check network fee for' })
+    @IsNotEmpty()
+    @IsString()
+    currency: string;
 
-  @ApiPropertyOptional({ example: 'btc', description: 'Blockchain network (optional)' })
-  @IsOptional()
-  @IsString()
-  network?: string;
+    @ApiPropertyOptional({ example: 'btc', description: 'Blockchain network (optional)' })
+    @IsOptional()
+    @IsString()
+    network?: string;
 }
 
 export class GetNetworkFeeUsdDto {
-  @ApiProperty({ example: 'ltc', description: 'Currency to check network fee' })
-  @IsNotEmpty()
-  @IsString()
-  currency: string;
+    @ApiProperty({ example: 'ltc', description: 'Currency to check network fee' })
+    @IsNotEmpty()
+    @IsString()
+    currency: string;
 
-  @ApiPropertyOptional({ example: 'ltcusdt', description: 'Ticker pair for USD price (e.g., btcusdt, ltcusdt)' })
-  @IsOptional()
-  @IsString()
-  ticker?: string;
+    @ApiPropertyOptional({ example: 'ltcusdt', description: 'Ticker pair for USD price (e.g., btcusdt, ltcusdt)' })
+    @IsOptional()
+    @IsString()
+    ticker?: string;
 
-  @ApiPropertyOptional({ example: 'buy', enum: ['buy', 'sell'], description: 'Choose price type' })
-  @IsOptional()
-  @IsIn(['buy', 'sell'])
-  priceType?: 'buy' | 'sell';
+    @ApiPropertyOptional({ example: 'buy', enum: ['buy', 'sell'], description: 'Choose price type' })
+    @IsOptional()
+    @IsIn(['buy', 'sell'])
+    priceType?: 'buy' | 'sell';
 
-  @ApiPropertyOptional({ example: 'btc', description: 'Blockchain network (optional)' })
-  @IsOptional()
-  @IsString()
-  network?: string;
+    @ApiPropertyOptional({ example: 'btc', description: 'Blockchain network (optional)' })
+    @IsOptional()
+    @IsString()
+    network?: string;
 }
 
 export class BuyCryptoDto {
@@ -447,6 +447,15 @@ export class BuyCryptoDto {
 }
 
 export class SellCryptoDto {
+
+    @ApiProperty({
+        description: 'The ID of the user making the sale.',
+        example: 'user123',
+    })
+    @IsString({ message: 'User ID must be a string' })
+    @IsNotEmpty({ message: 'User ID is required' })
+    userId: string;
+
     @ApiProperty({
         description: 'The amount of cryptocurrency to sell.',
         example: 0.0,
@@ -463,41 +472,6 @@ export class SellCryptoDto {
     @IsString({ message: 'Currency must be a string' })
     @IsNotEmpty({ message: 'Currency is required' })
     currency: string;
-
-    @ApiProperty({
-        description: 'The ID of the user making the sale.',
-        example: 'user123',
-    })
-    @IsString({ message: 'User ID must be a string' })
-    @IsNotEmpty({ message: 'User ID is required' })
-    userId: string;
-
-    // @ApiProperty({
-    //   description: 'The name on the bank account.',
-    //   example: 'John Doe',
-    // })
-    // @IsString({ message: 'Account Name must be a string' })
-    // @IsNotEmpty({ message: 'Account Name is required' })
-    // accountName: string;
-
-    // @ApiProperty({
-    //   description: 'The name of the bank.',
-    //   example: 'First Bank',
-    // })
-    // @IsString({ message: 'Bank Name must be a string' })
-    // @IsNotEmpty({ message: 'Bank Name is required' })
-    // bankName: string;
-
-    // @ApiProperty({
-    //   description: 'The bank account number.',
-    //   example: '1234567890',
-    // })
-    // @IsString({ message: 'Account Number must be a string' })
-    // @IsNotEmpty({ message: 'Account Number is required' })
-    // accountNumber: string;
-
-    // @ApiProperty({ type: String, description: 'The bank code number', example: '1234567890', })
-    // beneficiaryBankCode: string;
 
     // @ApiProperty({ type: String, description: 'Refund address', example: '8758thu85hnjfrgurtyh', })
     // refunAddress: string;

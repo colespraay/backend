@@ -9,6 +9,7 @@ import {
     HttpException,
     HttpStatus,
     Query,
+    UseGuards,
 } from '@nestjs/common';
 import { CryptoService } from './crypto.service';
 import {
@@ -31,6 +32,7 @@ import {
     WithdrawDto,
 } from './dto/crypto.dto';
 import {
+    ApiBearerAuth,
     ApiBody,
     ApiOperation,
     ApiParam,
@@ -39,8 +41,11 @@ import {
     ApiTags,
 } from '@nestjs/swagger';
 import { BaseResponseTypeDTO } from 'src/utils';
+import { RolesGuard } from '@schematics/index';
 
 
+@ApiBearerAuth('JWT')
+@UseGuards(RolesGuard)
 @Controller('crypto')
 @ApiTags('Crypto')
 export class CryptoController {
@@ -71,10 +76,25 @@ export class CryptoController {
     @ApiOperation({ summary: 'Fetch all wallets associated with a user' })
     @ApiResponse({ status: 200, description: 'Wallets fetched successfully.' })
     @ApiResponse({ status: 404, description: 'User not found.' })
-    @Get(':userId/wallets')
+    @Get(':userId/wallets/normal')
     async fetchUserWallets(@Param('userId') userId: string): Promise<any> {
         try {
             return await this.cryptoService.fetchUserWallets(userId);
+        } catch (error) {
+            throw new HttpException(
+                error.message,
+                error.status || HttpStatus.INTERNAL_SERVER_ERROR,
+            );
+        }
+    }
+
+    @ApiOperation({ summary: 'Fetch all wallets associated with a user' })
+    @ApiResponse({ status: 200, description: 'Wallets fetched successfully.' })
+    @ApiResponse({ status: 404, description: 'User not found.' })
+    @Get(':userId/wallets')
+    async fetchUserWalletsForSwapping(@Param('userId') userId: string): Promise<any> {
+        try {
+            return await this.cryptoService.fetchUserWalletsForSwapping(userId);
         } catch (error) {
             throw new HttpException(
                 error.message,

@@ -702,6 +702,26 @@ export class UserService extends GenericService(User) {
     }
   }
 
+
+    async findUserByQuidaxId(userId: string): Promise<UserResponseDTO> {
+    try {
+      const data = await this.getRepo().findOne({
+        where: { quidax_user_id: userId },
+      });
+      if (data?.id) {
+        return {
+          success: true,
+          code: HttpStatus.OK,
+          data,
+          message: 'User found',
+        };
+      }
+      throw new NotFoundException('User not found');
+    } catch (ex) {
+      throw ex;
+    }
+  }
+
   async findUserByUserTag(userTag: string): Promise<UserResponseDTO> {
     try {
       const data = await this.getRepo().findOne({

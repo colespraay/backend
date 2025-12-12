@@ -269,9 +269,9 @@ export class CryptoService {
                         { quidax_user_id: response.data.id },
                     );
 
-                    // -------------------------------------------
-                    // Allowed currencies: btc, ltc, eth, usdt, bnb, xrp, trx
-                    // -------------------------------------------
+                    ///////////////////// --------------------------------------------------------
+                    ///////////////////// Allowed currencies: btc, ltc, eth, usdt, bnb, xrp, trx
+                    ///////////////////// --------------------------------------------------------
                     const currencies = ['btc', 'ltc', 'eth', 'usdt', 'bnb', 'xrp', 'trx'];
 
                     for (const currency of currencies) {
@@ -626,63 +626,102 @@ export class CryptoService {
     }
 
 
-    // async fetchUserWallets(userId: string): Promise<any> {
-    //     const url = `${this.baseUrl}/users/${userId}/wallets`;
+    async fetchUserWalletsForSwapping(userId: string): Promise<any> {
+        const url = `${this.baseUrl}/users/${userId}/wallets`;
 
-    //     const options = {
-    //         method: 'GET',
-    //         headers: {
-    //             accept: 'application/json',
-    //             Authorization: `Bearer ${process.env.QUIDAX_Secrete_key}`,
-    //         },
-    //     };
+        const options = {
+            method: 'GET',
+            headers: {
+                accept: 'application/json',
+                Authorization: `Bearer ${process.env.QUIDAX_Secrete_key}`,
+            },
+        };
 
-    //     try {
-    //         const response = await axios.get(url, options);
-    //         const wallets = response.data.data;
+        try {
+            // 🔹 Fetch Quidax wallets
+            const response = await axios.get(url, options);
+            const wallets = response.data.data;
 
-    //         // Add image_url and filter unwanted items
-    //         const enhancedWallets = wallets
-    //             .map((wallet) => {
-    //                 const symbol = wallet.currency?.toUpperCase();
-    //                 return {
-    //                     ...wallet,
-    //                     image_url: this.coinLogos[symbol] || null,
-    //                 };
-    //             })
-    //             .filter(
-    //                 (wallet) =>
-    //                     // Remove USD and NGN wallets
-    //                     wallet.currency !== 'usd' &&
-    //                     wallet.currency !== 'ngn' &&
-    //                     wallet.name !== 'US Dollar' &&
-    //                     // Ensure deposit_address and image_url are valid
-    //                     wallet.deposit_address &&
-    //                     wallet.image_url
-    //             );
+            // 🔹 Get user to attach NGN balance
+            const user = await this.userSrv.findUserByQuidaxId(userId);
 
-    //         return {
-    //             success: true,
-    //             message: 'User wallets fetched successfully.',
-    //             status: HttpStatus.OK,
-    //             code: HttpStatus.OK,
-    //             data: enhancedWallets,
-    //         };
-    //     } catch (error) {
-    //         if (error.response) {
-    //             throw new HttpException(
-    //                 `Failed to fetch user wallets: ${error.response.data.message}`,
-    //                 error.response.status,
-    //             );
-    //         } else {
-    //             throw new HttpException(
-    //                 `Failed to fetch user wallets: ${error.message}`,
-    //                 HttpStatus.INTERNAL_SERVER_ERROR,
-    //             );
-    //         }
-    //     }
-    // }
+            // If user has no balance field, default to 0
+            const nairaBalance = user.data.walletBalance ?? 0;
 
+            // Allowed crypto coins
+            const allowedCurrencies = ['usdt', 'btc', 'eth', 'ltc', 'bch'];
+
+            // Enhance crypto wallets
+            const enhancedWallets = wallets
+                .map((wallet) => {
+                    const symbol = wallet.currency?.toUpperCase();
+                    return {
+                        ...wallet,
+                        image_url: this.coinLogos[symbol] || null,
+                    };
+                })
+                .filter(
+                    (wallet) =>
+                        allowedCurrencies.includes(wallet.currency) &&
+                        wallet.deposit_address &&
+                        wallet.image_url
+                );
+
+            // 🔥 Add hardcoded NAIRA Wallet
+            const nairaWallet = {
+                id: null,
+                name: "Naira Wallet",
+                currency: "ngn",
+                balance: nairaBalance.toString(),
+                locked: null,
+                staked: null,
+                user: {
+                    id: userId,
+                    email: user.data.email,
+                    first_name: user.data.firstName || null,
+                    last_name: user.data.lastName || null,
+                },
+                converted_balance: null,
+                reference_currency: "ngn",
+                is_crypto: false,
+                created_at: null,
+                updated_at: null,
+                blockchain_enabled: false,
+                default_network: null,
+                networks: [],
+                deposit_address: null,
+                destination_tag: null,
+
+                // Realistic NGN image
+                image_url:
+                    "https://upload.wikimedia.org/wikipedia/commons/thumb/9/9c/Flag_of_Nigeria.svg/2560px-Flag_of_Nigeria.svg.png",
+            };
+
+            // 🔹 Final result with NGN wallet at the top
+            const finalWallets = [nairaWallet, ...enhancedWallets];
+
+            return {
+                success: true,
+                message: "User wallets fetched successfully.",
+                status: HttpStatus.OK,
+                code: HttpStatus.OK,
+                data: finalWallets,
+            };
+
+        } catch (error) {
+            if (error.response) {
+                throw new HttpException(
+                    `Failed to fetch user wallets: ${error.response.data.message}`,
+                    error.response.status,
+                );
+            } else {
+                throw new HttpException(
+                    `Failed to fetch user wallets: ${error.message}`,
+                    HttpStatus.INTERNAL_SERVER_ERROR,
+                );
+            }
+        }
+    }
 
 
     async getUserWallet(getUserWalletDto: GetUserWalletDto): Promise<any> {
@@ -1044,45 +1083,7 @@ export class CryptoService {
         };
     }
 
-    // async getNetworkFeeWithUsdValue(dto: GetNetworkFeeUsdDto) {
-    //     const { currency, ticker, priceType, network } = dto;
 
-    //     // 1. Fetch network fee (crypto amount)
-    //     const feeResponse = await this.getNetworkFee({ currency, network });
-    //     const fee = feeResponse.data.data.fee; // Example: 0.002
-
-    //     // 2. Fetch market ticker for USD conversion
-    //     if (!ticker) {
-    //         throw new HttpException(
-    //             'Ticker (e.g., btcusdt, ltcusdt) is required to calculate USD value.',
-    //             HttpStatus.BAD_REQUEST,
-    //         );
-    //     }
-
-    //     const tickerResponse = await this.getMarketTicker({ currency: ticker });
-
-    //     const selectedPriceType = priceType || 'buy';
-    //     const usdPrice = parseFloat(tickerResponse.data.ticker[selectedPriceType]); // e.g., 95.69
-
-    //     // 3. Calculate USD value
-    //     const usdValue = fee * usdPrice;
-
-    //     return {
-    //         success: true,
-    //         code: HttpStatus.OK,
-    //         message: 'Network fee with USD value fetched successfully.',
-    //         data: {
-    //             fee_crypto: fee,
-    //             fee_type: feeResponse.data.data.type,
-    //             usd_per_unit: usdPrice,
-    //             price_type_used: selectedPriceType,
-    //             usd_value: parseFloat(usdValue.toFixed(5)),
-    //             ticker_used: ticker,
-    //             original_fee_response: feeResponse.data,
-    //             original_ticker_response: tickerResponse,
-    //         },
-    //     };
-    // }
 
 
     async checkUserWalletBalance(
@@ -1206,6 +1207,7 @@ export class CryptoService {
 
     async getAllUserTransactions(userId: string, currency: string) {
         const user = await this.userSrv.findUserById(userId);
+
         if (!user?.data?.quidax_user_id) {
             throw new HttpException(
                 'User not found or missing Quidax ID',
@@ -1734,12 +1736,7 @@ export class CryptoService {
             await this.QuidaxorderSrv.createOrder(
                 payload.userId,
                 sentwithdrawal.data.id,
-                'USER-SOLD-CRYPTO',
-                // payload.accountName,
-                // payload.bankName,
-                // payload.accountNumber,
-                // payload.beneficiaryBankCode,
-                // PaymentStatus.PENDING,
+                'USER-CRYPTO-TO-NAIRA-SWAP',
             );
 
             return {
@@ -1759,25 +1756,6 @@ export class CryptoService {
     //////////////////////////////////////////////ADD WEBHOOK FOR RECIVEING CRYPTO AND CONFIRMING TRANSACTIONS////////////////////////////
     //////////////////////////////////////////////ADD WEBHOOK FOR RECIVEING CRYPTO AND CONFIRMING TRANSACTIONS////////////////////////////
 
-    // private mapCurrencyToEnum(currency: string): CryptoCurrencyType {
-    //   switch (currency.toLowerCase()) {
-    //     case 'btc':
-    //       return CryptoCurrencyType.BTC;
-    //     case 'eth':
-    //       return CryptoCurrencyType.ETH;
-    //     case 'usdt':
-    //       return CryptoCurrencyType.USDT;
-    //     case 'trx':
-    //       return CryptoCurrencyType.TRX;
-    //     case 'xrp':
-    //       return CryptoCurrencyType.XRP;
-    //     default:
-    //       throw new HttpException(
-    //         `Unsupported currency: ${currency}`,
-    //         HttpStatus.BAD_REQUEST,
-    //       );
-    //   }
-    // }
 
     async quidaxWebhook(payload: any) {
         const referenceNumber = generateUniqueCode(13);
@@ -1830,7 +1808,7 @@ export class CryptoService {
                 const orderForCreditingUserWallet = await this.QuidaxorderSrv.getRepo().findOne({
                     where: {
                         orderId: payload.data.id,
-                        reasonForOrder: 'USER-SOLD-CRYPTO'
+                        reasonForOrder: 'USER-CRYPTO-TO-NAIRA-SWAP'
                     }
                 });
 
@@ -1852,7 +1830,7 @@ export class CryptoService {
                         amount: parseFloat(payload.data.amount),
                         // currency: currencyType,
                         reference: referenceNumber,
-                        narration: 'Crypto Sale',
+                        narration: 'Crypto Swap',
                         type: TransactionType.CREDIT,
                         transactionStatus: PaymentStatus.SUCCESSFUL,
                         typeAction: TransactionTypeAction.SELL,
