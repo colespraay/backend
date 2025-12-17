@@ -668,11 +668,17 @@ export class CryptoService {
                 );
 
             // 🔥 Add hardcoded NAIRA Wallet
+
+                    const tickerResponse = await this.getMarketTicker({ currency: "usdtngn" });
+
+        const selectedPriceType ='buy';
+        const usdPrice = parseFloat(tickerResponse.data.ticker[selectedPriceType]);
+
             const nairaWallet = {
                 id: null,
                 name: "Naira Wallet",
                 currency: "ngn",
-                balance: nairaBalance.toString(),
+                balance:  nairaBalance/usdPrice ,
                 locked: null,
                 staked: null,
                 user: {
@@ -681,7 +687,7 @@ export class CryptoService {
                     first_name: user.data.firstName || null,
                     last_name: user.data.lastName || null,
                 },
-                converted_balance: null,
+                converted_balance: nairaBalance.toString(),
                 reference_currency: "ngn",
                 is_crypto: false,
                 created_at: null,
@@ -1550,42 +1556,6 @@ export class CryptoService {
                     details: error.response?.data || error.message,
                 },
                 HttpStatus.BAD_REQUEST,
-            );
-        }
-    }
-
-
-    async getSwapTransaction(userId: string, transactionId: string) {
-        try {
-            // https://app.quidax.io/api/v1/users/7cc10ba7-b3bd-4e03-844b-530d80250373/swap_quotation/903b283f-57a3-43b1-9ac0-d559de1d9de8/refresh
-            const url = `https://app.quidax.io/api/v1/users/${userId}/swap_quotation/${transactionId}/refresh`;
-
-            // NOTE: axios.post(body, headers) → body must be {}, headers in 3rd param
-            const response = await axios.post(
-                url,
-                {}, // No body required
-                {
-                    headers: {
-                        Authorization: `Bearer ${process.env.QUIDAX_Secrete_key}`, // Replace with your actual token
-                        accept: 'application/json',
-                        'content-type': 'application/json',
-                    },
-                },
-            );
-
-            return {
-                success: true,
-                data: response.data,
-            };
-        } catch (error) {
-            console.log(error.response?.data || error.message);
-            throw new HttpException(
-                {
-                    success: false,
-                    message: 'Failed to fetch swap transaction',
-                    error: error.response?.data || error.message,
-                },
-                error.response?.status || HttpStatus.BAD_REQUEST,
             );
         }
     }

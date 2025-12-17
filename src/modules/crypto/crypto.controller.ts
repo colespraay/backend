@@ -363,14 +363,6 @@ export class CryptoController {
         return this.cryptoService.getSwapQuotation(dto);
     }
 
-//       @Get('swap/swap-details/:userId/:transactionId')
-//   async getSwapTransaction(
-//     @Param('userId') userId: string,
-//     @Param('transactionId') transactionId: string,
-//   ) {
-//     return this.cryptoService.getSwapTransaction(userId, transactionId);
-//   }
-
     @Post('swap-quotation/confirm')
     @ApiOperation({ summary: 'Confirm a previously quoted swap on Quidax' })
     @ApiResponse({ status: 200, description: 'Swap confirmed successfully' })
