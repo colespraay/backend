@@ -2048,9 +2048,15 @@ export class CryptoService {
 
                     ////////////////////IF ACCOUNT DETAILS DOESNT EXITS DO THIS BELOW ELSE SEND TO ACCOUNT DETAILS INFO WITH SAFEHAVEN ALSO UPDATE QUIDAX ORDER STATUS///////////////////////
                     ////////////////////IF ACCOUNT DETAILS DOESNT EXITS DO THIS BELOW ELSE SEND TO ACCOUNT DETAILS INFO WITH SAFEHAVEN ALSO UPDATE QUIDAX ORDER STATUS///////////////////////
+
+                    const tickerResponse = await this.getMarketTicker({ currency: payload.data.currency.toLowerCase()+"ngn" });
+                    const selectedPriceType = 'buy';
+                    const usdPrice = parseFloat(tickerResponse.data.ticker[selectedPriceType]);
+
+
                     const newTransaction = await this.transactionSrv.createTransaction({
                         userId: userToCreditNairaWallet.data.id,
-                        amount: parseFloat(payload.data.amount),
+                        amount: parseFloat(payload.data.amount) * usdPrice,
                         // currency: currencyType,
                         reference: referenceNumber,
                         narration: 'Crypto Swap',
