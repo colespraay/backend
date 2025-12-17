@@ -678,7 +678,7 @@ export class CryptoService {
                 id: null,
                 name: "Naira Wallet",
                 currency: "ngn",
-                balance:  (nairaBalance/usdPrice).toString() ,
+           balance: (nairaBalance / usdPrice).toFixed(2),
                 locked: null,
                 staked: null,
                 user: {
