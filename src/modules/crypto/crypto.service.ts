@@ -571,6 +571,7 @@ export class CryptoService {
 
     async fetchUserWallets(userId: string): Promise<any> {
         const url = `${this.baseUrl}/users/${userId}/wallets`;
+        console.log("url", url);
 
         const options = {
             method: 'GET',
@@ -598,7 +599,8 @@ export class CryptoService {
                 })
                 .filter(
                     (wallet) =>
-                        allowedCurrencies.includes(wallet.currency) &&
+                        allowedCurrencies.includes(wallet.currency)
+                        &&
                         wallet.deposit_address &&
                         wallet.image_url
                 );
@@ -1725,6 +1727,50 @@ export class CryptoService {
         }
     }
 
+
+    async SendCryptoForSwapping(withdrawDto: WithdrawDto) {
+        const apiUrl = `https://app.quidax.io/api/v1/users/${withdrawDto.userId}/withdraws`;
+        const {
+            currency,
+            amount,
+            transaction_note,
+            narration,
+            network,
+            reference,
+            fund_uid,
+        } = withdrawDto;
+        try {
+            const options = {
+                method: 'POST',
+                headers: {
+                    accept: 'application/json',
+                    'content-type': 'application/json',
+                    Authorization: `Bearer ${process.env.QUIDAX_Secrete_key}`, // Replace with your actual token
+                },
+                data: {
+                    fund_uid,
+                    currency,
+                    amount,
+                    transaction_note,
+                    narration,
+                    network, // Add network to the request
+                    reference, // Add reference to the request
+                },
+            };
+
+            const response = await axios.post(apiUrl, options.data, {
+                headers: options.headers,
+            });
+            return response.data;
+        } catch (error) {
+            console.log(error);
+            throw new HttpException(
+                'Error performing withdrawal',
+                HttpStatus.BAD_REQUEST,
+            );
+        }
+    }
+
     async UserBuyCrypto(payload: BuyCryptoDto): Promise<BaseResponseTypeDTO> {
         const allowedCryptos = this.allowedCurrencies;
         try {
@@ -1789,44 +1835,129 @@ export class CryptoService {
         }
     }
 
+    // async UserSellCrypto(payload: SellCryptoDto): Promise<BaseResponseTypeDTO> {
+    //     const allowedCryptos = this.allowedCurrencies;
+    //     try {
+    //         checkForRequiredFields(['amount', 'currency', 'userId'], payload);
+    //         if (!allowedCryptos.includes(payload.currency.toLowerCase())) {
+    //             throw new HttpException(
+    //                 `Invalid currency. Allowed currencies are: ${allowedCryptos.join(', ')}`,
+    //                 HttpStatus.BAD_REQUEST,
+    //             );
+    //         }
+    //         const userData = await this.userSrv.findUserById(payload.userId);
+    //         await this.checkUserWalletBalance(
+    //             { user_id: userData.data.quidax_user_id, currency: payload.currency },
+    //             payload.amount,
+    //         );
+    //         const referenceNumber = generateUniqueCode(13);
+    //         //SEND CRYPTO FROM USER WALLET TO ADMIN WALLET
+    //         console.log(payload.currency, payload.amount.toString());
+    //         const sentwithdrawal = await this.SendCryptoForSwapping({
+    //             userId: userData.data.quidax_user_id,
+    //             fund_uid: 'me',
+    //             currency: payload.currency,
+    //             amount: payload.amount.toString(),
+    //             transaction_note: 'Stay safe',
+    //             narration: 'We love you.',
+    //             network: "",
+    //             reference: referenceNumber,
+    //         });
+    //         ////////////////////After after sending crypto to admin(me) wallet so selling can start save order for webhook/////////////
+    //         ////////////////////After after sending crypto to admin(me) wallet so selling can start save order for webhook/////////////
+    //         await this.QuidaxorderSrv.createOrder(
+    //             payload.userId,
+    //             sentwithdrawal.data.id,
+    //             'USER-CRYPTO-TO-NAIRA-SWAP',
+    //         );
+
+    //         return {
+    //             success: true,
+    //             code: HttpStatus.OK,
+    //             message: 'Sell initiated',
+    //             data: { orderId: sentwithdrawal.data.id },
+    //         };
+    //     } catch (ex) {
+    //         this.logger.error(ex);
+    //         throw ex;
+    //     }
+    // }
+
     async UserSellCrypto(payload: SellCryptoDto): Promise<BaseResponseTypeDTO> {
-        const allowedCryptos = this.allowedCurrencies;
+        const ADMIN_WALLETS: Record<
+            string,
+            { address: string; network?: string }
+        > = {
+            btc: {
+                address: 'bc1qkqtsl5jgmeeh72hl5p24zjc7a2cdhnsgqss086',
+                network: 'btc',
+            },
+            ltc: {
+                address: 'ltc1qqjm7uhx53arqwgkaumv35h6l4arkmxvkgn9j8r',
+                network: 'ltc',
+            },
+            eth: {
+                address: '0x47dcc1c3abfD37e71b521b73a7b03D7b9511d55a',
+                network: 'erc20',
+            },
+            usdt: {
+                address: '0x47dcc1c3abfD37e71b521b73a7b03D7b9511d55a',
+                network: 'bep20',
+            },
+        };
+
+
         try {
             checkForRequiredFields(['amount', 'currency', 'userId'], payload);
-            if (!allowedCryptos.includes(payload.currency.toLowerCase())) {
+
+            const currency = payload.currency.toLowerCase();
+            const allowedCryptos = this.allowedCurrencies;
+
+            if (!allowedCryptos.includes(currency)) {
                 throw new HttpException(
                     `Invalid currency. Allowed currencies are: ${allowedCryptos.join(', ')}`,
                     HttpStatus.BAD_REQUEST,
                 );
             }
+
+            // 🔑 Pick admin wallet automatically
+            const adminWallet = ADMIN_WALLETS[currency];
+
+            if (!adminWallet) {
+                throw new HttpException(
+                    `No admin wallet configured for ${currency}`,
+                    HttpStatus.BAD_REQUEST,
+                );
+            }
+
             const userData = await this.userSrv.findUserById(payload.userId);
-            // await this.userSrv.verifyTransactionPin(
-            //   payload.userId,
-            //   payload.transactionPin,
-            // );
-            //CHECK IF USER IS REQUESTUING FOR MORE THAN VALUE IN WALLET AND HELD
+
             await this.checkUserWalletBalance(
-                { user_id: userData.data.quidax_user_id, currency: payload.currency },
+                {
+                    user_id: userData.data.quidax_user_id,
+                    currency,
+                },
                 payload.amount,
             );
+
             const referenceNumber = generateUniqueCode(13);
-            //SEND CRYPTO FROM USER WALLET TO ADMIN WALLET
-            console.log(payload.currency, payload.amount.toString());
-            const sentwithdrawal = await this.SendCrypto({
+
+            // 🚀 Send crypto from user → admin wallet
+            const sentWithdrawal = await this.SendCryptoForSwapping({
                 userId: userData.data.quidax_user_id,
-                fund_uid: 'me',
-                currency: payload.currency,
+                fund_uid: adminWallet.address,
+                currency,
                 amount: payload.amount.toString(),
                 transaction_note: 'Stay safe',
                 narration: 'We love you.',
-                // "network": trc20,
+                network: adminWallet.network,
                 reference: referenceNumber,
             });
-            ////////////////////After after sending crypto to admin(me) wallet so selling can start save order for webhook/////////////
-            ////////////////////After after sending crypto to admin(me) wallet so selling can start save order for webhook/////////////
+
+            // 🧾 Save order for webhook processing
             await this.QuidaxorderSrv.createOrder(
                 payload.userId,
-                sentwithdrawal.data.id,
+                sentWithdrawal.data.id,
                 'USER-CRYPTO-TO-NAIRA-SWAP',
             );
 
@@ -1834,13 +1965,14 @@ export class CryptoService {
                 success: true,
                 code: HttpStatus.OK,
                 message: 'Sell initiated',
-                data: { orderId: sentwithdrawal.data.id },
+                data: { orderId: sentWithdrawal.data.id },
             };
         } catch (ex) {
             this.logger.error(ex);
             throw ex;
         }
     }
+
 
     //////////////////////////////////////////////ADD WEBHOOK FOR RECIVEING CRYPTO AND CONFIRMING TRANSACTIONS////////////////////////////
     //////////////////////////////////////////////ADD WEBHOOK FOR RECIVEING CRYPTO AND CONFIRMING TRANSACTIONS////////////////////////////
