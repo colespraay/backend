@@ -669,16 +669,16 @@ export class CryptoService {
 
             // 🔥 Add hardcoded NAIRA Wallet
 
-                    const tickerResponse = await this.getMarketTicker({ currency: "usdtngn" });
+            const tickerResponse = await this.getMarketTicker({ currency: "usdtngn" });
 
-        const selectedPriceType ='buy';
-        const usdPrice = parseFloat(tickerResponse.data.ticker[selectedPriceType]);
+            const selectedPriceType = 'buy';
+            const usdPrice = parseFloat(tickerResponse.data.ticker[selectedPriceType]);
 
             const nairaWallet = {
                 id: null,
                 name: "Naira Wallet",
                 currency: "ngn",
-           balance: (nairaBalance / usdPrice).toFixed(2),
+                balance: (nairaBalance / usdPrice).toFixed(2),
                 locked: null,
                 staked: null,
                 user: {
@@ -1973,8 +1973,11 @@ export class CryptoService {
             }
 
             default:
-                console.log(`Unhandled event: ${payload.event}`);
-                console.log(`Unhandled event: ${payload.data}`);
+                console.log('Unhandled event:', payload.event);
+                console.log(
+                    'Full payload:',
+                    JSON.stringify(payload, null, 2),
+                );
                 break;
         }
     }
