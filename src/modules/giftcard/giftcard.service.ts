@@ -411,6 +411,10 @@ export class GiftcardService extends GenericService(
       const plan = await this.getProductById(payload.productId);
 
       const convertedRate = await this.getFxRate(plan.data.recipientCurrencyCode, payload.unitPrice * payload.quantity);
+      this.logger.debug({
+        message: 'Converted rate fetched',
+        convertedRate: convertedRate.data,
+      });
       const RealNairaEquivalentOfCard = convertedRate.data.senderAmount;
       console.log("RealNairaEquivalentOfCard", RealNairaEquivalentOfCard)
       return {
