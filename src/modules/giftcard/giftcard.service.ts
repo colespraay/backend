@@ -413,56 +413,66 @@ export class GiftcardService extends GenericService(
       const convertedRate = await this.getFxRate(plan.data.recipientCurrencyCode, payload.unitPrice * payload.quantity);
       const RealNairaEquivalentOfCard = convertedRate.data.senderAmount;
       console.log("RealNairaEquivalentOfCard", RealNairaEquivalentOfCard)
-
-      await this.userSrv.checkAccountBalance(RealNairaEquivalentOfCard, payload.userid);
-
-      const userToUse = await this.userSrv.getRepo().findOne({ where: { id: payload.userid } });
-      const narration = `Gift Card purchase (₦${RealNairaEquivalentOfCard}) for ${plan.data.productName}`;
-      const transactionDate = new Date();
-      const reference = `Spraay-Giftcard-${generateUniqueCode(10)}`;
-
-      const GiftCardPurchase = await this.placeOrder({
-        productId: payload.productId,
-        quantity: payload.quantity,
-        unitPrice: payload.unitPrice,
-        senderName: payload.senderName,
-        recipientEmail: payload.recipientEmail,
-        preOrder: payload.preOrder,
-        customIdentifier: payload.customIdentifier,
-      });
-
-      if (!GiftCardPurchase?.success) {
-        throw new BadGatewayException('Gift Card purchase failed');
-      }
-
-      const newTransaction = await this.transactionSrv.createTransaction({
-        narration,
-        userId: userToUse.id,
-        amount: RealNairaEquivalentOfCard,
-        type: TransactionType.DEBIT,
-        transactionStatus: PaymentStatus.SUCCESSFUL,
-        reference,
-        transactionDate: new Date().toLocaleString(),
-        currentBalanceBeforeTransaction: userToUse.walletBalance,
-      });
-
-      const newGiftCard = await this.getRepo().create({
-        transactionId: newTransaction.data.id,
-        amount: RealNairaEquivalentOfCard,
-        giftcardName: plan.data.productName,
-        userId: payload.userid,
-        createdDate: new Date(),
-        createdTime: new Date(),
-      });
-
-      await this.getRepo().save(newGiftCard);
-
       return {
         success: true,
-        code: HttpStatus.CREATED,
-        data: newGiftCard,
-        message: GiftCardPurchase.message,
+        code: HttpStatus.OK,
+        data: {
+          productDetails: plan.data,
+          convertedRate: convertedRate.data,
+          RealNairaEquivalentOfCard: RealNairaEquivalentOfCard,
+        },
+        message: 'Gift card purchase details fetched successfully',
       };
+
+      // await this.userSrv.checkAccountBalance(RealNairaEquivalentOfCard, payload.userid);
+
+      // const userToUse = await this.userSrv.getRepo().findOne({ where: { id: payload.userid } });
+      // const narration = `Gift Card purchase (₦${RealNairaEquivalentOfCard}) for ${plan.data.productName}`;
+      // const transactionDate = new Date();
+      // const reference = `Spraay-Giftcard-${generateUniqueCode(10)}`;
+
+      // const GiftCardPurchase = await this.placeOrder({
+      //   productId: payload.productId,
+      //   quantity: payload.quantity,
+      //   unitPrice: payload.unitPrice,
+      //   senderName: payload.senderName,
+      //   recipientEmail: payload.recipientEmail,
+      //   preOrder: payload.preOrder,
+      //   customIdentifier: payload.customIdentifier,
+      // });
+
+      // if (!GiftCardPurchase?.success) {
+      //   throw new BadGatewayException('Gift Card purchase failed');
+      // }
+
+      // const newTransaction = await this.transactionSrv.createTransaction({
+      //   narration,
+      //   userId: userToUse.id,
+      //   amount: RealNairaEquivalentOfCard,
+      //   type: TransactionType.DEBIT,
+      //   transactionStatus: PaymentStatus.SUCCESSFUL,
+      //   reference,
+      //   transactionDate: new Date().toLocaleString(),
+      //   currentBalanceBeforeTransaction: userToUse.walletBalance,
+      // });
+
+      // const newGiftCard = await this.getRepo().create({
+      //   transactionId: newTransaction.data.id,
+      //   amount: RealNairaEquivalentOfCard,
+      //   giftcardName: plan.data.productName,
+      //   userId: payload.userid,
+      //   createdDate: new Date(),
+      //   createdTime: new Date(),
+      // });
+
+      // await this.getRepo().save(newGiftCard);
+
+      // return {
+      //   success: true,
+      //   code: HttpStatus.CREATED,
+      //   data: newGiftCard,
+      //   message: GiftCardPurchase.message,
+      // };
     } catch (ex) {
       console.error(ex);
       throw ex;
