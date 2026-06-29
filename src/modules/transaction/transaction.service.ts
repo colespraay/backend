@@ -1215,7 +1215,7 @@ export class TransactionService extends GenericService(TransactionRecord) {
         code: HttpStatus.OK,
         data: aggregatedData,
       };
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error in aggregateTotalTransactionSumPerDay:', error);
 
       return {
@@ -1243,7 +1243,7 @@ export class TransactionService extends GenericService(TransactionRecord) {
           totalCount: totalCount,
         },
       };
-    } catch (error) {
+    } catch (error: any) {
       return {
         success: false,
         message: 'Failed to retrieve transactions',

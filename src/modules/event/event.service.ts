@@ -729,26 +729,71 @@ export class EventService extends GenericService(EventRecord) {
     }
   }
 
+  /**
+   * Number of days after the event date before an event is considered expired.
+   * After this grace window the event is moved to EventStatus.PAST and can no
+   * longer be spraayed at.
+   */
+  private static readonly EVENT_EXPIRY_DAYS = 3;
+
+  /**
+   * The exact moment an event expires.
+   *
+   * Rule: an event expires at 12 midnight (00:00:00), EVENT_EXPIRY_DAYS days
+   * after the event date. e.g. an event held on the 1st expires at 00:00 on the
+   * 4th. Because we normalise to the start of the day, the cut-off always lands
+   * on a midnight boundary ("stop by 12 midnight").
+   */
+  private getEventExpiryDate(eventDate: Date | string): Date {
+    const expiry = new Date(eventDate);
+    expiry.setHours(0, 0, 0, 0);
+    expiry.setDate(expiry.getDate() + EventService.EVENT_EXPIRY_DAYS);
+    return expiry;
+  }
+
+  /**
+   * Whether an event has passed its expiry moment and should no longer be
+   * treated as active. Used both by the scheduled deactivation job and by the
+   * spraay flow to block spraaying at events that are already over.
+   */
+  isEventExpired(
+    event: Pick<EventRecord, 'eventDate' | 'eventStatus'>,
+  ): boolean {
+    if (event.eventStatus === EventStatus.PAST) {
+      return true;
+    }
+    return (
+      new Date().getTime() >=
+      this.getEventExpiryDate(event.eventDate).getTime()
+    );
+  }
+
   async deactivatePastEvents(): Promise<void> {
     try {
-      const date24HoursAgo = new Date();
-      date24HoursAgo.setDate(date24HoursAgo.getDate() - 1);
-      const events = await this.getRepo()
-        .createQueryBuilder('event')
-        .where('event.eventDate >= :date', { date: date24HoursAgo })
-        .andWhere('event.status = :status', { status: true })
-        .andWhere('event.eventStatus = :eventStatus', {
-          eventStatus: EventStatus.ONGOING,
-        })
-        .getMany();
-      await this.getRepo().update(
-        { id: In(events.map(({ id }) => id)) },
-        {
-          status: false,
-          eventStatus: EventStatus.PAST,
-          isNotificationSent: true,
+      // Pull every event that is still active (UPCOMING or ONGOING).
+      const activeEvents = await this.getRepo().find({
+        where: {
+          status: true,
+          eventStatus: In([EventStatus.UPCOMING, EventStatus.ONGOING]),
         },
-      );
+        select: ['id', 'eventDate', 'eventStatus'],
+      });
+
+      // An event expires 3 days after the event date, at 12 midnight.
+      const expiredEventIds = activeEvents
+        .filter((event) => this.isEventExpired(event))
+        .map(({ id }) => id);
+
+      if (expiredEventIds.length > 0) {
+        await this.getRepo().update(
+          { id: In(expiredEventIds) },
+          {
+            status: false,
+            eventStatus: EventStatus.PAST,
+            isNotificationSent: true,
+          },
+        );
+      }
     } catch (ex) {
       this.logger.error(ex, 'deactivatePastEvents');
       throw ex;
@@ -1041,28 +1086,6 @@ export class EventService extends GenericService(EventRecord) {
     }
   }
 
-  // async getAllEvents(paginationDto: EventPaginationDto): Promise<any> {
-  //   try {
-  //     const { page, limit } = paginationDto;
-  //     const [events, totalCount] = await this.eventRecordRepository.findAndCount({
-  //       skip: (page - 1) * limit,
-  //       take: limit,
-  //     });
-
-  //     return {
-  //       success: true,
-  //       message: 'Events retrieved successfully',
-  //       code: HttpStatus.OK,
-  //       data: { events: events, totalCount: totalCount },
-  //     };
-  //   } catch (error) {
-  //     return {
-  //       success: false,
-  //       message: 'Failed to retrieve events',
-  //       code: HttpStatus.INTERNAL_SERVER_ERROR,
-  //       error: error.message,
-  //     };
-  //   }
 
   async getAllEvents(paginationDto: EventPaginationDto): Promise<any> {
     try {
@@ -1078,7 +1101,7 @@ export class EventService extends GenericService(EventRecord) {
         code: HttpStatus.OK,
         data: { events: events, totalCount: totalCount },
       };
-    } catch (error) {
+    } catch (error:any) {
       return {
         success: false,
         message: 'Failed to retrieve events',
@@ -1087,110 +1110,6 @@ export class EventService extends GenericService(EventRecord) {
       };
     }
   }
-
-  // async getTotalEventsByVenue(): Promise<{ [state: string]: number }> {
-  //   console.log("getTotalEventsByVenue")
-  //   const events = await this.getRepo().find();
-  //   const totalEventsByVenue: { [state: string]: number } = {};
-
-  //   events.forEach((event) => {
-  //     const venue = event.venue.toLowerCase();
-  //     const state = this.extractStateFromVenue(venue);
-  //     if (state) {
-  //       totalEventsByVenue[state] = (totalEventsByVenue[state] || 0) + 1;
-  //     }
-  //   });
-
-  //   return totalEventsByVenue;
-  // }
-
-  // async getTotalEventsByVenue(): Promise<{ [state: string]: number }> {
-  //   console.log("getTotalEventsByVenue");
-  //   const events = await this.getRepo().find();
-  //   const totalEventsByVenue: { [state: string]: number } = {};
-
-  //   events.forEach((event) => {
-  //     const venue = event.venue.toLowerCase();
-  //     const state = this.extractStateFromVenue(venue);
-  //     if (state) {
-  //       totalEventsByVenue[state] = (totalEventsByVenue[state] || 0) + 1;
-  //     }
-  //   });
-
-  //   // Fill in 0 for states with no events
-  //   const statesInNigeria = [
-  //     'abia', 'adamawa', 'akwa ibom', 'anambra', 'bauchi', 'bayelsa', 'benue',
-  //     'borno', 'cross river', 'delta', 'ebonyi', 'edo', 'ekiti', 'enugu', 'gombe',
-  //     'imo', 'jigawa', 'kaduna', 'kano', 'katsina', 'kebbi', 'kogi', 'kwara', 'lagos',
-  //     'nasarawa', 'niger', 'ogun', 'ondo', 'osun', 'oyo', 'plateau', 'rivers',
-  //     'sokoto', 'taraba', 'yobe', 'zamfara',
-  //   ];
-
-  //   statesInNigeria.forEach((state) => {
-  //     if (!totalEventsByVenue[state]) {
-  //       totalEventsByVenue[state] = 0;
-  //     }
-  //   });
-
-  //   return totalEventsByVenue;
-  // }
-
-  // async getTotalEventsByVenueWithPercentage(): Promise<{ [state: string]: { count: number; percentage: number } }> {
-  //   console.log("getTotalEventsByVenueWithPercentage");
-  //   const events = await this.getRepo().find();
-  //   const totalEventsByVenue: { [state: string]: { count: number; percentage: number } } = {};
-
-  //   events.forEach((event) => {
-  //     const venue = event.venue.toLowerCase();
-  //     const state = this.extractStateFromVenue(venue);
-  //     if (state) {
-  //       totalEventsByVenue[state] = totalEventsByVenue[state] || { count: 0, percentage: 0 };
-  //       totalEventsByVenue[state].count++;
-  //     }
-  //   });
-
-  //   // Calculate percentages
-  //   const totalCount = Object.values(totalEventsByVenue).reduce((acc, cur) => acc + cur.count, 0);
-  //   Object.keys(totalEventsByVenue).forEach((state) => {
-  //     const stateCount = totalEventsByVenue[state].count;
-  //     totalEventsByVenue[state].percentage = (stateCount / totalCount) * 100;
-  //   });
-
-  //   // Fill in 0 for states with no events
-  //   const statesInNigeria = [
-  //     'abia', 'adamawa', 'akwa ibom', 'anambra', 'bauchi', 'bayelsa', 'benue',
-  //     'borno', 'cross river', 'delta', 'ebonyi', 'edo', 'ekiti', 'enugu', 'gombe',
-  //     'imo', 'jigawa', 'kaduna', 'kano', 'katsina', 'kebbi', 'kogi', 'kwara', 'lagos',
-  //     'nasarawa', 'niger', 'ogun', 'ondo', 'osun', 'oyo', 'plateau', 'rivers',
-  //     'sokoto', 'taraba', 'yobe', 'zamfara',
-  //   ];
-
-  //   statesInNigeria.forEach((state) => {
-  //     if (!totalEventsByVenue[state]) {
-  //       totalEventsByVenue[state] = { count: 0, percentage: 0 };
-  //     }
-  //   });
-
-  //   return totalEventsByVenue;
-  // }
-
-  // private extractStateFromVenue(venue: string): string | undefined {
-  //   const statesInNigeria = [
-  //     'abia', 'adamawa', 'akwa ibom', 'anambra', 'bauchi', 'bayelsa', 'benue',
-  //     'borno', 'cross river', 'delta', 'ebonyi', 'edo', 'ekiti', 'enugu', 'gombe',
-  //     'imo', 'jigawa', 'kaduna', 'kano', 'katsina', 'kebbi', 'kogi', 'kwara', 'lagos',
-  //     'nasarawa', 'niger', 'ogun', 'ondo', 'osun', 'oyo', 'plateau', 'rivers',
-  //     'sokoto', 'taraba', 'yobe', 'zamfara',
-  //   ];
-
-  //   for (const state of statesInNigeria) {
-  //     if (venue.includes(state)) {
-  //       return state;
-  //     }
-  //   }
-
-  //   return undefined;
-  // }
 
   async getTotaleventAmountAndCount(
     dateRange: TransactionDateRangeDto,

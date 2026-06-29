@@ -14,6 +14,8 @@ import {
   HttpStatus,
   ValidationPipe,
   BadRequestException,
+  NotFoundException,
+  InternalServerErrorException,
 } from '@nestjs/common';
 import {
   ApiBearerAuth,
@@ -61,7 +63,7 @@ import { User } from '@entities/user.entity';
 @ApiTags('user')
 @Controller('user')
 export class UserController {
-  constructor(private readonly userSrv: UserService) {}
+  constructor(private readonly userSrv: UserService) { }
 
   @ApiOperation({ description: 'Sign up with email and password' })
   @ApiProduces('json')
@@ -368,7 +370,7 @@ export class UserController {
   // @ApiBearerAuth()
   @ApiOperation({
     summary: 'Verify BVN with Selfie Image',
-    description: 
+    description:
       'Lookup and verify a user\'s BVN with their selfie image. This endpoint helps reduce fraud by confirming ' +
       'the person inputting the BVN is who they claim to be. The confidence value ranges from 0% to 100%, ' +
       'where 0-90% indicates a false match and 90-100% indicates a true match.'
@@ -381,7 +383,7 @@ export class UserController {
         summary: 'Verification Request Example',
         description: 'A request to verify BVN with selfie image URL',
         value: {
-          userId:"67a0888aa2be4c3f68c3ccfa",
+          userId: "67a0888aa2be4c3f68c3ccfa",
           bvn: '12345678901',
           selfie_image_url: 'https://example.com/user-selfie.jpg',
         },
@@ -399,7 +401,7 @@ export class UserController {
   ): Promise<BvnVerificationResponse> {
     return this.userSrv.verifyBvnWithSelfie(
       verificationDto.userId,
-      verificationDto.bvn, 
+      verificationDto.bvn,
       verificationDto.selfie_image_url,
       req
     );
@@ -422,7 +424,29 @@ export class UserController {
   //   @Param('email') email: string,
   //   @Body() incrementBalanceDto: IncrementBalanceDto,
   // ): Promise<User> {
-  //   return this.userSrv.incrementUserBalance(email, incrementBalanceDto.amount);
+  //   try {
+  //     return await this.userSrv.incrementUserBalance(email, incrementBalanceDto.amount);
+  //   } catch (error) {
+  //     if (error instanceof BadRequestException || error instanceof NotFoundException) {
+  //       throw error;
+  //     }
+  //     throw new InternalServerErrorException('Failed to increment balance');
+  //   }
+  // }
+
+  // @Patch(':email/reset-balance')
+  // @ApiOperation({ summary: 'Reset user wallet balance to zero' })
+  // @ApiParam({ name: 'email', type: 'string', description: 'User email' })
+  // @ApiResponse({ status: 200, description: 'User balance reset to zero', type: User })
+  // async resetBalance(@Param('email') email: string): Promise<User> {
+  //   try {
+  //     return await this.userSrv.setBalanceToZero(email);
+  //   } catch (error) {
+  //     if (error instanceof NotFoundException) {
+  //       throw error;
+  //     }
+  //     throw new InternalServerErrorException('Failed to reset balance');
+  //   }
   // }
 
   // @Get('testing/phone/:phoneNumber')
@@ -448,7 +472,7 @@ export class UserController {
 
 
   @Delete('delete-non-admins/all')
-   @ApiOperation({
+  @ApiOperation({
     summary: 'Delete all non-admin users',
     description:
       'Deletes all user accounts except those with the role `ADMIN`. This operation is irreversible and should only be performed by administrators.',

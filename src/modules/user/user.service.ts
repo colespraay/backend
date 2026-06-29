@@ -1446,7 +1446,7 @@ export class UserService extends GenericService(User) {
 
       const response = await axios.get(url, { headers });
       return response.data;
-    } catch (error) {
+    } catch (error:any) {
       console.log(error);
       if (error.response) {
         throw new HttpException(
@@ -1612,7 +1612,7 @@ export class UserService extends GenericService(User) {
       }
 
       return response.data;
-    } catch (error) {
+    } catch (error:any) {
       if (error.response) {
         // The request was made and the server responded with a status code
         // that falls out of the range of 2xx
@@ -1670,7 +1670,7 @@ export class UserService extends GenericService(User) {
 
       // Return the complete base64 image string
       return `data:${contentType};base64,${base64}`;
-    } catch (error) {
+    } catch (error:any) {
       throw new HttpException(
         {
           message: `Failed to convert image URL to base64: ${error.message}`,
@@ -1922,14 +1922,36 @@ export class UserService extends GenericService(User) {
     return user;
   }
 
-  async incrementUserBalance(email: string, amount: number): Promise<User> {
-    if (amount <= 0) {
-      throw new BadRequestException('Amount must be greater than zero');
-    }
+async incrementUserBalance(email: string, amount: number): Promise<User> {
+  if (amount <= 0) {
+    throw new BadRequestException('Amount must be greater than zero');
+  }
+  try {
     const user = await this.findUserByEmail(email);
     user.walletBalance += amount;
-    return this.getRepo().save(user);
+    return await this.getRepo().save(user);
+  } catch (error) {
+    if (error instanceof BadRequestException || error instanceof NotFoundException) {
+      throw error;
+    }
+    throw new InternalServerErrorException('Failed to increment user balance');
   }
+}
+
+async setBalanceToZero(email: string): Promise<User> {
+  try {
+    const user = await this.findUserByEmail(email);
+    user.walletBalance = 0;
+    return await this.getRepo().save(user);
+  } catch (error) {
+    if (error instanceof NotFoundException) {
+      throw error;
+    }
+    throw new InternalServerErrorException('Failed to reset user balance');
+  }
+}
+
+
   async findUserByPhoneNumber(phoneNumber: string): Promise<User> {
     const user = await this.getRepo().findOne({ where: { phoneNumber } });
     if (!user) {

@@ -49,11 +49,6 @@ export class EventSpraayService extends GenericService(EventSpraay) {
     super();
   }
 
-
-
-  // ANYTIME THIS IS CALLED THE SPARY EMMISION WILL BE CALLED TOO FROM THE APP SOCKET
-  // ANYTIME THIS IS CALLED THE SPARY EMMISION WILL BE CALLED TOO FROM THE APP SOCKET
-  // ANYTIME THIS IS CALLED THE SPARY EMMISION WILL BE CALLED TOO FROM THE APP SOCKET
   // ANYTIME THIS IS CALLED THE SPARY EMMISION WILL BE CALLED TOO FROM THE APP SOCKET
   // ANYTIME THIS IS CALLED THE SPARY EMMISION WILL BE CALLED TOO FROM THE APP SOCKET
   // ANYTIME THIS IS CALLED THE SPARY EMMISION WILL BE CALLED TOO FROM THE APP SOCKET
@@ -87,6 +82,11 @@ export class EventSpraayService extends GenericService(EventSpraay) {
     }
     await this.userSrv.checkAccountBalance(payload.amount, user.id);
     const event = await this.eventSrv.findEventById(payload.eventId);
+    if (this.eventSrv.isEventExpired(event.data)) {
+      throw new BadRequestException(
+        'This event has ended. You can no longer spraay at a past event',
+      );
+    }
     if (event.data.userId === user.id) {
       throw new ConflictException('Cannot spraay at your own event');
     }
@@ -389,123 +389,7 @@ export class EventSpraayService extends GenericService(EventSpraay) {
     }
   }
 
-  // async aggregateTotalEventSpraaySumPerDay(): Promise<any> {
-  //   try {
-  //     const currentDate = new Date();
-  //     const startDate = new Date(currentDate.getTime() - 10 * 24 * 60 * 60 * 1000); // 10 days ago
 
-  //     // Format start and end dates to match the transaction date format
-  //     const startDateISO = startDate.toISOString().split('T')[0];
-  //     const currentDateISO = currentDate.toISOString().split('T')[0];
-
-  //     const eventSpraays = await this.eventSpraayRepository.find({
-  //       where: {
-  //         createdAt: Between(startDateISO, currentDateISO),
-  //       },
-  //     });
-
-  //     const aggregatedData = {};
-
-  //     eventSpraays.forEach((eventSpraay) => {
-  //       // Get the date part from the eventSpraay createdAt timestamp
-  //       const dateKey = eventSpraay.createdAt.toISOString().split('T')[0];
-
-  //       if (!aggregatedData[dateKey]) {
-  //         aggregatedData[dateKey] = 0;
-  //       }
-
-  //       aggregatedData[dateKey] += eventSpraay.amount;
-  //     });
-
-  //     // Fill in 0 for days with no data in the past 10 days
-  //     for (let i = 0; i < 10; i++) {
-  //       const dateKey = new Date(currentDate.getTime() - i * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
-
-  //       if (!aggregatedData[dateKey]) {
-  //         aggregatedData[dateKey] = 0;
-  //       }
-  //     }
-
-  //     return {
-  //       success: true,
-  //       message: 'Total event spraay sum aggregated per day for the past 10 days',
-  //       code: HttpStatus.OK,
-  //       data: aggregatedData,
-  //     };
-  //   } catch (error) {
-  //     console.error('Error in aggregateTotalEventSpraaySumPerDay:', error);
-
-  //     return {
-  //       success: false,
-  //       message: 'Failed to aggregate total event spraay sum per day',
-  //       code: HttpStatus.INTERNAL_SERVER_ERROR,
-  //       error: error.message,
-  //     };
-  //   }
-  // }
-  // async aggregateTotalEventSpraaySumPerDay(dateRangeDto: TransactionDateRangeDto): Promise<any> {
-  //   try {
-  //     const { startDate, endDate } = dateRangeDto;
-  
-  //     // Fetch event spraays within the specified date range
-  //     const eventSpraays = await this.getRepo().find({
-  //       where: {
-  //         dateCreated: Between(startDate, endDate),
-  //       },
-  //     });
-  
-  //     const aggregatedData = {};
-  
-  //     eventSpraays.forEach((eventSpraay) => {
-  //       // Get the date part from the eventSpraay dateCreated timestamp
-  //       const dateKey = eventSpraay.dateCreated.toISOString().split('T')[0];
-  
-  //       if (!aggregatedData[dateKey]) {
-  //         aggregatedData[dateKey] = 0;
-  //       }
-  
-  //       aggregatedData[dateKey] += eventSpraay.amount;
-  //     });
-  
-  //     // Fill in 0 for days with no data in the specified date range
-  //     const start = new Date(startDate);
-  //     const end = new Date(endDate);
-  //     const daysInRange = Math.floor((end.getTime() - start.getTime()) / (24 * 60 * 60 * 1000));
-  
-  //     for (let i = 0; i <= daysInRange; i++) {
-  //       const dateKey = new Date(start.getTime() + i * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
-  
-  //       if (!aggregatedData[dateKey]) {
-  //         aggregatedData[dateKey] = 0;
-  //       }
-  //     }
-  
-  //     // Sort the date keys chronologically
-  //     const sortedKeys = Object.keys(aggregatedData).sort();
-  
-  //     // Format the date keys in the expected format "YYYY-MM-DD"
-  //     const formattedData = {};
-  //     sortedKeys.forEach((date) => {
-  //       formattedData[date] = aggregatedData[date];
-  //     });
-  
-  //     return {
-  //       success: true,
-  //       message: 'Total event spraay sum aggregated per day for the specified date range',
-  //       code: HttpStatus.OK,
-  //       data: formattedData,
-  //     };
-  //   } catch (error) {
-  //     console.error('Error in aggregateTotalEventSpraaySumPerDay:', error);
-  
-  //     return {
-  //       success: false,
-  //       message: 'Failed to aggregate total event spraay sum per day',
-  //       code: HttpStatus.INTERNAL_SERVER_ERROR,
-  //       error: error.message,
-  //     };
-  //   }
-  // }
 
   async aggregateTotalEventSpraaySumPerDay(dateRangeDto: TransactionDateRangeDto): Promise<any> {
     try {
@@ -562,7 +446,7 @@ export class EventSpraayService extends GenericService(EventSpraay) {
         data: formattedData,
         totalCount,
       };
-    } catch (error) {
+    } catch (error:any) {
       console.error('Error in aggregateTotalEventSpraaySumPerDay:', error);
   
       return {

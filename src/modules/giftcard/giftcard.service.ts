@@ -381,30 +381,38 @@ export class GiftcardService extends GenericService(
     try {
       const response = await axios.post(url, orderDto, { headers });
       return { data: response.data, success: true };
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error placing order:', error);
       // throw new Error('Failed to place order.');
       throw new BadGatewayException(error.message);
     }
   }
   async createGiftCardPurchase(payload: CreateGiftCardProviderDTO): Promise<any> {
-    console.log("Giftcard payload:",payload)
+    // Never log the raw payload — it carries the transaction PIN.
+    const { transactionPin, ...safePayload } = payload;
+    this.logger.debug({
+      message: 'createGiftCardPurchase called',
+      payload: {
+        ...safePayload,
+        recipientEmail: payload.recipientEmail,
+        hasTransactionPin: Boolean(transactionPin),
+      },
+    });
     try {
       checkForRequiredFields(
         ['productId', 'unitPrice', 'quantity', 'transactionPin', 'recipientEmail'],
         payload,
       );
-
       if (!payload.recipientEmail || !payload.senderName) {
         throw new BadGatewayException(`Invalid recipient email or name`);
       }
 
       await this.userSrv.verifyTransactionPin(payload.userid, payload.transactionPin);
       const plan = await this.getProductById(payload.productId);
-      
+
       const convertedRate = await this.getFxRate(plan.data.recipientCurrencyCode, payload.unitPrice * payload.quantity);
       const RealNairaEquivalentOfCard = convertedRate.data.senderAmount;
-      console.log("RealNairaEquivalentOfCard",RealNairaEquivalentOfCard)
+      console.log("RealNairaEquivalentOfCard", RealNairaEquivalentOfCard)
 
       await this.userSrv.checkAccountBalance(RealNairaEquivalentOfCard, payload.userid);
 
@@ -434,7 +442,7 @@ export class GiftcardService extends GenericService(
         type: TransactionType.DEBIT,
         transactionStatus: PaymentStatus.SUCCESSFUL,
         reference,
-        transactionDate:new Date().toLocaleString(),
+        transactionDate: new Date().toLocaleString(),
         currentBalanceBeforeTransaction: userToUse.walletBalance,
       });
 

@@ -219,20 +219,7 @@ export class AdminDashboardController {
     return totalAppProfit;
   }
 
-  // @Get('/transaction/aggregate-total')
-  // @ApiResponse({
-  //   status: HttpStatus.OK,
-  //   description:
-  //     'Total transaction sum aggregated per day ',
-  // })
-  // @ApiResponse({
-  //   status: HttpStatus.INTERNAL_SERVER_ERROR,
-  //   description: 'Failed to aggregate total transaction sum per day',
-  // })
-  // // @Query() dateRangeDto: TransactionDateRangeDto,
-  // async aggregateTotalTransactionSumPerDay(): Promise<any> {
-  //   return await this.transactionSrv.aggregateTotalTransactionSumPerDay();
-  // }
+
 
   @Get('eventspray/aggregate-total-sum-per-day')
   @ApiResponse({
@@ -354,96 +341,6 @@ export class AdminDashboardController {
   }> {
     return this.eventSrv.getTotalEventsByVenueWithPercentage();
   }
-
-  // @Get('bill/total-amount-for-date-range')
-  // async getTotalSumPerRepo(
-  //   @Query() dateRange: TransactionDateRangeDto,
-  // ): Promise<{ repo: string; sum: number }[]> {
-  //   const { startDate, endDate } = dateRange;
-  //   const results = [];
-
-  //   // Calculate total sum for electricityPurchaseSrv
-  //   const electricitySum = await this.electricityPurchaseSrv
-  //     .getRepo()
-  //     .createQueryBuilder('entity')
-  //     .select('SUM(entity.amount)', 'sum')
-  //     .where('entity.dateCreated BETWEEN :startDate AND :endDate', {
-  //       startDate,
-  //       endDate,
-  //     })
-  //     .getRawOne();
-
-  //   results.push({
-  //     repo: 'electricity',
-  //     sum: parseFloat(electricitySum.sum) || 0,
-  //   });
-
-  //   // Calculate total sum for dataPurchaseSrv
-  //   const dataSum = await this.dataPurchaseSrv
-  //     .getRepo()
-  //     .createQueryBuilder('entity')
-  //     .select('SUM(entity.amount)', 'sum')
-  //     .where('entity.dateCreated BETWEEN :startDate AND :endDate', {
-  //       startDate,
-  //       endDate,
-  //     })
-  //     .getRawOne();
-
-  //   results.push({
-  //     repo: 'data',
-  //     sum: parseFloat(dataSum.sum) || 0,
-  //   });
-
-  //   // Calculate total sum for airtimePurchaseSrv
-  //   const airtimeSum = await this.airtimePurchaseSrv
-  //     .getRepo()
-  //     .createQueryBuilder('entity')
-  //     .select('SUM(entity.amount)', 'sum')
-  //     .where('entity.dateCreated BETWEEN :startDate AND :endDate', {
-  //       startDate,
-  //       endDate,
-  //     })
-  //     .getRawOne();
-
-  //   results.push({
-  //     repo: 'airtime',
-  //     sum: parseFloat(airtimeSum.sum) || 0,
-  //   });
-
-  //   // Calculate total sum for cablePurchaseSrv
-  //   const cableSum = await this.cablePurchaseSrv
-  //     .getRepo()
-  //     .createQueryBuilder('entity')
-  //     .select('SUM(entity.amount)', 'sum')
-  //     .where('entity.dateCreated BETWEEN :startDate AND :endDate', {
-  //       startDate,
-  //       endDate,
-  //     })
-  //     .getRawOne();
-
-  //   results.push({
-  //     repo: 'cable',
-  //     sum: parseFloat(cableSum.sum) || 0,
-  //   });
-
-  //   // Calculate total sum for bettingPurchaseSrv
-  //   const bettingSum = await this.bettingPurchaseSrv
-  //     .getRepo()
-  //     .createQueryBuilder('entity')
-  //     .select('SUM(entity.amount)', 'sum')
-  //     .where('entity.dateCreated BETWEEN :startDate AND :endDate', {
-  //       startDate,
-  //       endDate,
-  //     })
-  //     .getRawOne();
-
-  //   results.push({
-  //     repo: 'betting',
-  //     sum: parseFloat(bettingSum.sum) || 0,
-  //   });
-
-  //   return results;
-  // }
 
   @Get('bill/total-amount-for-date-range')
   async getTotalSumPerRepo(

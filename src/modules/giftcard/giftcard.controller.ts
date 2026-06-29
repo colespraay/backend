@@ -110,7 +110,7 @@ export class GiftcardController {
           countryCode,
         );
         return result
-      } catch (error) {
+      } catch (error:any) {
         throw new HttpException(
           {
             success: false,
