@@ -30,6 +30,7 @@ import {
   AppProfit,
   BettingPurchase,
   GiftCard,
+  VirtualNumberOrder,
 } from './index';
 
 @Entity({ name: 'user' })
@@ -275,6 +276,9 @@ export class User extends Base {
   @ApiProperty({ type: () => [AppProfit] })
   @OneToMany(() => AppProfit, ({ payoutUser }) => payoutUser, { cascade: true })
   appProfits: AppProfit[];
+
+  @OneToMany(() => VirtualNumberOrder, (order) => order.user)
+   virtualNumberOrders: VirtualNumberOrder[];
 
   @BeforeInsert()
   async beforeInsertHandler(): Promise<void> {

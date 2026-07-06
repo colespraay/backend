@@ -22,6 +22,7 @@ import {
   AppProfit,
   BettingPurchase,
   GiftCard,
+  VirtualNumberOrder,
 } from './index';
 
 @Entity({ name: 'transaction_record' })
@@ -174,6 +175,10 @@ export class TransactionRecord extends Base {
   @OneToMany(() => AppProfit, ({ transaction }) => transaction, { cascade: true })
   appProfits: AppProfit[];
 
+  @OneToMany(() => VirtualNumberOrder, (order) => order.transaction)
+   virtualNumberOrders: VirtualNumberOrder[];
+
+   
   @BeforeInsert()
   beforeInsertHandler(): void {
     this.id = uuidV4();

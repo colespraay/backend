@@ -45,6 +45,7 @@ import { SprayEmitterRealtimeModule } from './modules/spray-emitter-realtime/spr
 import { GiftcardModule } from './modules/giftcard/giftcard.module';
 import { CryptoModule } from './modules/crypto/crypto.module';
 import { QuidaxorderModule } from './modules/quidaxorder/quidaxorder.module';
+import { VirtualNumberModule } from './modules/virtual-number/virtual-number.module';
 
 import ormConfig from './orm.config';
 
@@ -84,6 +85,7 @@ import ormConfig from './orm.config';
     GiftcardModule,
     CryptoModule,
     QuidaxorderModule,
+    VirtualNumberModule,
     // AdmindashboardModule,
   ],
   controllers: [AppController],
