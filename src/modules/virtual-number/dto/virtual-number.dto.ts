@@ -6,6 +6,8 @@ import {
   IsInt,
   IsPositive,
   IsUUID,
+  IsNumber,
+  IsEnum,
 } from 'class-validator';
 
 
@@ -71,4 +73,103 @@ export class CancelOrderDto {
   @ApiProperty({ description: 'ID of the user cancelling the order' })
   @IsUUID()
   userid: string;
+}
+
+
+export class ListAllOrdersDto {
+    @ApiPropertyOptional({ description: 'Page number', default: 1 })
+    @IsOptional()
+    @IsNumber()
+    @IsPositive()
+    page?: number;
+
+    @ApiPropertyOptional({ description: 'Items per page', default: 10 })
+    @IsOptional()
+    @IsNumber()
+    @IsPositive()
+    limit?: number;
+
+    @ApiPropertyOptional({ description: 'Filter by status', enum: VirtualNumberStatus })
+    @IsOptional()
+    @IsEnum(VirtualNumberStatus)
+    status?: VirtualNumberStatus;
+
+    @ApiPropertyOptional({ description: 'Filter by service code' })
+    @IsOptional()
+    @IsString()
+    service?: string;
+
+    @ApiPropertyOptional({ description: 'Filter by country code' })
+    @IsOptional()
+    @IsString()
+    country?: string;
+
+    @ApiPropertyOptional({ description: 'Filter by user ID' })
+    @IsOptional()
+    @IsString()
+    userId?: string;
+}
+
+export class VirtualNumberOrderResponseDto {
+    @ApiProperty()
+    id: string;
+
+    @ApiProperty()
+    service: {
+        code: string;
+        name: string;
+        icon: string;
+    };
+
+    @ApiProperty()
+    country: {
+        code: string;
+        name: string;
+        flag: string;
+    };
+
+    @ApiProperty()
+    phoneNumber: string;
+
+    @ApiProperty({ nullable: true })
+    smsCode: string | null;
+
+    @ApiProperty()
+    amount: number;
+
+    @ApiProperty()
+    amountUsd: string;
+
+    @ApiProperty()
+    date: Date;
+
+    @ApiProperty({ nullable: true })
+    user: {
+        id: string;
+        name: string;
+        email: string;
+    } | null;
+
+    @ApiProperty({ enum: VirtualNumberStatus })
+    status: VirtualNumberStatus;
+}
+
+export class AdminDashboardResponseDto {
+    @ApiProperty()
+    totalVerifications: number;
+
+    @ApiProperty()
+    completedVerifications: number;
+
+    @ApiProperty()
+    cancelledVerifications: number;
+
+    @ApiProperty()
+    timedOutVerifications: number;
+
+    @ApiProperty()
+    totalRevenue: number;
+
+    @ApiProperty()
+    totalProfit: number;
 }

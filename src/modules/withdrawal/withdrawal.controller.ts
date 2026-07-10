@@ -42,7 +42,7 @@ export class WithdrawalController {
   @ApiQuery({ name: 'page', required: false, type: Number })
   @ApiQuery({ name: 'limit', required: false, type: Number })
   @Get('pending')
-  @Roles('ADMIN') // TODO: Add your specific Admin Role decorator here
+@Roles(AppRole.ADMIN) 
   async getPendingWithdrawals(
     @Query('page') page: number = 1,
     @Query('limit') limit: number = 10,
@@ -52,14 +52,14 @@ export class WithdrawalController {
 
   @ApiOperation({ description: 'Approve a pending withdrawal (Admin)' })
   @Post('approve/:id')
-  @Roles(AppRole.ADMIN) // TODO: Add your specific Admin Role decorator here
+@Roles(AppRole.ADMIN) 
   async approveWithdrawal(@Param('id') id: string) {
     return await this.withdrawalSrv.approveWithdrawal(id);
   }
 
   @ApiOperation({ description: 'Decline a pending withdrawal (Admin)' })
   @Post('decline/:id')
-   @Roles(AppRole.ADMIN) // TODO: Add your specific Admin Role decorator here
+  @Roles(AppRole.ADMIN) 
   async declineWithdrawal(@Param('id') id: string) {
     return await this.withdrawalSrv.declineWithdrawal(id);
   }

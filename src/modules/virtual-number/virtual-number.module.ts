@@ -8,6 +8,7 @@ import { VirtualNumberController } from './virtual-number.controller';
 
 import { VirtualNumberOrder } from '@entities/index';
 import { VirtualNumberService } from './virtual-number.service';
+import { AdminVirtualNumberController } from './AdminVirtualNumber.controller';
 
 @Module({
   imports: [
@@ -20,7 +21,7 @@ import { VirtualNumberService } from './virtual-number.service';
     WalletModule,
     TransactionModule,
   ],
-  controllers: [VirtualNumberController],
+  controllers: [VirtualNumberController,AdminVirtualNumberController],
   providers: [VirtualNumberService],
   exports: [VirtualNumberService],
 })

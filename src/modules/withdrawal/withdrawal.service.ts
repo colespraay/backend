@@ -167,7 +167,7 @@ export class WithdrawalService extends GenericService(Withdrawal) {
       // Cast to 'any' to bypass the TypeScript error. 
       // If your Base entity uses a different name (like 'created_at' or 'dateCreated'), 
       // change 'createdAt' to the exact property name used in your code.
-      order: { createdAt: 'DESC' } as any, 
+      // order: { createdAt: 'DESC' } as any, 
     });
 
     return {

@@ -18,7 +18,7 @@ import {
 import { UserService } from '@modules/user/user.service';
 import { WalletService } from '@modules/wallet/wallet.service';
 import { TransactionService } from '@modules/transaction/transaction.service';
-import { BuyVirtualNumberDto, ListOrdersDto } from './dto/virtual-number.dto';
+import { BuyVirtualNumberDto, ListAllOrdersDto, ListOrdersDto } from './dto/virtual-number.dto';
 import {
     VIRTUAL_NUMBER_COUNTRIES,
     VirtualNumberCountry,
@@ -642,4 +642,243 @@ export class VirtualNumberService extends GenericService(VirtualNumberOrder) {
             }
         }
     }
+
+
+
+
+
+
+// ---------------------------------------------------------------------
+// Admin Dashboard & Global Statistics
+// Admin Dashboard & Global Statistics
+// Admin Dashboard & Global Statistics
+// Admin Dashboard & Global Statistics
+// Admin Dashboard & Global Statistics
+// Admin Dashboard & Global Statistics
+// Admin Dashboard & Global Statistics
+// Admin Dashboard & Global Statistics
+// ---------------------------------------------------------------------
+
+async getAdminDashboard() {
+    const repo = this.getRepo();
+    
+    // Get all statistics across all users
+    const [
+        totalVerifications,
+        completedVerifications,
+        cancelledVerifications,
+        timedOutVerifications,
+        allOrders,
+    ] = await Promise.all([
+        repo.count(),
+        repo.count({ where: { orderStatus: VirtualNumberStatus.COMPLETED } }),
+        repo.count({ where: { orderStatus: VirtualNumberStatus.CANCELLED } }),
+        repo.count({ where: { orderStatus: VirtualNumberStatus.TIMEOUT } }),
+        repo.find({
+            where: { orderStatus: VirtualNumberStatus.COMPLETED },
+            select: ['amountNgn', 'providerCostUsd'],
+        }),
+    ]);
+
+    // Calculate total revenue and profit
+    let totalRevenue = 0;
+    let totalProfit = 0;
+
+    allOrders.forEach((order: any) => {
+        totalRevenue += order.amountNgn || 0;
+        // Profit = amountNgn - (providerCostUsd * fxRate)
+        const providerCostNgn = (order.providerCostUsd || 0) * (order.fxRateUsed || 1);
+        totalProfit += (order.amountNgn || 0) - providerCostNgn;
+    });
+
+    return {
+        success: true,
+        code: HttpStatus.OK,
+        data: {
+            totalVerifications,
+            completedVerifications,
+            cancelledVerifications,
+            timedOutVerifications,
+            totalRevenue: Number(totalRevenue.toFixed(2)),
+            totalProfit: Number(totalProfit.toFixed(2)),
+        },
+        message: 'Admin dashboard statistics fetched successfully',
+    };
+}
+
+async listAllOrders(query: ListAllOrdersDto) {
+    const page = query.page && query.page > 0 ? query.page : 1;
+    const limit = query.limit && query.limit > 0 ? query.limit : 10;
+
+    const where: any = {};
+    
+    if (query.status) where.orderStatus = query.status;
+    if (query.service) where.serviceCode = query.service;
+    if (query.country) where.countryCode = query.country;
+    if (query.userId) where.userId = query.userId;
+
+    const [orders, count] = await this.getRepo().findAndCount({
+        where,
+        relations: ['user', 'transaction'],
+        order: { createdTime: 'DESC' },
+        skip: (page - 1) * limit,
+        take: limit,
+    });
+
+    const ordersWithUser = orders.map((order) => ({
+        id: order.id,
+        service: {
+            code: order.serviceCode,
+            name: order.serviceName,
+            icon: this.getServiceIcon(order.serviceCode),
+        },
+        country: {
+            code: order.countryCode,
+            name: order.countryName,
+            flag: this.getCountryFlag(order.countryCode),
+        },
+        phoneNumber: order.phoneNumber,
+        smsCode: order.smsCode,
+        amount: order.amountNgn,
+        amountUsd: `$${(order.amountNgn / (order.fxRateUsed || 1)).toFixed(2)}`,
+        date: order.createdTime,
+        user: order.user 
+            ? {
+                  id: order.user.id,
+                  name: `${order.user.firstName || ''} ${order.user.lastName || ''}`.trim(),
+                  email: order.user.email,
+              }
+            : null,
+        status: order.orderStatus,
+        expiresAt: order.expiresAt,
+        activationId: order.activationId,
+    }));
+
+    return {
+        success: true,
+        code: HttpStatus.OK,
+        data: {
+            orders: ordersWithUser,
+            page,
+            limit,
+            total: count,
+            totalPages: Math.ceil(count / limit),
+        },
+        message: 'All orders fetched successfully',
+    };
+}
+
+async getOrderDetailAdmin(orderId: string) {
+    const order = await this.getRepo().findOne({
+        where: { id: orderId },
+        relations: ['user', 'transaction'],
+    });
+
+    if (!order) {
+        throw new NotFoundException('Virtual number order not found');
+    }
+
+    const refreshedOrder = await this.refreshOrderFromProvider(order);
+
+    return {
+        success: true,
+        code: HttpStatus.OK,
+        data: {
+            ...refreshedOrder,
+            user: refreshedOrder.user
+                ? {
+                      id: refreshedOrder.user.id,
+                      name: `${refreshedOrder.user.firstName || ''} ${
+                          refreshedOrder.user.lastName || ''
+                      }`.trim(),
+                      email: refreshedOrder.user.email,
+                      phoneNumber: refreshedOrder.user.phoneNumber,
+                  }
+                : null,
+        },
+        message: 'Order details fetched successfully',
+    };
+}
+
+async refreshOrderAdmin(orderId: string) {
+    const order = await this.getRepo().findOne({
+        where: { id: orderId },
+        relations: ['user'],
+    });
+
+    if (!order) {
+        throw new NotFoundException('Virtual number order not found');
+    }
+
+    const refreshedOrder = await this.refreshOrderFromProvider(order);
+
+    return {
+        success: true,
+        code: HttpStatus.OK,
+        data: refreshedOrder,
+        message: 'Order refreshed successfully',
+    };
+}
+
+async cancelOrderAdmin(orderId: string) {
+    const order = await this.getRepo().findOne({
+        where: { id: orderId },
+        relations: ['user'],
+    });
+
+    if (!order) {
+        throw new NotFoundException('Virtual number order not found');
+    }
+
+    if (
+        ![
+            VirtualNumberStatus.WAITING_SMS,
+            VirtualNumberStatus.RECEIVED,
+            VirtualNumberStatus.PENDING,
+        ].includes(order.orderStatus)
+    ) {
+        throw new BadRequestException('This order can no longer be cancelled');
+    }
+
+    await this.setStatus(order.activationId, ProviderSetStatus.CANCEL).catch((err) => {
+        console.error('Provider cancel failed, proceeding with local cancel/refund:', err.message);
+    });
+
+    order.orderStatus = VirtualNumberStatus.CANCELLED;
+    await this.refundIfNeeded(order);
+    await this.getRepo().save(order);
+
+    return {
+        success: true,
+        code: HttpStatus.OK,
+        data: order,
+        message: 'Order cancelled successfully',
+    };
+}
+
+// Helper methods for icons/flags
+private getServiceIcon(serviceCode: string): string {
+    const serviceIcons: Record<string, string> = {
+        wa: 'whatsapp',
+        whatsapp: 'whatsapp',
+        tg: 'telegram',
+        telegram: 'telegram',
+        go: 'google',
+        fb: 'facebook',
+        ig: 'instagram',
+    };
+    return serviceIcons[serviceCode.toLowerCase()] || 'default';
+}
+
+private getCountryFlag(countryCode: string): string {
+    // Returns emoji flag or country code
+    const countryFlags: Record<string, string> = {
+        ca: '🇨🇦',
+        us: '🇸',
+        gb: '🇬🇧',
+        ng: '🇳🇬',
+        // Add more as needed
+    };
+    return countryFlags[countryCode.toLowerCase()] || countryCode.toUpperCase();
+}
 }
