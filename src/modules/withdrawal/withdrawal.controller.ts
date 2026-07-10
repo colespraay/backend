@@ -1,4 +1,4 @@
-import { Body, Post, Controller, UseGuards } from '@nestjs/common';
+import { Body, Post, Controller, UseGuards, Get, Query, Param } from '@nestjs/common';
 import {
   ApiBearerAuth,
   ApiTags,
@@ -6,9 +6,10 @@ import {
   ApiResponse,
   ApiProduces,
   ApiConsumes,
+  ApiQuery,
 } from '@nestjs/swagger';
-import { CurrentUser, RolesGuard, SetRequestTimeout } from '@schematics/index';
-import { DecodedTokenKey } from '@utils/index';
+import { CurrentUser, Roles, RolesGuard, SetRequestTimeout } from '@schematics/index';
+import { AppRole, DecodedTokenKey } from '@utils/index';
 import { WithdrawalService } from './withdrawal.service';
 import {
   CreateWithdrawalDTO,
@@ -33,5 +34,33 @@ export class WithdrawalController {
     @CurrentUser(DecodedTokenKey.USER_ID) userId: string,
   ): Promise<WithdrawalResponseDTO> {
     return await this.withdrawalSrv.makeWithdrawal(payload, userId);
+  }
+
+  // --- NEW ADMIN ENDPOINTS ---
+
+  @ApiOperation({ description: 'Get pending withdrawals (Admin)' })
+  @ApiQuery({ name: 'page', required: false, type: Number })
+  @ApiQuery({ name: 'limit', required: false, type: Number })
+  @Get('pending')
+  @Roles('ADMIN') // TODO: Add your specific Admin Role decorator here
+  async getPendingWithdrawals(
+    @Query('page') page: number = 1,
+    @Query('limit') limit: number = 10,
+  ) {
+    return await this.withdrawalSrv.getPendingWithdrawals(page, limit);
+  }
+
+  @ApiOperation({ description: 'Approve a pending withdrawal (Admin)' })
+  @Post('approve/:id')
+  @Roles(AppRole.ADMIN) // TODO: Add your specific Admin Role decorator here
+  async approveWithdrawal(@Param('id') id: string) {
+    return await this.withdrawalSrv.approveWithdrawal(id);
+  }
+
+  @ApiOperation({ description: 'Decline a pending withdrawal (Admin)' })
+  @Post('decline/:id')
+   @Roles(AppRole.ADMIN) // TODO: Add your specific Admin Role decorator here
+  async declineWithdrawal(@Param('id') id: string) {
+    return await this.withdrawalSrv.declineWithdrawal(id);
   }
 }
