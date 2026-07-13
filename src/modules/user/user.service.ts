@@ -1264,55 +1264,87 @@ export class UserService extends GenericService(User) {
     }
   }
 
-  async creditUserWallet(
-    payload: CreditUserWalletDTO,
-  ): Promise<BaseResponseTypeDTO> {
-    try {
-      checkForRequiredFields(['amount', 'userId'], payload);
-      validateUUIDField(payload.userId, 'userId');
-      const user = await this.findUserById(payload.userId);
-      const newBalance =
-        Number(user.data.walletBalance) + Number(payload.amount);
-      await this.getRepo().update(
-        { id: payload.userId },
-        { walletBalance: newBalance },
-      );
-      return {
-        success: true,
-        code: HttpStatus.OK,
-        message: 'Wallet credited',
-      };
-    } catch (ex) {
-      this.logger.error(ex);
-      throw ex;
-    }
-  }
+async creditUserWallet(
+  payload: CreditUserWalletDTO,
+): Promise<BaseResponseTypeDTO> {
+  try {
+    checkForRequiredFields(['amount', 'userId'], payload);
+    validateUUIDField(payload.userId, 'userId');
 
-  async debitUserWallet(
-    payload: CreditUserWalletDTO,
-  ): Promise<BaseResponseTypeDTO> {
-    try {
-      checkForRequiredFields(['amount', 'userId'], payload);
-      validateUUIDField(payload.userId, 'userId');
-      const user = await this.findUserById(payload.userId);
-      if (payload.amount <= user.data.walletBalance) {
-        const newBalance =
-          Number(user.data.walletBalance) - Number(payload.amount);
-        await this.getRepo().update(
-          { id: payload.userId },
-          { walletBalance: newBalance },
-        );
-      }
-      return {
-        success: true,
-        code: HttpStatus.OK,
-        message: 'Wallet credited',
-      };
-    } catch (ex) {
-      this.logger.error(ex);
-      throw ex;
+    const amount = Number(payload.amount);
+    if (!Number.isFinite(amount) || amount <= 0) {
+      throw new BadRequestException('Amount must be a positive number');
     }
+
+    const result = await this.getRepo()
+      .createQueryBuilder()
+      .update(User)
+      .set({ walletBalance: () => `"walletBalance" + :amount` })
+      .where('id = :id', { id: payload.userId })
+      .setParameters({ amount })
+      .execute();
+
+    if (!result.affected) {
+      throw new NotFoundException('User not found');
+    }
+
+    return {
+      success: true,
+      code: HttpStatus.OK,
+      message: 'Wallet credited',
+    };
+  } catch (ex) {
+    this.logger.error(ex);
+    throw ex;
   }
+}
+
+async debitUserWallet(
+  payload: CreditUserWalletDTO,
+): Promise<BaseResponseTypeDTO> {
+  try {
+    checkForRequiredFields(['amount', 'userId'], payload);
+    validateUUIDField(payload.userId, 'userId');
+
+    const amount = Number(payload.amount);
+    if (!Number.isFinite(amount) || amount <= 0) {
+      throw new BadRequestException('Amount must be a positive number');
+    }
+
+    // Atomic, conditional update: only debits if the balance is sufficient
+    // at the moment of the write, avoiding read-then-write race conditions.
+    const result = await this.getRepo()
+      .createQueryBuilder()
+      .update(User)
+      .set({ walletBalance: () => `"walletBalance" - :amount` })
+      .where('id = :id', { id: payload.userId })
+      .andWhere('"walletBalance" >= :amount', { amount })
+      .setParameters({ amount })
+      .execute();
+
+    if (!result.affected) {
+      // Either the user doesn't exist, or the balance was insufficient
+      // at the time of the update. Distinguish for a clearer error.
+      const user = await this.getRepo().findOne({
+        where: { id: payload.userId },
+        select: ['id'],
+      });
+      if (!user?.id) {
+        throw new NotFoundException('User not found');
+      }
+      throw new ConflictException('Insufficient balance');
+    }
+
+    return {
+      success: true,
+      code: HttpStatus.OK,
+      message: 'Wallet debited',
+    };
+  } catch (ex) {
+    this.logger.error(ex);
+    throw ex;
+  }
+}
 
   private async afterSignup(user: User): Promise<void> {
     try {

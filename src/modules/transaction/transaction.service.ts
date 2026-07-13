@@ -243,64 +243,71 @@ const transactions = await this.getRepo().find({
     }
   }
 
-  async createTransaction(
-    payload: CreateTransactionDTO,
-  ): Promise<TransactionResponseDTO> {
-    try {
-      checkForRequiredFields(
-        ['type', 'userId', 'amount', 'narration', 'transactionDate'],
+async createTransaction(
+  payload: CreateTransactionDTO,
+): Promise<TransactionResponseDTO> {
+  try {
+    checkForRequiredFields(
+      ['type', 'userId', 'amount', 'narration', 'transactionDate'],
+      payload,
+    );
+    if (
+      payload.currentBalanceBeforeTransaction < 0 &&
+      !payload.currentBalanceBeforeTransaction
+    ) {
+      throw new BadRequestException(
+        'Field currentBalanceBeforeTransaction is required',
+      );
+    }
+    compareEnumValueFields(
+      payload.type,
+      Object.values(TransactionType),
+      'type',
+    );
+
+    const amount = Number(payload.amount);
+    if (!Number.isFinite(amount) || amount <= 0) {
+      throw new BadRequestException('Amount must be a positive number');
+    }
+    payload.amount = amount;
+
+    const recordFound = await this.getRepo().findOne({
+      where: { reference: payload.reference, type: payload.type },
+      select: ['id'],
+    });
+    if (!recordFound?.id) {
+      const createdRecord = await this.create<Partial<TransactionRecord>>(
         payload,
       );
-      if (
-        payload.currentBalanceBeforeTransaction < 0 &&
-        !payload.currentBalanceBeforeTransaction
-      ) {
-        throw new BadRequestException(
-          'Field currentBalanceBeforeTransaction is required',
-        );
-      }
-      compareEnumValueFields(
-        payload.type,
-        Object.values(TransactionType),
-        'type',
-      );
-      const recordFound = await this.getRepo().findOne({
-        where: { reference: payload.reference, type: payload.type },
-        select: ['id'],
-      });
-      if (!recordFound?.id) {
-        const createdRecord = await this.create<Partial<TransactionRecord>>(
-          payload,
-        );
-        if (createdRecord.transactionStatus === PaymentStatus.SUCCESSFUL) {
-          switch (createdRecord.type) {
-            case TransactionType.CREDIT:
-              await this.userSrv.creditUserWallet({
-                amount: payload.amount,
-                userId: payload.userId,
-              });
-              break;
-            case TransactionType.DEBIT:
-              await this.userSrv.debitUserWallet({
-                amount: payload.amount,
-                userId: payload.userId,
-              });
-              break;
-          }
-          await this.sendEmailForTransactionNotification(createdRecord);
+      if (createdRecord.transactionStatus === PaymentStatus.SUCCESSFUL) {
+        switch (createdRecord.type) {
+          case TransactionType.CREDIT:
+            await this.userSrv.creditUserWallet({
+              amount: payload.amount,
+              userId: payload.userId,
+            });
+            break;
+          case TransactionType.DEBIT:
+            await this.userSrv.debitUserWallet({
+              amount: payload.amount,
+              userId: payload.userId,
+            });
+            break;
         }
-        return {
-          success: true,
-          code: HttpStatus.CREATED,
-          message: 'Transaction logged',
-          data: createdRecord,
-        };
+        await this.sendEmailForTransactionNotification(createdRecord);
       }
-    } catch (ex) {
-      this.logger.error(ex);
-      throw ex;
+      return {
+        success: true,
+        code: HttpStatus.CREATED,
+        message: 'Transaction logged',
+        data: createdRecord,
+      };
     }
+  } catch (ex) {
+    this.logger.error(ex);
+    throw ex;
   }
+}
 
   async findTransactions(
     payload: FindTransactionDTO,
