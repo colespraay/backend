@@ -200,10 +200,11 @@ export class TransactionService extends GenericService(TransactionRecord) {
     try {
       checkForRequiredFields(['userId'], { userId });
       validateUUIDField(userId, 'userId');
-      const transactions = await this.getRepo().find({
-        where: { userId, receiverUserId: Not(IsNull()) },
-        select: ['userId', 'receiverUserId'],
-      });
+const transactions = await this.getRepo().find({
+  where: { userId, receiverUserId: Not(IsNull()) },
+  select: ['userId', 'receiverUserId'],
+  order: { dateCreated: 'DESC' },
+});
       const receivers = [
         ...new Set(transactions.map(({ receiverUserId }) => receiverUserId)),
       ];
@@ -305,9 +306,9 @@ export class TransactionService extends GenericService(TransactionRecord) {
     payload: FindTransactionDTO,
   ): Promise<TransactionsResponseDTO> {
     try {
-      const filter: FindManyOptions<TransactionRecord> = {
-        order: { dateCreated: 'DESC' },
-      };
+const filter: FindManyOptions<TransactionRecord> = {
+  order: { dateCreated: 'DESC' },
+};
       if (payload.date) {
         filter.where = { ...filter.where, createdDate: payload.date };
       }
@@ -1159,7 +1160,7 @@ export class TransactionService extends GenericService(TransactionRecord) {
         code: HttpStatus.OK,
         data: { totalAmount: totalAmount },
       };
-    } catch (error) {
+    } catch (error: any) {
       return {
         success: false,
         message: 'Failed to calculate total transaction amount',
@@ -1228,11 +1229,12 @@ export class TransactionService extends GenericService(TransactionRecord) {
   }
   async getAllTransactions(paginationDto: TransPaginationDto): Promise<any> {
     try {
-      const { page, limit } = paginationDto;
-      const [transactions, totalCount] = await this.getRepo().findAndCount({
-        skip: (page - 1) * limit,
-        take: limit,
-      });
+    const { page, limit } = paginationDto;
+    const [transactions, totalCount] = await this.getRepo().findAndCount({
+      skip: (page - 1) * limit,
+      take: limit,
+      order: { dateCreated: 'DESC' },
+    });
 
       return {
         success: true,
@@ -1287,12 +1289,12 @@ export class TransactionService extends GenericService(TransactionRecord) {
   ): Promise<{ transactions: TransactionRecord[]; totalTransactions: number }> {
     const skip = (page - 1) * limit;
 
-    const [transactions, totalTransactions] = await this.getRepo().findAndCount({
-      where: { userId },
-      skip,
-      take: limit,
-      order: { transactionDate: 'DESC' },
-    });
+const [transactions, totalTransactions] = await this.getRepo().findAndCount({
+  where: { userId },
+  skip,
+  take: limit,
+  order: { dateCreated: 'DESC' },
+});
 
     return { transactions, totalTransactions };
   }
@@ -1358,11 +1360,13 @@ export class TransactionService extends GenericService(TransactionRecord) {
 
 
 
-  async findTransactionsByWildcardReference(reference: string): Promise<TransactionRecord[]> {
-    const queryBuilder = this.getRepo().createQueryBuilder('transactionRecord');
-    queryBuilder.where('transactionRecord.reference ILIKE :reference', { reference: `%${reference}%` });
+async findTransactionsByWildcardReference(reference: string): Promise<TransactionRecord[]> {
+  const queryBuilder = this.getRepo().createQueryBuilder('transactionRecord');
+  queryBuilder
+    .where('transactionRecord.reference ILIKE :reference', { reference: `%${reference}%` })
+    .orderBy('transactionRecord.dateCreated', 'DESC');
 
-    return await queryBuilder.getMany();
-  }
+  return await queryBuilder.getMany();
+}
 
 }

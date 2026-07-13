@@ -155,29 +155,25 @@ export class WithdrawalService extends GenericService(Withdrawal) {
 
   // --- NEW ADMIN METHODS ---
 
-  async getPendingWithdrawals(page: number = 1, limit: number = 10) {
-    const skip = (page - 1) * limit;
-    
-    // Use this.getRepo() to access native TypeORM methods for pagination
-    const [data, total] = await this.getRepo().findAndCount({
-      where: { paymentStatus: PaymentStatus.PENDING },
-      relations: ['user', 'userAccount', 'transaction'],
-      skip,
-      take: limit,
-      // Cast to 'any' to bypass the TypeScript error. 
-      // If your Base entity uses a different name (like 'created_at' or 'dateCreated'), 
-      // change 'createdAt' to the exact property name used in your code.
-      // order: { createdAt: 'DESC' } as any, 
-    });
+async getPendingWithdrawals(page: number = 1, limit: number = 10) {
+  const skip = (page - 1) * limit;
 
-    return {
-      data,
-      total,
-      page,
-      limit,
-      totalPages: Math.ceil(total / limit),
-    };
-  }
+  const [data, total] = await this.getRepo().findAndCount({
+    where: { paymentStatus: PaymentStatus.PENDING },
+    relations: ['user', 'userAccount', 'transaction'],
+    skip,
+    take: limit,
+    order: { dateCreated: 'DESC' },
+  });
+
+  return {
+    data,
+    total,
+    page,
+    limit,
+    totalPages: Math.ceil(total / limit),
+  };
+}
 
   async approveWithdrawal(withdrawalId: string) {
     // Use this.getRepo() to fetch with relations

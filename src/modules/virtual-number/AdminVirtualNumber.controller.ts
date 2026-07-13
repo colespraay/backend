@@ -17,9 +17,9 @@ import { RolesGuard } from '@schematics/index';
 import { VirtualNumberService } from './virtual-number.service';
 import { ListAllOrdersDto } from './dto/virtual-number.dto';
 
-// @UseGuards(RolesGuard)
-// @ApiBearerAuth('JWT')
-// @ApiTags('admin/virtual-numbers')
+@UseGuards(RolesGuard)
+@ApiBearerAuth('JWT')
+@ApiTags('admin/virtual-numbers')
 @Controller('admin/virtual-numbers')
 export class AdminVirtualNumberController {
     constructor(private readonly virtualNumberSrv: VirtualNumberService) {}

@@ -1087,29 +1087,30 @@ export class EventService extends GenericService(EventRecord) {
   }
 
 
-  async getAllEvents(paginationDto: EventPaginationDto): Promise<any> {
-    try {
-      const { page, limit } = paginationDto;
-      const [events, totalCount] = await this.getRepo().findAndCount({
-        skip: (page - 1) * limit,
-        take: limit,
-      });
+async getAllEvents(paginationDto: EventPaginationDto): Promise<any> {
+  try {
+    const { page, limit } = paginationDto;
+    const [events, totalCount] = await this.getRepo().findAndCount({
+      skip: (page - 1) * limit,
+      take: limit,
+      order: { dateCreated: 'DESC' },
+    });
 
-      return {
-        success: true,
-        message: 'Events retrieved successfully',
-        code: HttpStatus.OK,
-        data: { events: events, totalCount: totalCount },
-      };
-    } catch (error:any) {
-      return {
-        success: false,
-        message: 'Failed to retrieve events',
-        code: HttpStatus.INTERNAL_SERVER_ERROR,
-        error: error.message,
-      };
-    }
+    return {
+      success: true,
+      message: 'Events retrieved successfully',
+      code: HttpStatus.OK,
+      data: { events: events, totalCount: totalCount },
+    };
+  } catch (error: any) {
+    return {
+      success: false,
+      message: 'Failed to retrieve events',
+      code: HttpStatus.INTERNAL_SERVER_ERROR,
+      error: error.message,
+    };
   }
+}
 
   async getTotaleventAmountAndCount(
     dateRange: TransactionDateRangeDto,

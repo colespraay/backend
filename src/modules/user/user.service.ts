@@ -149,6 +149,7 @@ export class UserService extends GenericService(User) {
       );
       const filter: FindManyOptions<User> = {
         where: { role: AppRole.CUSTOMER },
+        order: { dateCreated: 'DESC' },
       };
       if (contacts?.length > 0) {
         filter.where = { ...filter.where, formattedPhoneNumber: In(contacts) };
@@ -448,7 +449,7 @@ export class UserService extends GenericService(User) {
         default:
         case OTPMedium.PHONE_NUMBER:
           const message = `Please copy the code below to verify your account\n ${token}`;
-           await sendSMS(message, record.phoneNumber, 'Verify Account');
+          await sendSMS(message, record.phoneNumber, 'Verify Account');
           responseMessage = 'Token has been sent to your phone-number via sms';
           break;
       }
@@ -703,7 +704,7 @@ export class UserService extends GenericService(User) {
   }
 
 
-    async findUserByQuidaxId(userId: string): Promise<UserResponseDTO> {
+  async findUserByQuidaxId(userId: string): Promise<UserResponseDTO> {
     try {
       const data = await this.getRepo().findOne({
         where: { quidax_user_id: userId },
@@ -776,7 +777,9 @@ export class UserService extends GenericService(User) {
     pagination?: PaginationRequestType,
   ): Promise<UsersResponseDTO> {
     try {
-      const filter: FindManyOptions<User> = {};
+      const filter: FindManyOptions<User> = {
+        order: { dateCreated: 'DESC' },
+      };
       if (
         typeof filterOptions.status !== 'undefined' &&
         filterOptions.status !== null
@@ -1367,7 +1370,7 @@ export class UserService extends GenericService(User) {
         const code = user.uniqueVerificationCode;
         const message = `Please use this OTP to validate your Spraay account: ${code}`;
         // await sendSMS(message, [user.phoneNumber], 'Verify Account');
-          await sendSMS(message, user.phoneNumber, 'Verify Account');
+        await sendSMS(message, user.phoneNumber, 'Verify Account');
       }
     } catch (ex) {
       this.logger.error(ex);
@@ -1446,7 +1449,7 @@ export class UserService extends GenericService(User) {
 
       const response = await axios.get(url, { headers });
       return response.data;
-    } catch (error:any) {
+    } catch (error: any) {
       console.log(error);
       if (error.response) {
         throw new HttpException(
@@ -1612,7 +1615,7 @@ export class UserService extends GenericService(User) {
       }
 
       return response.data;
-    } catch (error:any) {
+    } catch (error: any) {
       if (error.response) {
         // The request was made and the server responded with a status code
         // that falls out of the range of 2xx
@@ -1670,7 +1673,7 @@ export class UserService extends GenericService(User) {
 
       // Return the complete base64 image string
       return `data:${contentType};base64,${base64}`;
-    } catch (error:any) {
+    } catch (error: any) {
       throw new HttpException(
         {
           message: `Failed to convert image URL to base64: ${error.message}`,
@@ -1816,6 +1819,7 @@ export class UserService extends GenericService(User) {
       const [users, totalCount] = await this.getRepo().findAndCount({
         skip,
         take: limit,
+        order: { dateCreated: 'DESC' },
       });
       return {
         success: true,
@@ -1828,7 +1832,6 @@ export class UserService extends GenericService(User) {
       new NotFoundException('Users not found');
     }
   }
-
   async createAdminAndEmployees(createUserDto: CreateAdminDto): Promise<User> {
     checkForRequiredFields(['email', 'password'], createUserDto);
     validateEmailField(createUserDto.email);
@@ -1891,29 +1894,31 @@ export class UserService extends GenericService(User) {
   async getAdminUsers(): Promise<User[]> {
     return await this.getRepo().find({
       where: { role: AppRole.ADMIN },
+      order: { dateCreated: 'DESC' },
     });
   }
 
   async findUsersByWildcard(searchTerm: string): Promise<User[]> {
     const queryBuilder = this.getRepo().createQueryBuilder('user');
 
-    queryBuilder.where(
-      '(UPPER(user.firstName) LIKE UPPER(:searchTerm) OR UPPER(user.lastName) LIKE UPPER(:searchTerm) OR UPPER(user.email) LIKE UPPER(:searchTerm))',
-      { searchTerm: `%${searchTerm}%` },
-    );
+    queryBuilder
+      .where(
+        '(UPPER(user.firstName) LIKE UPPER(:searchTerm) OR UPPER(user.lastName) LIKE UPPER(:searchTerm) OR UPPER(user.email) LIKE UPPER(:searchTerm))',
+        { searchTerm: `%${searchTerm}%` },
+      )
+      .orderBy('user.dateCreated', 'DESC');
 
     return await queryBuilder.getMany();
   }
-
   async searchUsers(query: string): Promise<User[]> {
     return await this.getRepo()
       .createQueryBuilder('user')
       .where('user.firstName LIKE :query', { query: `%${query}%` })
       .orWhere('user.lastName LIKE :query', { query: `%${query}%` })
       .orWhere('user.email LIKE :query', { query: `%${query}%` })
+      .orderBy('user.dateCreated', 'DESC')
       .getMany();
   }
-
   async findUserByEmail(email: string): Promise<User> {
     const user = await this.getRepo().findOne({ where: { email } });
     if (!user) {
@@ -1922,34 +1927,34 @@ export class UserService extends GenericService(User) {
     return user;
   }
 
-async incrementUserBalance(email: string, amount: number): Promise<User> {
-  if (amount <= 0) {
-    throw new BadRequestException('Amount must be greater than zero');
-  }
-  try {
-    const user = await this.findUserByEmail(email);
-    user.walletBalance += amount;
-    return await this.getRepo().save(user);
-  } catch (error) {
-    if (error instanceof BadRequestException || error instanceof NotFoundException) {
-      throw error;
+  async incrementUserBalance(email: string, amount: number): Promise<User> {
+    if (amount <= 0) {
+      throw new BadRequestException('Amount must be greater than zero');
     }
-    throw new InternalServerErrorException('Failed to increment user balance');
+    try {
+      const user = await this.findUserByEmail(email);
+      user.walletBalance += amount;
+      return await this.getRepo().save(user);
+    } catch (error) {
+      if (error instanceof BadRequestException || error instanceof NotFoundException) {
+        throw error;
+      }
+      throw new InternalServerErrorException('Failed to increment user balance');
+    }
   }
-}
 
-async setBalanceToZero(email: string): Promise<User> {
-  try {
-    const user = await this.findUserByEmail(email);
-    user.walletBalance = 0;
-    return await this.getRepo().save(user);
-  } catch (error) {
-    if (error instanceof NotFoundException) {
-      throw error;
+  async setBalanceToZero(email: string): Promise<User> {
+    try {
+      const user = await this.findUserByEmail(email);
+      user.walletBalance = 0;
+      return await this.getRepo().save(user);
+    } catch (error) {
+      if (error instanceof NotFoundException) {
+        throw error;
+      }
+      throw new InternalServerErrorException('Failed to reset user balance');
     }
-    throw new InternalServerErrorException('Failed to reset user balance');
   }
-}
 
 
   async findUserByPhoneNumber(phoneNumber: string): Promise<User> {
