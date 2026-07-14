@@ -13,13 +13,14 @@ import {
     ApiResponse,
     ApiQuery,
 } from '@nestjs/swagger';
-import { RolesGuard } from '@schematics/index';
+import { Roles, RolesGuard } from '@schematics/index';
 import { VirtualNumberService } from './virtual-number.service';
 import { ListAllOrdersDto } from './dto/virtual-number.dto';
+import { AppRole } from '@utils/utils.constant';
 
 @UseGuards(RolesGuard)
 @ApiBearerAuth('JWT')
-
+@Roles(AppRole.ADMIN) 
 @ApiTags('admin/virtual-numbers')
 @Controller('admin/virtual-numbers')
 export class AdminVirtualNumberController {
