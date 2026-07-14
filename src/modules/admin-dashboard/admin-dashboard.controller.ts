@@ -45,11 +45,14 @@ import {
   ApiResponse,
   ApiTags,
 } from '@nestjs/swagger';
-import { CurrentUser, RolesGuard } from '@schematics/index';
-import { DecodedTokenKey } from '@utils/index';
+import { CurrentUser, Roles, RolesGuard } from '@schematics/index';
+import { AppRole, DecodedTokenKey } from '@utils/index';
 import { PaginationRequestType } from '@utils/utils.types';
 
 @ApiTags('Admin-Dashboard')
+@UseGuards(RolesGuard)
+@ApiBearerAuth('JWT')
+@Roles(AppRole.ADMIN) 
 @Controller('admin-dashboard')
 export class AdminDashboardController {
   constructor(
