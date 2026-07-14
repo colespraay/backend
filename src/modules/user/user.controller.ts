@@ -407,50 +407,50 @@ export class UserController {
     );
   }
 
-  @Get('test/account/find-by-email')
-  @ApiOperation({ summary: 'Find user by email' })
-  @ApiResponse({ status: 200, description: 'User found', type: User })
-  @ApiResponse({ status: 404, description: 'User not found' })
-  async findUserByEmail(@Query('email') email: string): Promise<User> {
-    return this.userSrv.findUserByEmail(email);
-  }
+  // @Get('test/account/find-by-email')
+  // @ApiOperation({ summary: 'Find user by email' })
+  // @ApiResponse({ status: 200, description: 'User found', type: User })
+  // @ApiResponse({ status: 404, description: 'User not found' })
+  // async findUserByEmail(@Query('email') email: string): Promise<User> {
+  //   return this.userSrv.findUserByEmail(email);
+  // }
 
 
-  @ApiOperation({ description: 'Delete user account by phone number' })
-  @ApiProduces('json')
-  @ApiConsumes('application/json')
-  @ApiResponse({ type: BaseResponseTypeDTO })
-  @Delete('/delete-by-phone-number/:phoneNumber')
-  async deleteUserByPhoneNumber(
-    @Param('phoneNumber') phoneNumber: string,
-  ): Promise<BaseResponseTypeDTO> {
-    return await this.userSrv.deleteUserByPhoneNumber(phoneNumber);
-  }
+  // @ApiOperation({ description: 'Delete user account by phone number' })
+  // @ApiProduces('json')
+  // @ApiConsumes('application/json')
+  // @ApiResponse({ type: BaseResponseTypeDTO })
+  // @Delete('/delete-by-phone-number/:phoneNumber')
+  // async deleteUserByPhoneNumber(
+  //   @Param('phoneNumber') phoneNumber: string,
+  // ): Promise<BaseResponseTypeDTO> {
+  //   return await this.userSrv.deleteUserByPhoneNumber(phoneNumber);
+  // }
 
 
-  @Delete('delete-non-admins/all')
-  @ApiOperation({
-    summary: 'Delete all non-admin users',
-    description:
-      'Deletes all user accounts except those with the role `ADMIN`. This operation is irreversible and should only be performed by administrators.',
-  })
-  @ApiResponse({
-    status: 200,
-    description: 'Successfully deleted non-admin users.',
-    type: BaseResponseTypeDTO,
-    schema: {
-      example: {
-        code: 200,
-        message: 'Successfully deleted 12 non-admin users',
-        success: true,
-      },
-    },
-  })
-  @ApiResponse({
-    status: 500,
-    description: 'An unexpected error occurred while deleting users.',
-  })
-  async deleteAllExceptAdmin(): Promise<BaseResponseTypeDTO> {
-    return await this.userSrv.deleteAllExceptAdmin();
-  }
+  // @Delete('delete-non-admins/all')
+  // @ApiOperation({
+  //   summary: 'Delete all non-admin users',
+  //   description:
+  //     'Deletes all user accounts except those with the role `ADMIN`. This operation is irreversible and should only be performed by administrators.',
+  // })
+  // @ApiResponse({
+  //   status: 200,
+  //   description: 'Successfully deleted non-admin users.',
+  //   type: BaseResponseTypeDTO,
+  //   schema: {
+  //     example: {
+  //       code: 200,
+  //       message: 'Successfully deleted 12 non-admin users',
+  //       success: true,
+  //     },
+  //   },
+  // })
+  // @ApiResponse({
+  //   status: 500,
+  //   description: 'An unexpected error occurred while deleting users.',
+  // })
+  // async deleteAllExceptAdmin(): Promise<BaseResponseTypeDTO> {
+  //   return await this.userSrv.deleteAllExceptAdmin();
+  // }
 }
