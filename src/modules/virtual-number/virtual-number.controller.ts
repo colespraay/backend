@@ -24,8 +24,8 @@ import { RolesGuard, SetRequestTimeout } from '@schematics/index';
 import { BuyVirtualNumberDto, CancelOrderDto, GetPriceDto, ListOrdersDto } from './dto/virtual-number.dto';
 import { VirtualNumberService } from './virtual-number.service';
 
-// @ApiBearerAuth('JWT')
-// @UseGuards(RolesGuard)
+@UseGuards(RolesGuard)
+@ApiBearerAuth('JWT')
 @ApiTags('virtual-numbers')
 @Controller('virtual-number')
 export class VirtualNumberController {
