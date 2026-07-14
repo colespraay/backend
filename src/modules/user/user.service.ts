@@ -1812,58 +1812,37 @@ async debitUserWallet(
     }
   }
 
-  // async getAllUsers(page: number, limit: number): Promise<{ success: boolean; message: string; code: number; data: { users: User[]; totalCount: number } }> {
-  //   try {
-  //     const skip = (page - 1) * limit;
-  //     const [users, totalCount] = await this.userRepository.findAndCount({
-  //       skip,
-  //       take: limit,
-  //     });
-  //     return {
-  //       success: true,
-  //       message: 'Users retrieved successfully',
-  //       code: HttpStatus.OK,
-  //       data: { users, totalCount },
-  //     };
-  //   } catch (error) {
-  //     console.error('Error in getAllUsers:', error);
-  //     return {
-  //       success: false,
-  //       message: 'Failed to retrieve users',
-  //       code: HttpStatus.INTERNAL_SERVER_ERROR,
-  //       error: error.message,
-  //     };
-  //   }
-  // }
 
-  async getAllUsers(
-    page: number,
-    limit: number,
-  ): Promise<{
-    success: boolean;
-    message: string;
-    error?: string;
-    code: number;
-    data: { users: User[]; totalCount: number };
-  }> {
-    try {
-      const skip = (page - 1) * limit;
-      const [users, totalCount] = await this.getRepo().findAndCount({
-        skip,
-        take: limit,
-        order: { dateCreated: 'DESC' },
-      });
-      return {
-        success: true,
-        message: 'Users retrieved successfully',
-        code: HttpStatus.OK,
-        data: { users, totalCount },
-      };
-    } catch (error) {
-      console.error('Error in getAllUsers:', error);
-      new NotFoundException('Users not found');
-    }
+async getAllUsers(
+  page: number,
+  limit: number,
+): Promise<{
+  success: boolean;
+  message: string;
+  error?: string;
+  code: number;
+  data: { users: User[]; totalCount: number };
+}> {
+  try {
+    const skip = (page - 1) * limit;
+    const [users, totalCount] = await this.getRepo().findAndCount({
+      where: { role: Not(AppRole.ADMIN) },
+      skip,
+      take: limit,
+      order: { dateCreated: 'DESC' },
+    });
+    return {
+      success: true,
+      message: 'Users retrieved successfully',
+      code: HttpStatus.OK,
+      data: { users, totalCount },
+    };
+  } catch (error) {
+    console.error('Error in getAllUsers:', error);
+    new NotFoundException('Users not found');
   }
+}
+
   async createAdminAndEmployees(createUserDto: CreateAdminDto): Promise<User> {
     checkForRequiredFields(['email', 'password'], createUserDto);
     validateEmailField(createUserDto.email);

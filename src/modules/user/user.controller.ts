@@ -415,49 +415,6 @@ export class UserController {
     return this.userSrv.findUserByEmail(email);
   }
 
-  // @Patch(':email/increment-balance/testbal')
-  // @ApiOperation({ summary: 'Increment user wallet balance' })
-  // @ApiParam({ name: 'email', type: 'string', description: 'User email' })
-  // @ApiBody({ type: IncrementBalanceDto })
-  // @ApiResponse({ status: 200, description: 'User balance updated', type: User })
-  // async incrementBalance(
-  //   @Param('email') email: string,
-  //   @Body() incrementBalanceDto: IncrementBalanceDto,
-  // ): Promise<User> {
-  //   try {
-  //     return await this.userSrv.incrementUserBalance(email, incrementBalanceDto.amount);
-  //   } catch (error) {
-  //     if (error instanceof BadRequestException || error instanceof NotFoundException) {
-  //       throw error;
-  //     }
-  //     throw new InternalServerErrorException('Failed to increment balance');
-  //   }
-  // }
-
-  // @Patch(':email/reset-balance')
-  // @ApiOperation({ summary: 'Reset user wallet balance to zero' })
-  // @ApiParam({ name: 'email', type: 'string', description: 'User email' })
-  // @ApiResponse({ status: 200, description: 'User balance reset to zero', type: User })
-  // async resetBalance(@Param('email') email: string): Promise<User> {
-  //   try {
-  //     return await this.userSrv.setBalanceToZero(email);
-  //   } catch (error) {
-  //     if (error instanceof NotFoundException) {
-  //       throw error;
-  //     }
-  //     throw new InternalServerErrorException('Failed to reset balance');
-  //   }
-  // }
-
-  // @Get('testing/phone/:phoneNumber')
-  // @ApiOperation({ summary: 'Find user by phone number' })
-  // @ApiParam({ name: 'phoneNumber', type: 'string', description: 'User phone number' })
-  // @ApiResponse({ status: 200, description: 'User found', type: User })
-  // @ApiResponse({ status: 404, description: 'User not found' })
-  // async getUserByPhoneNumber(@Param('phoneNumber') phoneNumber: string): Promise<User> {
-  //   return this.userSrv.findUserByPhoneNumber(phoneNumber);
-  // }
-
 
   @ApiOperation({ description: 'Delete user account by phone number' })
   @ApiProduces('json')
